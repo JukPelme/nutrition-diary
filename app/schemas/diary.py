@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import date
 from pydantic import BaseModel
 
@@ -60,16 +61,6 @@ class DiaryEntryResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class DailySummary(BaseModel):
-    date: date
-    total_calories: float
-    total_protein: float
-    total_fat: float
-    total_carbohydrates: float
-    entries_count: int
-    meals: list[MealWithEntries] | None = None
-
-
 class MealWithEntries(BaseModel):
     meal: MealResponse
     entries: list[DiaryEntryResponse]
@@ -79,5 +70,11 @@ class MealWithEntries(BaseModel):
     subtotal_carbohydrates: float
 
 
-# Fix forward reference
-DailySummary.model_rebuild()
+class DailySummary(BaseModel):
+    date: date
+    total_calories: float
+    total_protein: float
+    total_fat: float
+    total_carbohydrates: float
+    entries_count: int
+    meals: list[MealWithEntries] | None = None
