@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
@@ -27,13 +27,21 @@ async def search_products(
                 Product.name.ilike(f"%{q}%"),
                 similarity > 0.1,
             )
-        ).order_by(similarity.desc())
+        ).order_by(
+            # Verified products first (USDA, lab data)
+            desc(Product.is_verified),
+            # Then by relevance
+            similarity.desc(),
+        )
         count_query = count_query.where(
             or_(
                 Product.name.ilike(f"%{q}%"),
                 similarity > 0.1,
             )
         )
+    else:
+        # Default: verified first, then by name
+        query = query.order_by(desc(Product.is_verified), Product.name)
 
     if category:
         query = query.where(Product.category == category)

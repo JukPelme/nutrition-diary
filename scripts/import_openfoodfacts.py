@@ -56,14 +56,48 @@ MINERAL_MAP = {
 }
 
 
-def safe_float(val: str) -> float | None:
+def safe_float(val: str, max_val: float | None = None) -> float | None:
     if not val or val.strip() == "":
         return None
     try:
         v = float(val)
-        return v if v >= 0 else None
+        if v < 0:
+            return None
+        if max_val is not None and v > max_val:
+            return None
+        return v
     except (ValueError, TypeError):
         return None
+
+
+def validate_product(data: dict) -> bool:
+    """Reject obviously bad data."""
+    cal = data.get("calories")
+    protein = data.get("protein") or 0
+    fat = data.get("fat") or 0
+    carbs = data.get("carbohydrates") or 0
+
+    # Calories can't exceed 900 kcal/100g (pure fat = 900)
+    if cal is not None and cal > 900:
+        return False
+
+    # Macros can't exceed 100g per 100g
+    if protein > 100 or fat > 100 or carbs > 100:
+        return False
+
+    # Sum of macros can't exceed ~100g (with some tolerance for rounding)
+    if (protein + fat + carbs) > 105:
+        return False
+
+    # Calorie sanity check: calculated vs declared (±50%)
+    if cal and cal > 0:
+        calculated = protein * 4 + fat * 9 + carbs * 4
+        if calculated > 0:
+            ratio = cal / calculated
+            if ratio > 2.0 or ratio < 0.3:
+                return False
+
+    return True
 
 
 def parse_row(row: dict) -> dict | None:
@@ -78,7 +112,8 @@ def parse_row(row: dict) -> dict | None:
     # Macros
     macros = {}
     for off_col, our_field in MACRO_MAP.items():
-        val = safe_float(row.get(off_col, ""))
+        max_v = 900.0 if our_field == "calories" else 100.0
+        val = safe_float(row.get(off_col, ""), max_val=max_v)
         if val is not None:
             macros[our_field] = val
 
@@ -100,7 +135,7 @@ def parse_row(row: dict) -> dict | None:
         if val is not None:
             minerals[our_field] = val
 
-    return {
+    result = {
         "id": uuid4(),
         "name": name[:500],
         "brand": (row.get("brands", "") or "")[:255] or None,
@@ -121,6 +156,11 @@ def parse_row(row: dict) -> dict | None:
         "image_url": (row.get("image_url", "") or "")[:500] or None,
         "is_verified": False,
     }
+
+    if not validate_product(result):
+        return None
+
+    return result
 
 
 async def import_data(file_path: str, batch_size: int = 5000, db_url: str | None = None):
