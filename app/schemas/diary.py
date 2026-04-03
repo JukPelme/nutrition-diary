@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import date
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -16,7 +17,7 @@ class MealUpdate(BaseModel):
 
 
 class MealResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     icon: str | None
     sort_order: int
@@ -30,7 +31,7 @@ class DiaryEntryCreate(BaseModel):
     product_id: str | None = None
     entry_date: date
     product_name: str
-    serving_amount: float  # grams
+    serving_amount: float
     calories: float = 0
     protein: float = 0
     fat: float = 0
@@ -47,9 +48,9 @@ class DiaryEntryUpdate(BaseModel):
 
 
 class DiaryEntryResponse(BaseModel):
-    id: str
-    meal_id: str | None
-    product_id: str | None
+    id: UUID
+    meal_id: UUID | None
+    product_id: UUID | None
     entry_date: date
     product_name: str
     serving_amount: float

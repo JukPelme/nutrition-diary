@@ -1,31 +1,5 @@
+from uuid import UUID
 from pydantic import BaseModel
-
-
-class NutrientData(BaseModel):
-    vitamin_a: float | None = None  # mcg
-    vitamin_b1: float | None = None  # mg
-    vitamin_b2: float | None = None  # mg
-    vitamin_b3: float | None = None  # mg (niacin)
-    vitamin_b5: float | None = None  # mg
-    vitamin_b6: float | None = None  # mg
-    vitamin_b9: float | None = None  # mcg (folate)
-    vitamin_b12: float | None = None  # mcg
-    vitamin_c: float | None = None  # mg
-    vitamin_d: float | None = None  # mcg
-    vitamin_e: float | None = None  # mg
-    vitamin_k: float | None = None  # mcg
-
-
-class MineralData(BaseModel):
-    calcium: float | None = None  # mg
-    iron: float | None = None  # mg
-    magnesium: float | None = None  # mg
-    phosphorus: float | None = None  # mg
-    potassium: float | None = None  # mg
-    sodium: float | None = None  # mg
-    zinc: float | None = None  # mg
-    selenium: float | None = None  # mcg
-    iodine: float | None = None  # mcg
 
 
 class ProductCreate(BaseModel):
@@ -64,7 +38,7 @@ class ProductUpdate(BaseModel):
 
 
 class ProductResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     brand: str | None
     barcode: str | None
@@ -84,11 +58,3 @@ class ProductResponse(BaseModel):
     is_verified: bool
 
     model_config = {"from_attributes": True}
-
-
-class ProductSearchParams(BaseModel):
-    q: str | None = None
-    category: str | None = None
-    barcode: str | None = None
-    limit: int = 20
-    offset: int = 0
