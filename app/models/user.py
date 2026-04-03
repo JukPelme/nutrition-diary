@@ -25,6 +25,6 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
-    diary_entries = relationship("DiaryEntry", back_populates="user", lazy="selectin")
-    meals = relationship("Meal", back_populates="user", lazy="selectin")
+    # Relationships — lazy="noload" to avoid circular loading, use explicit queries
+    diary_entries = relationship("DiaryEntry", back_populates="user", lazy="noload")
+    meals = relationship("Meal", back_populates="user", lazy="noload")
