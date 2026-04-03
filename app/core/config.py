@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # API
     api_v1_prefix: str = "/api/v1"
 
+    # Food recognition
+    anthropic_api_key: str | None = None
+    logmeal_api_key: str | None = None
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
