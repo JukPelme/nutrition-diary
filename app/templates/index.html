@@ -15,7 +15,6 @@
         <div class="auth-logo">🥗</div>
         <h1 class="auth-title">Дневник питания</h1>
         <p class="auth-subtitle">Следите за рационом и КБЖУ</p>
-
         <form id="auth-form" onsubmit="handleLogin(event)">
             <div id="auth-name-group" class="form-group hidden">
                 <input type="text" id="auth-name" class="input" placeholder="Имя">
@@ -28,7 +27,6 @@
             </div>
             <button type="submit" id="auth-submit" class="btn btn-primary">Войти</button>
         </form>
-
         <p id="auth-toggle-text" class="auth-toggle">
             Нет аккаунта? <a href="#" onclick="toggleAuthMode()">Регистрация</a>
         </p>
@@ -37,8 +35,6 @@
 
 <!-- App Page -->
 <div id="app-page" class="page hidden">
-
-    <!-- Header -->
     <header class="header">
         <div class="header-left">
             <span class="header-logo">🥗</span>
@@ -49,19 +45,15 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
 
         <!-- Diary View -->
         <div id="diary-view">
-            <!-- Date Navigation -->
             <div class="date-nav">
                 <button class="btn-icon" onclick="changeDate(-1)">◀</button>
                 <span id="date-display" class="date-text">Сегодня</span>
                 <button class="btn-icon" onclick="changeDate(1)">▶</button>
             </div>
-
-            <!-- Calorie Summary -->
             <div class="card summary-card">
                 <div class="summary-ring">
                     <svg viewBox="0 0 100 100" class="ring-svg">
@@ -78,39 +70,34 @@
                 <div class="macros">
                     <div class="macro macro-protein">
                         <div class="macro-bar"><div class="macro-fill" style="width:0%"></div></div>
-                        <div class="macro-info">
-                            <span class="macro-label">Белки</span>
-                            <span id="protein-val" class="macro-value">0г</span>
-                        </div>
+                        <div class="macro-info"><span class="macro-label">Белки</span><span id="protein-val" class="macro-value">0г</span></div>
                     </div>
                     <div class="macro macro-fat">
                         <div class="macro-bar"><div class="macro-fill" style="width:0%"></div></div>
-                        <div class="macro-info">
-                            <span class="macro-label">Жиры</span>
-                            <span id="fat-val" class="macro-value">0г</span>
-                        </div>
+                        <div class="macro-info"><span class="macro-label">Жиры</span><span id="fat-val" class="macro-value">0г</span></div>
                     </div>
                     <div class="macro macro-carbs">
                         <div class="macro-bar"><div class="macro-fill" style="width:0%"></div></div>
-                        <div class="macro-info">
-                            <span class="macro-label">Углеводы</span>
-                            <span id="carbs-val" class="macro-value">0г</span>
-                        </div>
+                        <div class="macro-info"><span class="macro-label">Углеводы</span><span id="carbs-val" class="macro-value">0г</span></div>
                     </div>
                 </div>
             </div>
-
-            <!-- Meals Container -->
             <div id="meals-container"></div>
         </div>
 
         <!-- Stats View -->
         <div id="stats-view" class="hidden">
-            <div id="stats-content">
-                <div class="card" style="text-align:center;padding:40px">
-                    <div style="color:var(--text2)">Загрузка статистики...</div>
-                </div>
-            </div>
+            <div id="stats-content"></div>
+        </div>
+
+        <!-- Nutrients View -->
+        <div id="nutrients-view" class="hidden">
+            <div id="nutrients-content"></div>
+        </div>
+
+        <!-- Health View -->
+        <div id="health-view" class="hidden">
+            <div id="health-content"></div>
         </div>
 
     </main>
@@ -121,9 +108,17 @@
             <div class="nav-icon">📖</div>
             <div class="nav-label">Дневник</div>
         </div>
+        <div class="nav-tab" data-tab="nutrients" onclick="setActiveTab('nutrients')">
+            <div class="nav-icon">💊</div>
+            <div class="nav-label">Нутриенты</div>
+        </div>
         <div class="nav-tab" data-tab="stats" onclick="setActiveTab('stats')">
             <div class="nav-icon">📊</div>
             <div class="nav-label">Статистика</div>
+        </div>
+        <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
+            <div class="nav-icon">🏥</div>
+            <div class="nav-label">Здоровье</div>
         </div>
     </nav>
 
@@ -137,7 +132,25 @@
             <div class="form-group">
                 <input type="text" id="food-search" class="input" placeholder="Поиск продукта..." oninput="onFoodSearch(event)" autocomplete="off">
             </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openBarcode(selectedMealId)">📷 Штрихкод</button>
+            </div>
             <div id="search-results" class="search-results"></div>
+        </div>
+    </div>
+
+    <!-- Barcode Modal -->
+    <div id="barcode-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Штрихкод</h3>
+                <button class="btn-icon" onclick="closeModal('barcode-modal')">✕</button>
+            </div>
+            <div class="form-group">
+                <input type="text" id="barcode-input" class="input" placeholder="Введите штрихкод..." inputmode="numeric">
+            </div>
+            <button class="btn btn-primary" onclick="searchBarcode()">Найти</button>
+            <div id="barcode-status" style="text-align:center;padding:12px;color:var(--text2)"></div>
         </div>
     </div>
 
@@ -161,6 +174,20 @@
                 </div>
             </div>
             <button class="btn btn-primary" onclick="addToDiary()">Добавить</button>
+        </div>
+    </div>
+
+    <!-- Condition Search Modal -->
+    <div id="condition-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Добавить состояние</h3>
+                <button class="btn-icon" onclick="closeModal('condition-modal')">✕</button>
+            </div>
+            <div class="form-group">
+                <input type="text" id="condition-search" class="input" placeholder="Поиск диагноза..." oninput="onConditionSearch(event)" autocomplete="off">
+            </div>
+            <div id="condition-results" class="search-results"></div>
         </div>
     </div>
 

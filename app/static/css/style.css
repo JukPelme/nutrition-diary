@@ -138,3 +138,34 @@ a { color:var(--accent); text-decoration:none; }
 /* Stats macros override for horizontal layout */
 .stats-content .macros { flex-direction:row; justify-content:space-around; }
 .stats-content .macro { text-align:center; }
+
+/* ---- Delete button ---- */
+.entry-right { display:flex; align-items:center; gap:8px; }
+.btn-delete { background:none; border:none; color:var(--text2); font-size:14px; cursor:pointer; padding:4px 6px; border-radius:4px; opacity:0.5; transition:all 0.2s; }
+.btn-delete:hover { opacity:1; color:var(--red); background:rgba(248,113,113,0.1); }
+
+/* ---- Nutrient bars ---- */
+.nutrient-row { margin-bottom:10px; }
+.nutrient-info { display:flex; justify-content:space-between; margin-bottom:4px; }
+.nutrient-name { font-size:13px; }
+.nutrient-val { font-size:12px; color:var(--text2); }
+.nutrient-bar { height:6px; background:var(--bg); border-radius:3px; overflow:hidden; }
+.nutrient-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+
+/* ---- Health / Conditions ---- */
+.condition-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+.condition-row:last-child { border-bottom:none; }
+.condition-name { font-size:14px; font-weight:500; }
+.condition-code { font-size:12px; color:var(--text2); margin-top:2px; }
+
+.rec-section { margin-bottom:12px; }
+.rec-label { font-size:12px; color:var(--text2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; }
+.tag { display:inline-block; padding:4px 10px; border-radius:20px; font-size:12px; }
+.tag-red { background:rgba(248,113,113,0.15); color:var(--red); }
+.tag-green { background:rgba(52,211,153,0.15); color:var(--green); }
+
+/* ---- Secondary button ---- */
+.btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:10px 16px; border-radius:8px; font-size:13px; cursor:pointer; }
+.btn-secondary:hover { background:var(--border); }
+.modal-actions { display:flex; gap:8px; margin-bottom:12px; }
