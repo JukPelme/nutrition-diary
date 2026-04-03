@@ -1,3 +1,4 @@
+import os
 """
 Offline seed: ~200 popular Russian products with accurate KBJU.
 Works without internet. Run: python scripts/seed_products.py
@@ -226,7 +227,7 @@ async def seed(db_url: str | None = None):
     from sqlalchemy.dialects.postgresql import insert
     from app.models.product import Product
 
-    url = db_url or "postgresql+asyncpg://nutrition:nutrition@localhost:5432/nutrition_diary"
+    url = db_url or os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_diary")
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

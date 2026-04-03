@@ -1,3 +1,4 @@
+import os
 """
 Import products from USDA FoodData Central API.
 
@@ -116,7 +117,7 @@ async def import_data(api_key: str, pages: int = 50, page_size: int = 200, db_ur
     from sqlalchemy.dialects.postgresql import insert
     from app.models.product import Product
 
-    url = db_url or "postgresql+asyncpg://nutrition:nutrition@localhost:5432/nutrition_diary"
+    url = db_url or os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_diary")
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

@@ -1,3 +1,4 @@
+import os
 """
 Seed ICD-11 conditions with dietary rules.
 Covers major diagnostic categories relevant to nutrition.
@@ -198,7 +199,7 @@ async def seed(db_url: str | None = None):
     from sqlalchemy.dialects.postgresql import insert
     from app.models.health import ICD11Condition
 
-    url = db_url or "postgresql+asyncpg://nutrition:nutrition@localhost:5432/nutrition_diary"
+    url = db_url or os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_diary")
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
