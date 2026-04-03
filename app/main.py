@@ -1,7 +1,12 @@
+import pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.api.v1.router import api_router
+
+BASE_DIR = pathlib.Path(__file__).resolve().parent
 
 
 @asynccontextmanager
@@ -28,7 +33,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+
+@app.get("/")
+async def index():
+    return FileResponse(str(BASE_DIR / "templates" / "index.html"))
 
 
 @app.get("/health")
