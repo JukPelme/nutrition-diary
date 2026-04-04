@@ -208,7 +208,10 @@ function renderDiary(summary) {
                     </div>
                 `).join('')}
             </div>
-            <div class="add-btn" onclick="openAddFood('${meal.id}')">+ Добавить</div>
+            <div style="display:flex;gap:6px">
+                <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ Добавить</div>
+                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="copyMeal('${meal.id}', '${currentDate}')" title="Повторить вчера">📋</div>
+            </div>
         `;
         container.appendChild(section);
     }
@@ -269,7 +272,25 @@ function openAddFood(mealId) {
     selectedMealId = mealId;
     document.getElementById('add-food-modal').classList.add('active');
     document.getElementById('food-search').value = '';
-    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('food-category-filter').value = '';
+    document.getElementById('food-sort').value = '';
+    // Show favorites
+    const favs = getFavorites();
+    const container = document.getElementById('search-results');
+    if (favs.length) {
+        container.innerHTML = '<div class="card-title" style="padding:8px 0 4px;font-size:11px">Избранное</div>' +
+            favs.map(p => `
+            <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                <div>
+                    <div class="p-name">⭐ ${p.name}</div>
+                    <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
+                </div>
+                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = '';
+    }
     document.getElementById('food-search').focus();
 }
 
@@ -692,12 +713,77 @@ async function createAndSelectScannedProduct(product, defaultWeight) {
     }
 }
 
+// ---- Favorites ----
+function toggleFavFromPortion() {
+    const p = window._selectedProduct;
+    if (!p?.id) return;
+    toggleFavorite(p);
+    const favStar = isFavorite(p.id) ? '★' : '☆';
+    document.getElementById('portion-product-name').innerHTML = p.name +
+        ` <span class="fav-btn" onclick="toggleFavFromPortion()" style="cursor:pointer;color:var(--orange)">${favStar}</span>`;
+}
+
+function getFavorites() {
+    return JSON.parse(localStorage.getItem('favorites') || '[]');
+}
+
+function toggleFavorite(product) {
+    let favs = getFavorites();
+    const idx = favs.findIndex(f => f.id === product.id);
+    if (idx >= 0) {
+        favs.splice(idx, 1);
+    } else {
+        favs.unshift({ id: product.id, name: product.name, calories: product.calories, protein: product.protein, fat: product.fat, carbohydrates: product.carbohydrates, serving_size: product.serving_size, serving_unit: product.serving_unit, brand: product.brand, is_verified: product.is_verified });
+        if (favs.length > 20) favs.pop();
+    }
+    localStorage.setItem('favorites', JSON.stringify(favs));
+}
+
+function isFavorite(productId) {
+    return getFavorites().some(f => f.id === productId);
+}
+
+// ---- Copy Meal ----
+async function copyMeal(mealId, fromDate) {
+    const prevDate = new Date(fromDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = prevDate.toISOString().slice(0, 10);
+
+    const summary = await api(`/diary/summary?entry_date=${prevDateStr}`);
+    const prevEntries = (summary?.entries || []).filter(e => e.meal_id === mealId);
+
+    if (!prevEntries.length) {
+        alert('Вчера в этом приёме пищи ничего не было');
+        return;
+    }
+
+    for (const e of prevEntries) {
+        await api('/diary', {
+            method: 'POST',
+            body: JSON.stringify({
+                meal_id: mealId,
+                product_id: e.product_id,
+                entry_date: currentDate,
+                product_name: e.product_name,
+                serving_amount: e.serving_amount,
+                calories: e.calories,
+                protein: e.protein,
+                fat: e.fat,
+                carbohydrates: e.carbohydrates,
+            })
+        });
+    }
+    loadDiary();
+}
+
 // ---- Portion ----
 function selectProduct(product) {
     closeModal('add-food-modal');
     closeModal('barcode-modal');
     document.getElementById('portion-modal').classList.add('active');
-    document.getElementById('portion-product-name').textContent = product.name;
+    const favStar = product.id && isFavorite(product.id) ? '★' : '☆';
+    document.getElementById('portion-product-name').innerHTML = product.name +
+        (product.id ? ` <span class="fav-btn" onclick="toggleFavFromPortion()" style="cursor:pointer;color:var(--orange)">${favStar}</span>` : '');
     document.getElementById('portion-amount').value = 100;
     window._selectedProduct = product;
     updatePortionCalc();
