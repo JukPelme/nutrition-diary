@@ -2,22 +2,23 @@
 import os
 
 block_cipher = None
-ROOT = os.path.abspath('.')
+# Spec is in desktop/, project root is one level up
+ROOT = os.path.abspath(os.path.join(SPECPATH, '..'))
 
 a = Analysis(
-    ['desktop/app_exe.py'],
+    [os.path.join(ROOT, 'desktop', 'app_exe.py')],
     pathex=[ROOT],
     binaries=[],
     datas=[
-        ('app/templates', 'app/templates'),
-        ('app/static', 'app/static'),
-        ('app/api', 'app/api'),
-        ('app/core', 'app/core'),
-        ('app/db', 'app/db'),
-        ('app/models', 'app/models'),
-        ('app/schemas', 'app/schemas'),
-        ('app/services', 'app/services'),
-        ('scripts', 'scripts'),
+        (os.path.join(ROOT, 'app', 'templates'), 'app/templates'),
+        (os.path.join(ROOT, 'app', 'static'), 'app/static'),
+        (os.path.join(ROOT, 'app', 'api'), 'app/api'),
+        (os.path.join(ROOT, 'app', 'core'), 'app/core'),
+        (os.path.join(ROOT, 'app', 'db'), 'app/db'),
+        (os.path.join(ROOT, 'app', 'models'), 'app/models'),
+        (os.path.join(ROOT, 'app', 'schemas'), 'app/schemas'),
+        (os.path.join(ROOT, 'app', 'services'), 'app/services'),
+        (os.path.join(ROOT, 'scripts'), 'scripts'),
     ],
     hiddenimports=[
         'uvicorn.logging',
