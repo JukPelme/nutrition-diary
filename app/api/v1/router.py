@@ -19,3 +19,5 @@ from app.api.v1.endpoints.bot import router as bot_router
 api_router.include_router(bot_router)
 from app.api.v1.endpoints.recommendations import router as rec_router
 api_router.include_router(rec_router)
+from app.api.v1.endpoints.sync import router as sync_router
+api_router.include_router(sync_router)

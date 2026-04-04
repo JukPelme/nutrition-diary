@@ -1507,6 +1507,46 @@ function renderStats(data) {
 
 
 
+
+// ---- Sync / Backup ----
+async function syncExport() {
+    const resp = await fetch('/api/v1/sync/export', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { alert('Ошибка экспорта'); return; }
+    const data = await resp.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nutrition-diary-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function syncImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!confirm('Импортировать данные из файла? Существующие записи не удалятся.')) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const resp = await fetch('/api/v1/sync/import', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData,
+    });
+    const result = await resp.json();
+    if (result.status === 'ok') {
+        alert('Импортировано записей: ' + result.imported_entries);
+        loadDiary();
+    } else {
+        alert('Ошибка: ' + (result.error || 'unknown'));
+    }
+    event.target.value = '';
+}
+
 // ---- Share ----
 async function shareDay() {
     const data = await api(`/share/day?entry_date=${currentDate}`, { method: 'POST' });
