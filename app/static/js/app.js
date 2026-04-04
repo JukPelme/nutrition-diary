@@ -492,6 +492,122 @@ async function createCustomProduct() {
     }
 }
 
+// ---- Food Photo Scan ----
+function openFoodScan() {
+    document.getElementById('food-scan-modal').classList.add('active');
+    document.getElementById('scan-preview').classList.add('hidden');
+    document.getElementById('scan-results').classList.add('hidden');
+    document.getElementById('scan-status').textContent = '';
+    document.getElementById('food-photo-input').value = '';
+}
+
+async function onFoodPhotoSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Show preview
+    const preview = document.getElementById('scan-preview');
+    const img = document.getElementById('scan-preview-img');
+    img.src = URL.createObjectURL(file);
+    preview.classList.remove('hidden');
+
+    // Upload
+    document.getElementById('scan-status').textContent = 'Распознаю...';
+    document.getElementById('scan-results').classList.add('hidden');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const resp = await fetch('/api/v1/food-scan', {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+
+        if (resp.status === 401) { logout(); return; }
+        const data = await resp.json();
+
+        if (data.error && !data.foods?.length) {
+            document.getElementById('scan-status').textContent = data.error === 'No food recognition provider available'
+                ? 'Сервис распознавания недоступен (нужен API ключ)'
+                : 'Ошибка: ' + data.error;
+            return;
+        }
+
+        document.getElementById('scan-status').textContent = data.description || '';
+        renderScanResults(data.foods || []);
+    } catch (err) {
+        document.getElementById('scan-status').textContent = 'Ошибка загрузки';
+    }
+}
+
+function renderScanResults(foods) {
+    const container = document.getElementById('scan-foods-list');
+    const results = document.getElementById('scan-results');
+
+    if (!foods.length) {
+        results.classList.add('hidden');
+        return;
+    }
+
+    results.classList.remove('hidden');
+    container.innerHTML = foods.map((f, i) => {
+        const conf = f.confidence ? Math.round(f.confidence * 100) : null;
+        return `<div class="scan-food-item">
+            <div class="scan-food-info">
+                <div class="scan-food-name">${f.name || f.name_en}</div>
+                <div class="scan-food-detail">~${f.estimated_weight_g || 100}г · ${Math.round(f.calories || 0)} ккал · Б${Math.round(f.protein || 0)} Ж${Math.round(f.fat || 0)} У${Math.round(f.carbohydrates || 0)}</div>
+            </div>
+            ${conf ? `<span class="scan-food-confidence">${conf}%</span>` : ''}
+            <div class="scan-food-add">
+                <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick='addScannedFood(${JSON.stringify(f).replace(/'/g, "&#39;")})'>+</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function addScannedFood(food) {
+    // Create a product-like object for the portion modal
+    const product = {
+        name: food.name || food.name_en,
+        calories: food.calories ? (food.calories / (food.estimated_weight_g || 100)) * 100 : 0,
+        protein: food.protein ? (food.protein / (food.estimated_weight_g || 100)) * 100 : 0,
+        fat: food.fat ? (food.fat / (food.estimated_weight_g || 100)) * 100 : 0,
+        carbohydrates: food.carbohydrates ? (food.carbohydrates / (food.estimated_weight_g || 100)) * 100 : 0,
+        serving_size: 100,
+        serving_unit: 'g',
+    };
+
+    // First create product in DB, then open portion modal
+    createAndSelectScannedProduct(product, food.estimated_weight_g || 100);
+}
+
+async function createAndSelectScannedProduct(product, defaultWeight) {
+    const created = await api('/products', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: product.name,
+            category: 'Готовые блюда',
+            calories: Math.round(product.calories * 10) / 10,
+            protein: Math.round(product.protein * 10) / 10,
+            fat: Math.round(product.fat * 10) / 10,
+            carbohydrates: Math.round(product.carbohydrates * 10) / 10,
+        })
+    });
+
+    if (created?.id) {
+        closeModal('food-scan-modal');
+        selectProduct(created);
+        // Set default weight from AI estimate
+        document.getElementById('portion-amount').value = defaultWeight;
+        updatePortionCalc();
+    }
+}
+
 // ---- Portion ----
 function selectProduct(product) {
     closeModal('add-food-modal');

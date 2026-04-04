@@ -162,6 +162,7 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openBarcode(selectedMealId)">📷 Штрихкод</button>
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openCreateProduct()">✚ Создать свой</button>
+                <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openFoodScan()">📸 Фото</button>
             </div>
             <div id="search-results" class="search-results"></div>
         </div>
@@ -294,6 +295,35 @@
         </div>
     </div>
 
+
+    <!-- Food Scan Modal -->
+    <div id="food-scan-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Распознать еду</h3>
+                <button class="btn-icon" onclick="closeModal('food-scan-modal')">✕</button>
+            </div>
+            <div id="scan-upload-area">
+                <input type="file" id="food-photo-input" accept="image/*" capture="environment" style="display:none" onchange="onFoodPhotoSelected(event)">
+                <div class="scan-buttons">
+                    <button class="btn btn-secondary scan-btn" onclick="document.getElementById('food-photo-input').setAttribute('capture','environment'); document.getElementById('food-photo-input').click()">
+                        📷 Камера
+                    </button>
+                    <button class="btn btn-secondary scan-btn" onclick="document.getElementById('food-photo-input').removeAttribute('capture'); document.getElementById('food-photo-input').click()">
+                        🖼 Галерея
+                    </button>
+                </div>
+                <div id="scan-preview" class="hidden">
+                    <img id="scan-preview-img" class="scan-img">
+                </div>
+            </div>
+            <div id="scan-status" style="text-align:center;padding:12px;color:var(--text2)"></div>
+            <div id="scan-results" class="hidden">
+                <div class="card-title" style="margin-top:8px">Распознано:</div>
+                <div id="scan-foods-list"></div>
+            </div>
+        </div>
+    </div>
     <!-- Condition Search Modal -->
     <div id="condition-modal" class="modal">
         <div class="modal-content">
