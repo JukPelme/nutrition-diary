@@ -1480,6 +1480,23 @@ function renderStats(data) {
 }
 
 
+
+// ---- Share ----
+async function shareDay() {
+    const data = await api(`/share/day?entry_date=${currentDate}`, { method: 'POST' });
+    if (data?._error) {
+        alert(data.detail || 'Нет записей для этого дня');
+        return;
+    }
+    const url = window.location.origin + '/shared/' + data.share_id;
+    if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        alert('Ссылка скопирована: ' + url);
+    } else {
+        prompt('Скопируйте ссылку:', url);
+    }
+}
+
 // ---- Week Plan ----
 async function loadWeekPlan() {
     const container = document.getElementById('plan-content');

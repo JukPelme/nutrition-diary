@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дневник питания — общий доступ</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div style="max-width:480px;margin:0 auto;padding:20px">
+        <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:48px">🍽</div>
+            <h2 id="share-title" style="margin-top:8px">Загрузка...</h2>
+            <p id="share-date" style="color:var(--text2)"></p>
+        </div>
+        <div id="share-content"></div>
+        <div style="text-align:center;margin-top:20px">
+            <a href="/" class="btn btn-primary" style="display:inline-block;text-decoration:none;padding:12px 32px">Создать свой дневник</a>
+        </div>
+    </div>
+    <script>
+    (async () => {
+        const id = window.location.pathname.split('/').pop();
+        const res = await fetch('/api/v1/share/view/' + id);
+        if (!res.ok) {
+            document.getElementById('share-title').textContent = 'Ссылка устарела';
+            return;
+        }
+        const data = await res.json();
+        document.getElementById('share-title').textContent = 'Рацион — ' + data.user_name;
+        document.getElementById('share-date').textContent = new Date(data.date).toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'});
+
+        let html = '';
+        let totalCal = 0, totalP = 0, totalF = 0, totalC = 0;
+
+        for (const [meal, items] of Object.entries(data.meals)) {
+            const mealCal = items.reduce((s, i) => s + i.calories, 0);
+            html += `<div class="card"><div class="card-title">${meal} · ${Math.round(mealCal)} ккал</div>`;
+            for (const item of items) {
+                totalCal += item.calories;
+                totalP += item.protein;
+                totalF += item.fat;
+                totalC += item.carbs;
+                html += `<div class="entry-row">
+                    <div class="entry-info"><div class="entry-name">${item.name}</div><div class="entry-weight">${item.weight}г</div></div>
+                    <div class="entry-cal">${Math.round(item.calories)} ккал</div>
+                </div>`;
+            }
+            html += '</div>';
+        }
+
+        html = `<div class="card summary-card" style="justify-content:space-around;text-align:center">
+            <div><div style="font-size:24px;font-weight:700">${Math.round(totalCal)}</div><div style="font-size:11px;color:var(--text2)">ккал</div></div>
+            <div><div style="font-size:18px;font-weight:600;color:var(--protein)">${Math.round(totalP)}г</div><div style="font-size:11px;color:var(--text2)">белки</div></div>
+            <div><div style="font-size:18px;font-weight:600;color:var(--fat)">${Math.round(totalF)}г</div><div style="font-size:11px;color:var(--text2)">жиры</div></div>
+            <div><div style="font-size:18px;font-weight:600;color:var(--carbs)">${Math.round(totalC)}г</div><div style="font-size:11px;color:var(--text2)">углеводы</div></div>
+        </div>` + html;
+
+        document.getElementById('share-content').innerHTML = html;
+    })();
+    </script>
+</body>
+</html>

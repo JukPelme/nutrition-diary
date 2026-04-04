@@ -35,6 +35,11 @@ async def index():
     return FileResponse(str(BASE_DIR / "templates" / "index.html"))
 
 
+@app.get("/shared/{share_id}")
+async def shared_page(share_id: str):
+    return FileResponse(str(BASE_DIR / "templates" / "shared.html"))
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "version": settings.version}

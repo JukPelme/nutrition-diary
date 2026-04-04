@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, products, diary, meals, barcode, stats, nutrients, health, devices, food_scan, export
+from app.api.v1.endpoints import  auth, products, diary, meals, barcode, stats, nutrients, health, devices, food_scan, export
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -13,3 +13,5 @@ api_router.include_router(health.router)
 api_router.include_router(devices.router)
 api_router.include_router(food_scan.router)
 api_router.include_router(export.router)
+from app.api.v1.endpoints.share import router as share_router
+api_router.include_router(share_router)
