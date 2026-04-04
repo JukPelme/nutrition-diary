@@ -1193,11 +1193,36 @@ async function loadHealth() {
     const container = document.getElementById('health-content');
     container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">Загрузка...</div>';
 
-    const profile = await api('/health/profile');
+    const [profile, aiRecs] = await Promise.all([
+        api('/health/profile'),
+        api('/recommendations'),
+    ]);
     if (!profile) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">Ошибка загрузки</div>'; return; }
 
     const conditions = profile.conditions || [];
     const recs = profile.recommendations || {};
+
+    // AI Recommendations block
+    let aiHtml = '';
+    if (aiRecs?.recommendations?.length) {
+        const typeColors = { warning: 'var(--orange)', tip: 'var(--accent)', health: 'var(--green)', success: 'var(--green)', info: 'var(--text2)' };
+        aiHtml = '<div class="card"><div class="card-title">Рекомендации</div>' +
+            aiRecs.recommendations.map(r =>
+                `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+                    <div style="font-size:14px;font-weight:500">${r.icon} ${r.title}</div>
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px">${r.text}</div>
+                </div>`
+            ).join('') + '</div>';
+
+        if (aiRecs.top_products?.length) {
+            aiHtml += '<div class="card"><div class="card-title">Часто едите</div>' +
+                aiRecs.top_products.map(p =>
+                    `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+                        <span>${p.name}</span><span style="color:var(--text2)">${p.count}x за неделю</span>
+                    </div>`
+                ).join('') + '</div>';
+        }
+    }
 
     // Словарь переводов
     const T = {
