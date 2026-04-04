@@ -15,3 +15,5 @@ api_router.include_router(food_scan.router)
 api_router.include_router(export.router)
 from app.api.v1.endpoints.share import router as share_router
 api_router.include_router(share_router)
+from app.api.v1.endpoints.bot import router as bot_router
+api_router.include_router(bot_router)

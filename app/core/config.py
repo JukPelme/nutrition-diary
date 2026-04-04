@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
+    bot_token: str = "change-me-bot-token"
     algorithm: str = "HS256"
 
     # API
