@@ -145,7 +145,7 @@ async def update_nutrients(db_url=None):
     async with session_factory() as session:
         for name, data in NUTRIENT_DATA.items():
             result = await session.execute(select(Product).where(Product.name == name))
-            product = result.scalar_one_or_none()
+            product = result.scalars().first()
             if product:
                 stmt = update(Product).where(Product.id == product.id).values(
                     vitamins=data.get("vitamins"),
