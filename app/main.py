@@ -1,3 +1,5 @@
+import os
+import sys
 import pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -6,7 +8,13 @@ from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.api.v1.router import api_router
 
-BASE_DIR = pathlib.Path(__file__).resolve().parent
+# Support frozen (PyInstaller) mode
+if os.environ.get("APP_BASE_DIR"):
+    BASE_DIR = pathlib.Path(os.environ["APP_BASE_DIR"]) / "app"
+elif getattr(sys, "frozen", False):
+    BASE_DIR = pathlib.Path(sys._MEIPASS) / "app"
+else:
+    BASE_DIR = pathlib.Path(__file__).resolve().parent
 
 
 @asynccontextmanager

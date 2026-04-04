@@ -85,24 +85,40 @@ def seed_if_empty():
 
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print("  Nutrition Diary")
-    print("=" * 50)
-    print(f"  http://{HOST}:{PORT}")
-    print("  Press Ctrl+C to stop")
-    print("=" * 50)
-
     try:
-        seed_if_empty()
+        print("=" * 50)
+        print("  Nutrition Diary")
+        print("=" * 50)
+        print(f"  Base dir: {BASE_DIR}")
+        print(f"  Data dir: {DATA_DIR}")
+        print(f"  DB: {db_path}")
+        print(f"  http://{HOST}:{PORT}")
+        print("  Press Ctrl+C to stop")
+        print("=" * 50)
+
+        # Pass base dir to app.main for frozen mode
+        os.environ["APP_BASE_DIR"] = BASE_DIR
+
+        try:
+            seed_if_empty()
+        except Exception as e:
+            print(f"Seed error (non-critical): {e}")
+            import traceback
+            traceback.print_exc()
+
+        threading.Thread(target=open_browser, daemon=True).start()
+
+        import uvicorn
+        uvicorn.run(
+            "app.main:app",
+            host=HOST,
+            port=PORT,
+            log_level="info",
+        )
     except Exception as e:
-        print(f"Seed error (non-critical): {e}")
-
-    threading.Thread(target=open_browser, daemon=True).start()
-
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host=HOST,
-        port=PORT,
-        log_level="info",
-    )
+        print(f"\n{chr(61)*50}")
+        print(f"ERROR: {e}")
+        print(f"{chr(61)*50}")
+        import traceback
+        traceback.print_exc()
+        input("\nPress Enter to close...")
