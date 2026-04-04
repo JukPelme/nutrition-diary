@@ -27,19 +27,24 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     # Create user
-    user = User(
-        email=data.email,
-        hashed_password=hash_password(data.password),
-        full_name=data.full_name,
-    )
-    db.add(user)
-    await db.flush()
+    try:
+        user = User(
+            email=data.email,
+            hashed_password=hash_password(data.password),
+            full_name=data.full_name,
+        )
+        db.add(user)
+        await db.flush()
 
-    # Create default meals
-    for meal_data in DEFAULT_MEALS:
-        db.add(Meal(user_id=user.id, is_default=True, **meal_data))
+        # Create default meals
+        for meal_data in DEFAULT_MEALS:
+            db.add(Meal(user_id=user.id, is_default=True, **meal_data))
 
-    await db.flush()
+        await db.flush()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
     return TokenResponse(
         access_token=create_access_token(str(user.id)),
