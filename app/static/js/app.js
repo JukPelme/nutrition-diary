@@ -90,6 +90,7 @@ async function loadUserSettings() {
 
 function openSettings() {
     document.getElementById('settings-modal').classList.add('active');
+    loadDevices();
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;
@@ -119,6 +120,78 @@ async function saveSettings() {
     localStorage.setItem('waterGoal', water);
     closeModal('settings-modal');
     loadDiary();
+}
+
+
+// ---- Devices ----
+const PROVIDER_NAMES = {
+    apple_health: 'Apple Health', google_fit: 'Google Fit', fitbit: 'Fitbit',
+    garmin: 'Garmin', withings: 'Withings', samsung_health: 'Samsung Health', mi_fit: 'Mi Fit',
+};
+const METRIC_UNITS = {
+    weight: 'кг', glucose: 'ммоль/л', blood_pressure: 'мм рт.ст.',
+    heart_rate: 'уд/мин', steps: 'шагов', sleep: 'часов',
+};
+const METRIC_NAMES = {
+    weight: 'Вес', glucose: 'Глюкоза', blood_pressure: 'Давление',
+    heart_rate: 'Пульс', steps: 'Шаги', sleep: 'Сон',
+};
+
+async function loadDevices() {
+    const integrations = await api('/devices') || [];
+    const container = document.getElementById('devices-list');
+    if (!integrations.length) {
+        container.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:4px 0">Нет подключённых устройств</div>';
+        return;
+    }
+    container.innerHTML = integrations.map(d => `
+        <div class="condition-row">
+            <div>
+                <div class="condition-name">${PROVIDER_NAMES[d.provider] || d.provider}</div>
+                <div class="condition-code">${d.is_active ? 'Активно' : 'Неактивно'} · ${d.last_sync_at ? new Date(d.last_sync_at).toLocaleDateString('ru') : 'Не синхронизировано'}</div>
+            </div>
+            <button class="btn-delete" onclick="disconnectDevice('${d.id}')" title="Отключить">✕</button>
+        </div>
+    `).join('');
+}
+
+async function connectDevice() {
+    const provider = document.getElementById('device-provider').value;
+    if (!provider) return;
+    await api('/devices', {
+        method: 'POST',
+        body: JSON.stringify({ provider })
+    });
+    document.getElementById('device-provider').value = '';
+    loadDevices();
+}
+
+async function disconnectDevice(id) {
+    if (!confirm('Отключить устройство?')) return;
+    await api(`/devices/${id}`, { method: 'DELETE' });
+    loadDevices();
+}
+
+async function addMetric() {
+    const type = document.getElementById('metric-type').value;
+    const value = parseFloat(document.getElementById('metric-value').value);
+    if (!value && value !== 0) { alert('Введите значение'); return; }
+    const unit = METRIC_UNITS[type] || '';
+
+    await api('/devices/metrics', {
+        method: 'POST',
+        body: JSON.stringify({
+            metrics: [{
+                provider: 'manual',
+                metric_type: type,
+                value,
+                unit,
+                measured_at: new Date().toISOString(),
+            }]
+        })
+    });
+    document.getElementById('metric-value').value = '';
+    alert('Записано');
 }
 
 // ---- Water Tracker ----
@@ -958,7 +1031,22 @@ async function loadHealth() {
             </div>`;
     }
 
-    container.innerHTML = `
+    // Load latest metrics
+    const metrics = await api('/devices/metrics/latest') || {};
+    let metricsHtml = '';
+    if (Object.keys(metrics).length) {
+        metricsHtml = `<div class="card"><div class="card-title">Последние метрики</div>` +
+            Object.entries(metrics).map(([type, m]) => {
+                const name = METRIC_NAMES[type] || type;
+                const date = new Date(m.measured_at).toLocaleDateString('ru');
+                return `<div class="condition-row">
+                    <div><div class="condition-name">${name}</div><div class="condition-code">${m.provider} · ${date}</div></div>
+                    <div style="font-size:16px;font-weight:600">${m.value} ${m.unit}</div>
+                </div>`;
+            }).join('') + `</div>`;
+    }
+
+    container.innerHTML = metricsHtml + `
         <div class="card">
             <div class="card-title">Мои состояния</div>
             ${conditions.length ? conditions.map(c => `
