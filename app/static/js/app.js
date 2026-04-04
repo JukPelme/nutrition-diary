@@ -40,6 +40,98 @@ function applyAccent(color) {
 // Apply theme immediately on script load
 initTheme();
 
+
+// ---- Notifications / Reminders ----
+function initNotifications() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    
+    const enabled = localStorage.getItem('notificationsEnabled');
+    if (enabled === 'true') {
+        startReminderLoop();
+    }
+}
+
+async function toggleNotifications() {
+    if (!('Notification' in window)) {
+        alert('Браузер не поддерживает уведомления');
+        return;
+    }
+    
+    const enabled = localStorage.getItem('notificationsEnabled') === 'true';
+    
+    if (enabled) {
+        localStorage.setItem('notificationsEnabled', 'false');
+        clearInterval(window._reminderInterval);
+        updateNotifButton(false);
+        return;
+    }
+    
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+        localStorage.setItem('notificationsEnabled', 'true');
+        startReminderLoop();
+        updateNotifButton(true);
+    } else {
+        alert('Уведомления заблокированы в настройках браузера');
+    }
+}
+
+function updateNotifButton(on) {
+    const btn = document.getElementById('notif-toggle-btn');
+    if (btn) {
+        btn.textContent = on ? '🔔 Вкл' : '🔕 Выкл';
+        btn.classList.toggle('active', on);
+    }
+}
+
+function startReminderLoop() {
+    checkAndNotify(); // check immediately
+    window._reminderInterval = setInterval(checkAndNotify, 60 * 60 * 1000); // every hour
+}
+
+function checkAndNotify() {
+    const now = new Date();
+    const hour = now.getHours();
+    const todayKey = 'lastNotif_' + now.toISOString().slice(0, 10);
+    const sent = JSON.parse(localStorage.getItem(todayKey) || '{}');
+    
+    const reminders = getReminders();
+    
+    for (const r of reminders) {
+        if (hour >= r.hour && !sent[r.id]) {
+            sendNotification(r.title, r.body, r.id);
+            sent[r.id] = true;
+            localStorage.setItem(todayKey, JSON.stringify(sent));
+        }
+    }
+    
+    // Water reminder: every 2 hours from 9 to 21 if water < goal
+    if (hour >= 9 && hour <= 21 && hour % 2 === 0 && !sent['water_' + hour]) {
+        const water = parseInt(localStorage.getItem('water_' + currentDate) || '0');
+        if (water < waterGoal) {
+            sendNotification('💧 Выпей воды', `${water} из ${waterGoal} стаканов`, 'water_' + hour);
+            sent['water_' + hour] = true;
+            localStorage.setItem(todayKey, JSON.stringify(sent));
+        }
+    }
+}
+
+function getReminders() {
+    return JSON.parse(localStorage.getItem('mealReminders') || JSON.stringify([
+        { id: 'breakfast', hour: 8, title: '🌅 Завтрак', body: 'Пора завтракать!' },
+        { id: 'lunch', hour: 13, title: '☀️ Обед', body: 'Время обеда!' },
+        { id: 'dinner', hour: 19, title: '🌙 Ужин', body: 'Пора ужинать!' },
+    ]));
+}
+
+function sendNotification(title, body, tag) {
+    if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_NOTIFICATION', title, body, tag
+        });
+    }
+}
+
 // State
 let currentDate = new Date().toISOString().slice(0, 10);
 let meals = [];
@@ -68,6 +160,7 @@ async function showApp() {
     document.getElementById('auth-page').classList.add('hidden');
     document.getElementById('app-page').classList.remove('hidden');
     await loadUserSettings();
+    initNotifications();
     loadDiary();
     setActiveTab('diary');
 }
@@ -136,6 +229,7 @@ function openSettings() {
     // Highlight current theme & accent
     applyTheme(localStorage.getItem('theme') || 'dark');
     applyAccent(localStorage.getItem('accent') || 'blue');
+    updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;

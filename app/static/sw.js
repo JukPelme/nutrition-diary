@@ -33,3 +33,30 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
+
+
+// ---- Notifications ----
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      if (windowClients.length > 0) {
+        windowClients[0].focus();
+      } else {
+        clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// Handle periodic check messages from main thread
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SHOW_NOTIFICATION') {
+    self.registration.showNotification(event.data.title, {
+      body: event.data.body,
+      icon: '/static/icon-192.png',
+      badge: '/static/icon-192.png',
+      tag: event.data.tag || 'nutrition-reminder',
+    });
+  }
+});
