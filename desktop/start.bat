@@ -28,8 +28,12 @@ if not exist "venv" (
     call venv\Scripts\activate.bat
 )
 
-REM Remove passlib if present (incompatible with bcrypt 4.1+)
+REM Remove passlib and pycache
 pip uninstall passlib -y >nul 2>&1
+for /d /r %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d"
+
+REM Verify security module
+python -c "import app.core.security; print('Security module OK')"
 
 echo.
 echo Starting app...
