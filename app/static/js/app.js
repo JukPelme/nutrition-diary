@@ -3,6 +3,9 @@ let currentDate = new Date().toISOString().slice(0, 10);
 let meals = [];
 let entries = [];
 let selectedMealId = null;
+let userGoals = { calories: 2000, protein: 120, fat: 65, carbs: 250 };
+let waterGoal = 8;
+let waterCount = 0;
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,9 +22,10 @@ function showAuth() {
     document.getElementById('app-page').classList.add('hidden');
 }
 
-function showApp() {
+async function showApp() {
     document.getElementById('auth-page').classList.add('hidden');
     document.getElementById('app-page').classList.remove('hidden');
+    await loadUserSettings();
     loadDiary();
     setActiveTab('diary');
 }
@@ -71,6 +75,76 @@ function toggleAuthMode() {
     }
 }
 
+// ---- User Settings & Goals ----
+async function loadUserSettings() {
+    const user = await api('/auth/me');
+    if (user) {
+        userGoals.calories = user.daily_calorie_goal || 2000;
+        userGoals.protein = user.daily_protein_goal || 120;
+        userGoals.fat = user.daily_fat_goal || 65;
+        userGoals.carbs = user.daily_carb_goal || 250;
+    }
+    waterGoal = parseInt(localStorage.getItem('waterGoal') || '8');
+    waterCount = parseInt(localStorage.getItem(`water_${currentDate}`) || '0');
+}
+
+function openSettings() {
+    document.getElementById('settings-modal').classList.add('active');
+    document.getElementById('set-cal').value = userGoals.calories;
+    document.getElementById('set-protein').value = userGoals.protein;
+    document.getElementById('set-fat').value = userGoals.fat;
+    document.getElementById('set-carbs').value = userGoals.carbs;
+    document.getElementById('set-water').value = waterGoal;
+}
+
+async function saveSettings() {
+    const cal = parseInt(document.getElementById('set-cal').value) || 2000;
+    const protein = parseFloat(document.getElementById('set-protein').value) || 120;
+    const fat = parseFloat(document.getElementById('set-fat').value) || 65;
+    const carbs = parseFloat(document.getElementById('set-carbs').value) || 250;
+    const water = parseInt(document.getElementById('set-water').value) || 8;
+
+    await api('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+            daily_calorie_goal: cal,
+            daily_protein_goal: protein,
+            daily_fat_goal: fat,
+            daily_carb_goal: carbs,
+        })
+    });
+
+    userGoals = { calories: cal, protein, fat, carbs };
+    waterGoal = water;
+    localStorage.setItem('waterGoal', water);
+    closeModal('settings-modal');
+    loadDiary();
+}
+
+// ---- Water Tracker ----
+function renderWater() {
+    waterCount = parseInt(localStorage.getItem(`water_${currentDate}`) || '0');
+    document.getElementById('water-count').textContent = `${waterCount} / ${waterGoal} стаканов`;
+    const container = document.getElementById('water-glasses');
+    let html = '';
+    for (let i = 0; i < waterGoal; i++) {
+        html += `<div class="water-glass ${i < waterCount ? 'filled' : ''}" onclick="setWater(${i + 1})">💧</div>`;
+    }
+    container.innerHTML = html;
+}
+
+function setWater(count) {
+    waterCount = count;
+    localStorage.setItem(`water_${currentDate}`, waterCount);
+    renderWater();
+}
+
+function changeWater(delta) {
+    waterCount = Math.max(0, Math.min(waterGoal, waterCount + delta));
+    localStorage.setItem(`water_${currentDate}`, waterCount);
+    renderWater();
+}
+
 // ---- Diary ----
 async function loadDiary() {
     meals = await api('/meals') || [];
@@ -83,7 +157,7 @@ function renderDiary(summary) {
     document.getElementById('date-display').textContent = formatDate(currentDate);
 
     const cal = summary?.total_calories || 0;
-    const goal = 2000;
+    const goal = userGoals.calories;
     const pct = Math.min((cal / goal) * 100, 100);
     const circumference = 2 * Math.PI * 40;
     const offset = circumference - (pct / 100) * circumference;
@@ -92,10 +166,19 @@ function renderDiary(summary) {
     document.getElementById('cal-ring').setAttribute('stroke-dashoffset', offset);
     document.getElementById('cal-num').textContent = Math.round(cal);
     document.getElementById('cal-left').textContent = `из ${goal}`;
+    document.getElementById('cal-ring').style.stroke = pct >= 100 ? 'var(--red)' : 'var(--accent)';
 
-    document.getElementById('protein-val').textContent = Math.round(summary?.total_protein || 0) + 'г';
-    document.getElementById('fat-val').textContent = Math.round(summary?.total_fat || 0) + 'г';
-    document.getElementById('carbs-val').textContent = Math.round(summary?.total_carbohydrates || 0) + 'г';
+    const prot = Math.round(summary?.total_protein || 0);
+    const fatVal = Math.round(summary?.total_fat || 0);
+    const carbsVal = Math.round(summary?.total_carbohydrates || 0);
+    document.getElementById('protein-val').textContent = prot + 'г';
+    document.getElementById('fat-val').textContent = fatVal + 'г';
+    document.getElementById('carbs-val').textContent = carbsVal + 'г';
+
+    // Update macro bars
+    document.querySelector('.macro-protein .macro-fill').style.width = Math.min(prot / userGoals.protein * 100, 100) + '%';
+    document.querySelector('.macro-fat .macro-fill').style.width = Math.min(fatVal / userGoals.fat * 100, 100) + '%';
+    document.querySelector('.macro-carbs .macro-fill').style.width = Math.min(carbsVal / userGoals.carbs * 100, 100) + '%';
 
     const container = document.getElementById('meals-container');
     container.innerHTML = '';
@@ -129,6 +212,7 @@ function renderDiary(summary) {
         `;
         container.appendChild(section);
     }
+    renderWater();
 }
 
 function changeDate(delta) {

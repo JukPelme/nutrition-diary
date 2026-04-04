@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import Meal
-from app.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenRefresh, UserResponse
+from app.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenRefresh, UserResponse, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -81,4 +81,25 @@ async def refresh(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.full_name is not None:
+        current_user.full_name = data.full_name
+    if data.daily_calorie_goal is not None:
+        current_user.daily_calorie_goal = data.daily_calorie_goal
+    if data.daily_protein_goal is not None:
+        current_user.daily_protein_goal = data.daily_protein_goal
+    if data.daily_fat_goal is not None:
+        current_user.daily_fat_goal = data.daily_fat_goal
+    if data.daily_carb_goal is not None:
+        current_user.daily_carb_goal = data.daily_carb_goal
+    await db.commit()
+    await db.refresh(current_user)
     return current_user

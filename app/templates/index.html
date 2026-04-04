@@ -41,6 +41,7 @@
             <span class="header-title">Дневник</span>
         </div>
         <div class="header-right">
+            <button class="btn-icon" onclick="openSettings()" title="Настройки">⚙</button>
             <button class="btn-icon" onclick="logout()" title="Выйти">⏻</button>
         </div>
     </header>
@@ -80,6 +81,17 @@
                         <div class="macro-bar"><div class="macro-fill" style="width:0%"></div></div>
                         <div class="macro-info"><span class="macro-label">Углеводы</span><span id="carbs-val" class="macro-value">0г</span></div>
                     </div>
+                </div>
+            </div>
+            <div class="card water-card">
+                <div class="water-header">
+                    <span>💧 Вода</span>
+                    <span id="water-count">0 / 8 стаканов</span>
+                </div>
+                <div class="water-glasses" id="water-glasses"></div>
+                <div class="water-actions">
+                    <button class="btn-icon water-btn" onclick="changeWater(-1)">−</button>
+                    <button class="btn-icon water-btn" onclick="changeWater(1)">+</button>
                 </div>
             </div>
             <div id="meals-container"></div>
@@ -322,6 +334,42 @@
                 <div class="card-title" style="margin-top:8px">Распознано:</div>
                 <div id="scan-foods-list"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Настройки</h3>
+                <button class="btn-icon" onclick="closeModal('settings-modal')">✕</button>
+            </div>
+            <div class="card-title">Дневная норма</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Калории</label>
+                    <input type="number" id="set-cal" class="input" placeholder="2000" min="500" max="10000">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Белки, г</label>
+                    <input type="number" id="set-protein" class="input" placeholder="120" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Жиры, г</label>
+                    <input type="number" id="set-fat" class="input" placeholder="65" min="0">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Углеводы, г</label>
+                    <input type="number" id="set-carbs" class="input" placeholder="250" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="label">Стаканов воды в день</label>
+                <input type="number" id="set-water" class="input" value="8" min="1" max="20">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:8px">Сохранить</button>
         </div>
     </div>
     <!-- Condition Search Modal -->

@@ -34,3 +34,11 @@ class UserResponse(BaseModel):
     daily_carb_goal: float | None
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    daily_calorie_goal: int | None = None
+    daily_protein_goal: float | None = None
+    daily_fat_goal: float | None = None
+    daily_carb_goal: float | None = None
