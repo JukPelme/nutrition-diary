@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, UniqueConstraint
-from app.db.compat import UUIDType, JSONType, server_now
+from app.db.compat import UUIDType, JSONType, server_now, python_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -49,7 +49,7 @@ class DiaryEntry(Base):
     carbohydrates: Mapped[float] = mapped_column(Float, default=0)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=server_now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)
 
     # Relationships
     user = relationship("User", back_populates="diary_entries")

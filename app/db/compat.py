@@ -50,3 +50,9 @@ def server_now():
     if is_sqlite():
         return text("(datetime('now'))")
     return func.now()
+
+
+def python_now():
+    """Python-side datetime for onupdate (works with any DB)."""
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc)

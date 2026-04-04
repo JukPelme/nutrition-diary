@@ -39,7 +39,7 @@ async function handleLogin(e) {
         setToken(data.access_token);
         showApp();
     } else {
-        showError('Неверный email или пароль');
+        showError(data?.detail || 'Неверный email или пароль');
     }
 }
 
@@ -53,7 +53,7 @@ async function handleRegister(e) {
         setToken(data.access_token);
         showApp();
     } else {
-        showError('Ошибка регистрации');
+        showError(data?.detail || 'Ошибка регистрации');
     }
 }
 

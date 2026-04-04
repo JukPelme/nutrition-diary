@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Float, DateTime, Text, Index
-from app.db.compat import UUIDType, JSONType, server_now
+from app.db.compat import UUIDType, JSONType, server_now, python_now
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -44,7 +44,7 @@ class Product(Base):
     is_verified: Mapped[bool] = mapped_column(default=False)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=server_now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)
 
     __table_args__ = (
         Index("ix_products_name_trgm", "name", postgresql_using="gin",
