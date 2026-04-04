@@ -328,6 +328,8 @@ function renderDiary(summary) {
             </div>
             <div style="display:flex;gap:6px">
                 <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ Добавить</div>
+                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="openTemplates('${meal.id}')" title="Шаблоны">📂</div>
+                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="saveTemplate('${meal.id}')" title="Сохранить как шаблон">💾</div>
                 <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="copyMeal('${meal.id}', '${currentDate}')" title="Повторить вчера">📋</div>
             </div>
         `;
@@ -892,6 +894,94 @@ async function copyMeal(mealId, fromDate) {
         });
     }
     loadDiary();
+}
+
+
+// ---- Meal Templates ----
+function getTemplates() {
+    return JSON.parse(localStorage.getItem('mealTemplates') || '[]');
+}
+
+function saveTemplate(mealId) {
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal) return;
+    const mealEntries = entries.filter(e => e.meal_id === mealId);
+    if (!mealEntries.length) {
+        alert('Нет записей для сохранения');
+        return;
+    }
+    const name = prompt('Название шаблона:', meal.name + ' — ' + new Date().toLocaleDateString('ru'));
+    if (!name) return;
+
+    const templates = getTemplates();
+    templates.push({
+        id: Date.now().toString(),
+        name: name,
+        items: mealEntries.map(e => ({
+            product_id: e.product_id,
+            product_name: e.product_name,
+            serving_amount: e.serving_amount,
+            calories: e.calories,
+            protein: e.protein,
+            fat: e.fat,
+            carbohydrates: e.carbohydrates,
+        }))
+    });
+    localStorage.setItem('mealTemplates', JSON.stringify(templates));
+    alert('Шаблон сохранён: ' + name);
+}
+
+function openTemplates(mealId) {
+    const templates = getTemplates();
+    if (!templates.length) {
+        alert('Нет сохранённых шаблонов. Сначала добавьте еду и нажмите 💾');
+        return;
+    }
+    window._templateMealId = mealId;
+    const list = document.getElementById('template-list');
+    list.innerHTML = templates.map(t => `
+        <div class="product-row" style="cursor:pointer">
+            <div style="flex:1" onclick="applyTemplate('${t.id}')">
+                <div class="p-name">${t.name}</div>
+                <div class="p-brand">${t.items.length} продукт(ов) · ${Math.round(t.items.reduce((s,i) => s + i.calories, 0))} ккал</div>
+            </div>
+            <button class="btn-delete" onclick="deleteTemplate('${t.id}')" title="Удалить">✕</button>
+        </div>
+    `).join('');
+    document.getElementById('template-modal').classList.add('active');
+}
+
+async function applyTemplate(templateId) {
+    const templates = getTemplates();
+    const tmpl = templates.find(t => t.id === templateId);
+    if (!tmpl) return;
+    const mealId = window._templateMealId;
+
+    for (const item of tmpl.items) {
+        await api('/diary', {
+            method: 'POST',
+            body: JSON.stringify({
+                meal_id: mealId,
+                product_id: item.product_id,
+                entry_date: currentDate,
+                product_name: item.product_name,
+                serving_amount: item.serving_amount,
+                calories: item.calories,
+                protein: item.protein,
+                fat: item.fat,
+                carbohydrates: item.carbohydrates,
+            })
+        });
+    }
+    closeModal('template-modal');
+    loadDiary();
+}
+
+function deleteTemplate(templateId) {
+    if (!confirm('Удалить шаблон?')) return;
+    const templates = getTemplates().filter(t => t.id !== templateId);
+    localStorage.setItem('mealTemplates', JSON.stringify(templates));
+    openTemplates(window._templateMealId);
 }
 
 // ---- Portion ----
