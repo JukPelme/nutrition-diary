@@ -203,14 +203,15 @@ function onFoodSearch(e) {
 
 function applyFoodFilter() {
     const q = document.getElementById('food-search').value.trim();
-    if (q.length < 2) return;
     const category = document.getElementById('food-category-filter').value;
     const sort = document.getElementById('food-sort').value;
+    if (q.length < 2 && !category) { document.getElementById('search-results').innerHTML = ''; return; }
     searchProducts(q, category, sort);
 }
 
 async function searchProducts(q, category, sort) {
-    let url = `/products?q=${encodeURIComponent(q)}&limit=30`;
+    let url = `/products?limit=30`;
+    if (q) url += `&q=${encodeURIComponent(q)}`;
     if (category) url += `&category=${encodeURIComponent(category)}`;
     const products = await api(url);
     if (!products) return;
