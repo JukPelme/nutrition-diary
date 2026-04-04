@@ -6,15 +6,18 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
 
+def _truncate_password(password: str) -> str:
+    """Truncate password to 72 bytes (bcrypt limit)."""
+    encoded = password.encode("utf-8")[:72]
+    return encoded.decode("utf-8", errors="ignore")
+
+
 def hash_password(password: str) -> str:
-    # bcrypt has a 72-byte limit, truncate if needed
-    password = password[:72]
-    return pwd_context.hash(password)
+    return pwd_context.hash(_truncate_password(password))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    plain_password = plain_password[:72]
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(_truncate_password(plain_password), hashed_password)
 
 
 def create_access_token(subject: str) -> str:
