@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Float, DateTime, ForeignKey, Index, func
-from app.db.compat import UUIDType, JSONType
+from sqlalchemy import String, Float, DateTime, ForeignKey, Index
+from app.db.compat import UUIDType, JSONType, server_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -19,7 +19,7 @@ class DeviceIntegration(Base):
     scopes: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(default=True)
 
-    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user = relationship("User")
@@ -38,7 +38,7 @@ class HealthMetric(Base):
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONType)  # extra data (systolic/diastolic for BP, etc.)
 
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
 
     __table_args__ = (
         Index("ix_health_metrics_user_type_date", "user_id", "metric_type", "measured_at"),

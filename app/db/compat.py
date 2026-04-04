@@ -3,7 +3,7 @@ Database compatibility layer.
 Supports both PostgreSQL (Docker) and SQLite (Desktop).
 """
 import uuid
-from sqlalchemy import String, JSON, TypeDecorator
+from sqlalchemy import String, JSON, TypeDecorator, text, func
 from app.core.config import settings
 
 
@@ -43,3 +43,10 @@ if not is_sqlite():
 else:
     UUIDType = GUID()
     JSONType = JSON
+
+
+def server_now():
+    """Return server-side NOW() compatible with current DB."""
+    if is_sqlite():
+        return text("(datetime('now'))")
+    return func.now()

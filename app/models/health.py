@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Float, DateTime, ForeignKey, Text, func, UniqueConstraint
-from app.db.compat import UUIDType, JSONType
+from sqlalchemy import String, Float, DateTime, ForeignKey, Text, UniqueConstraint
+from app.db.compat import UUIDType, JSONType, server_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -29,7 +29,7 @@ class ICD11Condition(Base):
     # }
     dietary_rules: Mapped[dict | None] = mapped_column(JSONType)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
 
 
 class UserCondition(Base):
@@ -43,7 +43,7 @@ class UserCondition(Base):
     diagnosed_at: Mapped[str | None] = mapped_column(String(20))  # date string
     notes: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
 
     # Relationships
     user = relationship("User")

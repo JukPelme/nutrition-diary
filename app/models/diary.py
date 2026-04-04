@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
-from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, func, UniqueConstraint
-from app.db.compat import UUIDType, JSONType
+from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, UniqueConstraint
+from app.db.compat import UUIDType, JSONType, server_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -17,7 +17,7 @@ class Meal(Base):
     icon: Mapped[str | None] = mapped_column(String(10))  # emoji
     is_default: Mapped[bool] = mapped_column(default=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
 
     # Relationships
     user = relationship("User", back_populates="meals")
@@ -48,8 +48,8 @@ class DiaryEntry(Base):
     fat: Mapped[float] = mapped_column(Float, default=0)
     carbohydrates: Mapped[float] = mapped_column(Float, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=server_now())
 
     # Relationships
     user = relationship("User", back_populates="diary_entries")

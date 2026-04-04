@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, func
-from app.db.compat import UUIDType, JSONType
+from sqlalchemy import String, Boolean, DateTime
+from app.db.compat import UUIDType, JSONType, server_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -22,8 +22,8 @@ class User(Base):
     daily_fat_goal: Mapped[float | None] = mapped_column()
     daily_carb_goal: Mapped[float | None] = mapped_column()
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=server_now())
 
     # Relationships — lazy="noload" to avoid circular loading, use explicit queries
     diary_entries = relationship("DiaryEntry", back_populates="user", lazy="noload")
