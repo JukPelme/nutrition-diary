@@ -328,30 +328,159 @@ function stopBarcodeScanner() {
 
 
 // ---- Create Custom Product ----
+let recipeIngredients = [];
+let createMode = 'manual';
+
 function openCreateProduct() {
     document.getElementById('create-product-modal').classList.add('active');
     document.getElementById('cp-name').value = '';
-    document.getElementById('cp-category').value = '';
+    document.getElementById('cp-category').value = 'Готовые блюда';
     document.getElementById('cp-cal').value = '';
     document.getElementById('cp-protein').value = '';
     document.getElementById('cp-fat').value = '';
     document.getElementById('cp-carbs').value = '';
+    recipeIngredients = [];
+    setCreateMode('manual');
     document.getElementById('cp-name').focus();
+}
+
+function setCreateMode(mode) {
+    createMode = mode;
+    document.getElementById('cp-manual-mode').classList.toggle('hidden', mode !== 'manual');
+    document.getElementById('cp-recipe-mode').classList.toggle('hidden', mode !== 'recipe');
+    document.getElementById('mode-manual-btn').classList.toggle('active', mode === 'manual');
+    document.getElementById('mode-recipe-btn').classList.toggle('active', mode === 'recipe');
+}
+
+// Recipe ingredient search
+let recipeSearchTimeout;
+function onRecipeSearch(e) {
+    clearTimeout(recipeSearchTimeout);
+    const q = e.target.value.trim();
+    if (q.length < 2) { document.getElementById('recipe-search-results').innerHTML = ''; return; }
+    recipeSearchTimeout = setTimeout(() => searchRecipeIngredients(q), 300);
+}
+
+async function searchRecipeIngredients(q) {
+    const products = await api(`/products?q=${encodeURIComponent(q)}&limit=10`);
+    const container = document.getElementById('recipe-search-results');
+    if (!products?.length) {
+        container.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text2);font-size:13px">Не найдено</div>';
+        return;
+    }
+    container.innerHTML = products.map(p => `
+        <div class="product-row" onclick='addRecipeIngredient(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div>
+                <div class="p-name" style="font-size:13px">${p.name}</div>
+                <div class="p-brand" style="font-size:11px">${p.calories ? Math.round(p.calories) + ' ккал/100г' : ''}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addRecipeIngredient(product) {
+    recipeIngredients.push({ ...product, amount: 100 });
+    document.getElementById('recipe-search-results').innerHTML = '';
+    document.getElementById('recipe-ingredient-search').value = '';
+    renderRecipeIngredients();
+}
+
+function removeRecipeIngredient(idx) {
+    recipeIngredients.splice(idx, 1);
+    renderRecipeIngredients();
+}
+
+function updateRecipeAmount(idx, val) {
+    recipeIngredients[idx].amount = parseFloat(val) || 0;
+    updateRecipeTotals();
+}
+
+function renderRecipeIngredients() {
+    const container = document.getElementById('recipe-ingredients-list');
+    if (!recipeIngredients.length) {
+        container.innerHTML = '';
+        document.getElementById('recipe-totals').classList.add('hidden');
+        return;
+    }
+
+    container.innerHTML = recipeIngredients.map((ing, i) => {
+        const cal = Math.round((ing.calories || 0) * ing.amount / 100);
+        return `<div class="recipe-ingredient">
+            <div class="recipe-ing-name">${ing.name}</div>
+            <div class="recipe-ing-weight">
+                <input type="number" value="${ing.amount}" min="1" oninput="updateRecipeAmount(${i}, this.value)">
+            </div>
+            <div class="recipe-ing-cal">${cal} ккал</div>
+            <button class="recipe-ing-del" onclick="removeRecipeIngredient(${i})">✕</button>
+        </div>`;
+    }).join('');
+
+    updateRecipeTotals();
+}
+
+function updateRecipeTotals() {
+    if (!recipeIngredients.length) return;
+
+    let totalWeight = 0, totalCal = 0, totalP = 0, totalF = 0, totalC = 0;
+
+    for (const ing of recipeIngredients) {
+        const factor = ing.amount / 100;
+        totalWeight += ing.amount;
+        totalCal += (ing.calories || 0) * factor;
+        totalP += (ing.protein || 0) * factor;
+        totalF += (ing.fat || 0) * factor;
+        totalC += (ing.carbohydrates || 0) * factor;
+    }
+
+    // Per 100g
+    const per100 = totalWeight > 0 ? 100 / totalWeight : 0;
+
+    document.getElementById('recipe-totals').classList.remove('hidden');
+    document.getElementById('recipe-total-weight').textContent = Math.round(totalWeight) + 'г всего';
+    document.getElementById('recipe-total-cal').textContent = Math.round(totalCal * per100) + ' ккал';
+    document.getElementById('recipe-total-p').textContent = Math.round(totalP * per100) + 'г';
+    document.getElementById('recipe-total-f').textContent = Math.round(totalF * per100) + 'г';
+    document.getElementById('recipe-total-c').textContent = Math.round(totalC * per100) + 'г';
 }
 
 async function createCustomProduct() {
     const name = document.getElementById('cp-name').value.trim();
     if (!name) { alert('Введите название'); return; }
 
+    let cal = 0, protein = 0, fat = 0, carbs = 0;
+
+    if (createMode === 'recipe') {
+        if (!recipeIngredients.length) { alert('Добавьте ингредиенты'); return; }
+        let totalWeight = 0;
+        for (const ing of recipeIngredients) {
+            const factor = ing.amount / 100;
+            totalWeight += ing.amount;
+            cal += (ing.calories || 0) * factor;
+            protein += (ing.protein || 0) * factor;
+            fat += (ing.fat || 0) * factor;
+            carbs += (ing.carbohydrates || 0) * factor;
+        }
+        const per100 = totalWeight > 0 ? 100 / totalWeight : 0;
+        cal = Math.round(cal * per100 * 10) / 10;
+        protein = Math.round(protein * per100 * 10) / 10;
+        fat = Math.round(fat * per100 * 10) / 10;
+        carbs = Math.round(carbs * per100 * 10) / 10;
+    } else {
+        cal = parseFloat(document.getElementById('cp-cal').value) || 0;
+        protein = parseFloat(document.getElementById('cp-protein').value) || 0;
+        fat = parseFloat(document.getElementById('cp-fat').value) || 0;
+        carbs = parseFloat(document.getElementById('cp-carbs').value) || 0;
+    }
+
     const product = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
             name,
             category: document.getElementById('cp-category').value || null,
-            calories: parseFloat(document.getElementById('cp-cal').value) || 0,
-            protein: parseFloat(document.getElementById('cp-protein').value) || 0,
-            fat: parseFloat(document.getElementById('cp-fat').value) || 0,
-            carbohydrates: parseFloat(document.getElementById('cp-carbs').value) || 0,
+            calories: cal,
+            protein,
+            fat,
+            carbohydrates: carbs,
         })
     });
 
