@@ -1356,30 +1356,74 @@ async function exportCSV(days) {
 }
 
 // ---- Stats ----
+let statsPeriod = 'week';
+
 async function loadStats() {
-    const data = await api('/stats/week');
+    let data;
+    if (statsPeriod === 'week') {
+        data = await api('/stats/week');
+    } else if (statsPeriod === 'month') {
+        const now = new Date();
+        data = await api(`/stats/month?month=${now.getMonth()+1}&year=${now.getFullYear()}`);
+    } else {
+        const to = new Date().toISOString().slice(0,10);
+        const from = new Date(Date.now() - 90*86400000).toISOString().slice(0,10);
+        data = await api(`/stats/range?date_from=${from}&date_to=${to}`);
+    }
     if (!data) return;
     renderStats(data);
+}
+
+function setStatsPeriod(p) {
+    statsPeriod = p;
+    document.querySelectorAll('.stats-period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+    loadStats();
 }
 
 function renderStats(data) {
     const container = document.getElementById('stats-content');
     const days = data.days || [];
     const avg = data.averages || {};
+    const periodLabels = { week: 'неделю', month: 'месяц', quarter: '3 месяца' };
 
     const maxCal = Math.max(...days.map(d => d.calories), 1);
+    const maxProt = Math.max(...days.map(d => d.protein), 1);
+    const maxFat = Math.max(...days.map(d => d.fat), 1);
+    const maxCarb = Math.max(...days.map(d => d.carbohydrates), 1);
+
+    // Goal progress
+    const goalPct = (v, g) => g > 0 ? Math.min(Math.round(v / g * 100), 100) : 0;
+    const calPct = goalPct(avg.avg_calories, userGoals.calories);
+    const protPct = goalPct(avg.avg_protein, userGoals.protein);
+    const fatPct = goalPct(avg.avg_fat, userGoals.fat);
+    const carbPct = goalPct(avg.avg_carbohydrates, userGoals.carbs);
+
+    // For month/quarter, show abbreviated dates
+    const dayLabel = (d) => {
+        if (statsPeriod === 'week') return new Date(d.date).toLocaleDateString('ru-RU', { weekday: 'short' });
+        return new Date(d.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    };
+
+    // Limit bars for long periods
+    const displayDays = statsPeriod === 'quarter' ? days.filter((_, i) => i % 3 === 0 || i === days.length - 1) : days;
 
     container.innerHTML = `
         <div class="card">
-            <div class="card-title">Экспорт данных</div>
-            <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(7)">7 дней</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(30)">30 дней</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">3 месяца</button>
+            <div class="mode-toggle">
+                <button class="mode-btn stats-period-btn ${statsPeriod==='week'?'active':''}" data-period="week" onclick="setStatsPeriod('week')">Неделя</button>
+                <button class="mode-btn stats-period-btn ${statsPeriod==='month'?'active':''}" data-period="month" onclick="setStatsPeriod('month')">Месяц</button>
+                <button class="mode-btn stats-period-btn ${statsPeriod==='quarter'?'active':''}" data-period="quarter" onclick="setStatsPeriod('quarter')">3 мес</button>
             </div>
         </div>
         <div class="card">
-            <div class="card-title">Среднее за неделю</div>
+            <div class="card-title">Прогресс к целям (средн. за ${periodLabels[statsPeriod]})</div>
+            <div class="nutrient-row"><div class="nutrient-info"><span class="nutrient-name">Калории</span><span class="nutrient-val">${Math.round(avg.avg_calories||0)} / ${userGoals.calories} ккал (${calPct}%)</span></div><div class="nutrient-bar"><div class="nutrient-fill" style="width:${calPct}%;background:var(--accent)"></div></div></div>
+            <div class="nutrient-row"><div class="nutrient-info"><span class="nutrient-name">Белки</span><span class="nutrient-val">${Math.round(avg.avg_protein||0)} / ${userGoals.protein}г (${protPct}%)</span></div><div class="nutrient-bar"><div class="nutrient-fill" style="width:${protPct}%;background:var(--protein)"></div></div></div>
+            <div class="nutrient-row"><div class="nutrient-info"><span class="nutrient-name">Жиры</span><span class="nutrient-val">${Math.round(avg.avg_fat||0)} / ${userGoals.fat}г (${fatPct}%)</span></div><div class="nutrient-bar"><div class="nutrient-fill" style="width:${fatPct}%;background:var(--fat)"></div></div></div>
+            <div class="nutrient-row"><div class="nutrient-info"><span class="nutrient-name">Углеводы</span><span class="nutrient-val">${Math.round(avg.avg_carbohydrates||0)} / ${userGoals.carbs}г (${carbPct}%)</span></div><div class="nutrient-bar"><div class="nutrient-fill" style="width:${carbPct}%;background:var(--carbs)"></div></div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">Среднее за ${periodLabels[statsPeriod]}</div>
             <div class="macros" style="flex-direction:row;justify-content:space-around">
                 <div class="macro" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_calories || 0)}</div><div class="macro-label">ккал</div></div>
                 <div class="macro macro-protein" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_protein || 0)}г</div><div class="macro-label">белки</div></div>
@@ -1390,15 +1434,46 @@ function renderStats(data) {
         <div class="card">
             <div class="card-title">Калории по дням</div>
             <div class="chart-bars">
-                ${days.map(d => {
+                ${displayDays.map(d => {
                     const h = Math.max((d.calories / maxCal) * 100, 2);
-                    const dayName = new Date(d.date).toLocaleDateString('ru-RU', { weekday: 'short' });
                     return `<div class="chart-bar">
                         <div class="bar-value">${Math.round(d.calories)}</div>
                         <div class="bar" style="height:${h}%"></div>
-                        <div class="bar-label">${dayName}</div>
+                        <div class="bar-label">${dayLabel(d)}</div>
                     </div>`;
                 }).join('')}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">БЖУ по дням</div>
+            <div class="chart-bars" style="height:100px">
+                ${displayDays.map(d => {
+                    const maxM = Math.max(maxProt, maxFat, maxCarb, 1);
+                    const hp = Math.max((d.protein / maxM) * 100, 1);
+                    const hf = Math.max((d.fat / maxM) * 100, 1);
+                    const hc = Math.max((d.carbohydrates / maxM) * 100, 1);
+                    return `<div class="chart-bar" style="gap:2px">
+                        <div style="display:flex;gap:1px;align-items:flex-end;height:80px;width:100%">
+                            <div style="flex:1;background:var(--protein);border-radius:2px 2px 0 0;height:${hp}%"></div>
+                            <div style="flex:1;background:var(--fat);border-radius:2px 2px 0 0;height:${hf}%"></div>
+                            <div style="flex:1;background:var(--carbs);border-radius:2px 2px 0 0;height:${hc}%"></div>
+                        </div>
+                        <div class="bar-label">${dayLabel(d)}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:11px">
+                <span style="color:var(--protein)">● Белки</span>
+                <span style="color:var(--fat)">● Жиры</span>
+                <span style="color:var(--carbs)">● Углеводы</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Экспорт данных</div>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(7)">7 дней</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(30)">30 дней</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">3 мес</button>
             </div>
         </div>
     `;
