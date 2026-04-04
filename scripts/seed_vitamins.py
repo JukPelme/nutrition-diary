@@ -3,6 +3,8 @@ Add vitamins & minerals data to existing offline products.
 Run after seed_products.py: python scripts/seed_vitamins.py
 """
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import update, select
