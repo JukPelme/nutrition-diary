@@ -3,8 +3,6 @@ from jose import JWTError, jwt
 import bcrypt
 from app.core.config import settings
 
-# Debug: verify no passlib interference
-print(f"[security] Using bcrypt directly: {bcrypt.__file__}")
 
 
 def hash_password(password: str) -> str:
