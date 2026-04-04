@@ -1479,17 +1479,90 @@ function renderStats(data) {
     `;
 }
 
+
+// ---- Week Plan ----
+async function loadWeekPlan() {
+    const container = document.getElementById('plan-content');
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+
+    let html = '';
+    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const isToday = dateStr === new Date().toISOString().slice(0, 10);
+        const isPast = d < new Date(new Date().toISOString().slice(0, 10));
+
+        const summary = await api(`/diary/summary?entry_date=${dateStr}`);
+        const dayEntries = summary?.entries || [];
+        const totalCal = dayEntries.reduce((s, e) => s + (e.calories || 0), 0);
+        const totalP = dayEntries.reduce((s, e) => s + (e.protein || 0), 0);
+        const totalF = dayEntries.reduce((s, e) => s + (e.fat || 0), 0);
+        const totalC = dayEntries.reduce((s, e) => s + (e.carbohydrates || 0), 0);
+
+        const borderColor = isToday ? 'var(--accent)' : 'var(--border)';
+        const bg = isToday ? 'border-width:2px' : '';
+
+        let foodList = '';
+        if (dayEntries.length > 0) {
+            const grouped = {};
+            for (const e of dayEntries) {
+                const mealName = meals.find(m => m.id === e.meal_id)?.name || 'Другое';
+                if (!grouped[mealName]) grouped[mealName] = [];
+                grouped[mealName].push(e.product_name);
+            }
+            foodList = Object.entries(grouped).map(([meal, items]) =>
+                `<div style="margin-top:4px"><span style="font-size:11px;color:var(--text2)">${meal}:</span> <span style="font-size:12px">${items.join(', ')}</span></div>`
+            ).join('');
+        } else {
+            foodList = '<div style="font-size:12px;color:var(--text2);margin-top:4px">' + (isPast ? 'Нет записей' : 'Не запланировано') + '</div>';
+        }
+
+        html += `
+            <div class="card" style="border-color:${borderColor};${bg};cursor:pointer" onclick="goToDate('${dateStr}')">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div>
+                        <span style="font-weight:600">${dayNames[i]}</span>
+                        <span style="color:var(--text2);font-size:13px;margin-left:6px">${d.toLocaleDateString('ru-RU', {day:'numeric', month:'short'})}</span>
+                        ${isToday ? '<span style="color:var(--accent);font-size:11px;margin-left:6px">сегодня</span>' : ''}
+                    </div>
+                    <div style="text-align:right;font-size:13px">
+                        <div style="font-weight:600">${Math.round(totalCal)} ккал</div>
+                        <div style="font-size:11px;color:var(--text2)">Б${Math.round(totalP)} Ж${Math.round(totalF)} У${Math.round(totalC)}</div>
+                    </div>
+                </div>
+                ${foodList}
+            </div>
+        `;
+    }
+
+    // Weekly totals
+    container.innerHTML = html;
+}
+
+function goToDate(dateStr) {
+    currentDate = dateStr;
+    setActiveTab('diary');
+}
+
 // ---- Navigation ----
 function setActiveTab(tab) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
 
-    ['diary-view','stats-view','nutrients-view','health-view'].forEach(v =>
+    ['diary-view','plan-view','stats-view','nutrients-view','health-view'].forEach(v =>
         document.getElementById(v)?.classList.add('hidden'));
 
     if (tab === 'diary') {
         document.getElementById('diary-view').classList.remove('hidden');
         loadDiary();
+    } else if (tab === 'plan') {
+        document.getElementById('plan-view').classList.remove('hidden');
+        loadWeekPlan();
     } else if (tab === 'stats') {
         document.getElementById('stats-view').classList.remove('hidden');
         loadStats();

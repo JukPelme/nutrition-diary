@@ -102,6 +102,16 @@
             <div id="meals-container"></div>
         </div>
 
+
+        <!-- Plan View -->
+        <div id="plan-view" class="hidden">
+            <div class="card">
+                <div class="card-title">План на неделю</div>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Добавляйте еду на будущие дни через Дневник (стрелки ◀▶). Здесь — обзор.</p>
+            </div>
+            <div id="plan-content"></div>
+        </div>
+
         <!-- Stats View -->
         <div id="stats-view" class="hidden">
             <div id="stats-content"></div>
@@ -124,6 +134,10 @@
         <div class="nav-tab active" data-tab="diary" onclick="setActiveTab('diary')">
             <div class="nav-icon">📖</div>
             <div class="nav-label">Дневник</div>
+        </div>
+        <div class="nav-tab" data-tab="plan" onclick="setActiveTab('plan')">
+            <div class="nav-icon">📅</div>
+            <div class="nav-label">План</div>
         </div>
         <div class="nav-tab" data-tab="nutrients" onclick="setActiveTab('nutrients')">
             <div class="nav-icon">💊</div>
