@@ -198,11 +198,27 @@ function onFoodSearch(e) {
     clearTimeout(searchTimeout);
     const q = e.target.value.trim();
     if (q.length < 2) { document.getElementById('search-results').innerHTML = ''; return; }
-    searchTimeout = setTimeout(() => searchProducts(q), 300);
+    searchTimeout = setTimeout(() => applyFoodFilter(), 300);
 }
 
-async function searchProducts(q) {
-    const products = await api(`/products?q=${encodeURIComponent(q)}&limit=20`);
+function applyFoodFilter() {
+    const q = document.getElementById('food-search').value.trim();
+    if (q.length < 2) return;
+    const category = document.getElementById('food-category-filter').value;
+    const sort = document.getElementById('food-sort').value;
+    searchProducts(q, category, sort);
+}
+
+async function searchProducts(q, category, sort) {
+    let url = `/products?q=${encodeURIComponent(q)}&limit=30`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+    const products = await api(url);
+    if (!products) return;
+
+    // Client-side sort
+    if (sort === 'calories_asc') products.sort((a, b) => (a.calories || 0) - (b.calories || 0));
+    else if (sort === 'calories_desc') products.sort((a, b) => (b.calories || 0) - (a.calories || 0));
+    else if (sort === 'protein_desc') products.sort((a, b) => (b.protein || 0) - (a.protein || 0));
     const container = document.getElementById('search-results');
     if (!products?.length) {
         container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
@@ -307,6 +323,43 @@ function stopBarcodeScanner() {
         barcodeScanner.stop().catch(() => {});
     }
     scannerActive = false;
+}
+
+
+// ---- Create Custom Product ----
+function openCreateProduct() {
+    document.getElementById('create-product-modal').classList.add('active');
+    document.getElementById('cp-name').value = '';
+    document.getElementById('cp-category').value = '';
+    document.getElementById('cp-cal').value = '';
+    document.getElementById('cp-protein').value = '';
+    document.getElementById('cp-fat').value = '';
+    document.getElementById('cp-carbs').value = '';
+    document.getElementById('cp-name').focus();
+}
+
+async function createCustomProduct() {
+    const name = document.getElementById('cp-name').value.trim();
+    if (!name) { alert('Введите название'); return; }
+
+    const product = await api('/products', {
+        method: 'POST',
+        body: JSON.stringify({
+            name,
+            category: document.getElementById('cp-category').value || null,
+            calories: parseFloat(document.getElementById('cp-cal').value) || 0,
+            protein: parseFloat(document.getElementById('cp-protein').value) || 0,
+            fat: parseFloat(document.getElementById('cp-fat').value) || 0,
+            carbohydrates: parseFloat(document.getElementById('cp-carbs').value) || 0,
+        })
+    });
+
+    if (product?.id) {
+        closeModal('create-product-modal');
+        selectProduct(product);
+    } else {
+        alert('Ошибка создания продукта');
+    }
 }
 
 // ---- Portion ----

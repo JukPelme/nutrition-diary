@@ -132,8 +132,32 @@
             <div class="form-group">
                 <input type="text" id="food-search" class="input" placeholder="Поиск продукта..." oninput="onFoodSearch(event)" autocomplete="off">
             </div>
+            <div class="filter-row">
+                <select id="food-category-filter" class="input-sm" onchange="applyFoodFilter()">
+                    <option value="">Все категории</option>
+                    <option value="meat">Мясо</option>
+                    <option value="dairy">Молочные</option>
+                    <option value="grains">Крупы</option>
+                    <option value="vegetables">Овощи</option>
+                    <option value="fruits">Фрукты</option>
+                    <option value="fish">Рыба</option>
+                    <option value="drinks">Напитки</option>
+                    <option value="sweets">Сладости</option>
+                    <option value="bakery">Выпечка</option>
+                    <option value="oils">Масла</option>
+                    <option value="nuts">Орехи</option>
+                    <option value="prepared">Готовые</option>
+                </select>
+                <select id="food-sort" class="input-sm" onchange="applyFoodFilter()">
+                    <option value="">По релевантности</option>
+                    <option value="calories_asc">Ккал ↑</option>
+                    <option value="calories_desc">Ккал ↓</option>
+                    <option value="protein_desc">Белки ↓</option>
+                </select>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openBarcode(selectedMealId)">📷 Штрихкод</button>
+                <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openCreateProduct()">✚ Создать свой</button>
             </div>
             <div id="search-results" class="search-results"></div>
         </div>
@@ -180,6 +204,61 @@
                 </div>
             </div>
             <button class="btn btn-primary" onclick="addToDiary()">Добавить</button>
+        </div>
+    </div>
+
+
+    <!-- Create Product Modal -->
+    <div id="create-product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать продукт</h3>
+                <button class="btn-icon" onclick="closeModal('create-product-modal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="label">Название</label>
+                <input type="text" id="cp-name" class="input" placeholder="Например: Домашний борщ">
+            </div>
+            <div class="form-group">
+                <label class="label">Категория</label>
+                <select id="cp-category" class="input">
+                    <option value="">Без категории</option>
+                    <option value="meat">Мясо</option>
+                    <option value="dairy">Молочные</option>
+                    <option value="grains">Крупы и злаки</option>
+                    <option value="vegetables">Овощи</option>
+                    <option value="fruits">Фрукты</option>
+                    <option value="fish">Рыба и морепродукты</option>
+                    <option value="drinks">Напитки</option>
+                    <option value="sweets">Сладости</option>
+                    <option value="bakery">Выпечка</option>
+                    <option value="oils">Масла и жиры</option>
+                    <option value="nuts">Орехи и семена</option>
+                    <option value="prepared">Готовые блюда</option>
+                    <option value="other">Другое</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Ккал / 100г</label>
+                    <input type="number" id="cp-cal" class="input" placeholder="0" min="0">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Белки, г</label>
+                    <input type="number" id="cp-protein" class="input" placeholder="0" min="0" step="0.1">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Жиры, г</label>
+                    <input type="number" id="cp-fat" class="input" placeholder="0" min="0" step="0.1">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Углеводы, г</label>
+                    <input type="number" id="cp-carbs" class="input" placeholder="0" min="0" step="0.1">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="createCustomProduct()">Создать и добавить</button>
         </div>
     </div>
 

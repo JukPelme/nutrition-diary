@@ -169,3 +169,11 @@ a { color:var(--accent); text-decoration:none; }
 .btn-secondary { background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:10px 16px; border-radius:8px; font-size:13px; cursor:pointer; }
 .btn-secondary:hover { background:var(--border); }
 .modal-actions { display:flex; gap:8px; margin-bottom:12px; }
+
+/* ---- Filter row ---- */
+.filter-row { display:flex; gap:8px; margin-bottom:12px; }
+.input-sm { padding:8px 10px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:12px; outline:none; flex:1; -webkit-appearance:none; }
+.input-sm:focus { border-color:var(--accent); }
+
+/* ---- Create product form ---- */
+.form-row { display:flex; gap:10px; }
