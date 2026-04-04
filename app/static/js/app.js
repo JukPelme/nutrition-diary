@@ -114,7 +114,7 @@ function renderDiary(summary) {
             <div class="meal-entries">
                 ${mealEntries.map(e => `
                     <div class="entry-row" id="entry-${e.id}">
-                        <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${e.product_name}')">
+                        <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${e.product_name.replace(/'/g, "\\'")}')">
                             <div class="entry-name">${e.product_name}</div>
                             <div class="entry-weight">${e.serving_amount}г · Б${Math.round(e.protein)} Ж${Math.round(e.fat)} У${Math.round(e.carbohydrates)}</div>
                         </div>
@@ -135,7 +135,10 @@ function changeDate(delta) {
     const d = new Date(currentDate);
     d.setDate(d.getDate() + delta);
     currentDate = d.toISOString().slice(0, 10);
-    loadDiary();
+    // Reload current tab
+    const activeTab = document.querySelector('.nav-tab.active')?.dataset.tab || 'diary';
+    if (activeTab === 'diary') loadDiary();
+    else if (activeTab === 'nutrients') loadNutrients();
 }
 
 function formatDate(dateStr) {
@@ -160,7 +163,6 @@ async function editEntry(entryId, currentAmount, productName) {
     const amount = parseFloat(newAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    // Find original entry to recalc
     const entry = entries.find(e => e.id === entryId);
     if (!entry) return;
     const factor = amount / entry.serving_amount;
@@ -291,26 +293,31 @@ async function loadNutrients() {
     container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">Загрузка...</div>';
 
     const data = await api(`/nutrients/daily?entry_date=${currentDate}`);
-    if (!data) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">Нет данных</div>'; return; }
+    if (!data) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">Ошибка загрузки</div>'; return; }
 
     const macros = data.macros || {};
     const nutrients = data.nutrients || {};
+    const vitamins = Object.entries(nutrients.vitamins || {});
+    const minerals = Object.entries(nutrients.minerals || {});
 
-    const vitamins = Object.entries(nutrients).filter(([k]) => k.startsWith('vitamin_'));
-    const minerals = Object.entries(nutrients).filter(([k]) => !k.startsWith('vitamin_'));
+    function nutrientName(key) {
+        const names = {
+            vitamin_a: 'Вит. A', vitamin_b1: 'Вит. B1', vitamin_b2: 'Вит. B2',
+            vitamin_b3: 'Вит. B3', vitamin_b5: 'Вит. B5', vitamin_b6: 'Вит. B6',
+            vitamin_b9: 'Вит. B9', vitamin_b12: 'Вит. B12', vitamin_c: 'Вит. C',
+            vitamin_d: 'Вит. D', vitamin_e: 'Вит. E', vitamin_k: 'Вит. K',
+            calcium: 'Кальций', iron: 'Железо', magnesium: 'Магний',
+            phosphorus: 'Фосфор', potassium: 'Калий', sodium: 'Натрий',
+            zinc: 'Цинк', selenium: 'Селен', iodine: 'Йод',
+        };
+        return names[key] || key;
+    }
 
-    function nutrientBar(name, item) {
-        const pct = Math.min(item.percent_dv || 0, 100);
+    function nutrientBar(key, item) {
+        const pct = Math.min(item.percent || 0, 100);
         const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--orange)' : 'var(--red)';
-        const label = name.replace('vitamin_', 'Вит. ').replace('calcium', 'Кальций').replace('iron', 'Железо')
-            .replace('magnesium', 'Магний').replace('phosphorus', 'Фосфор').replace('potassium', 'Калий')
-            .replace('sodium', 'Натрий').replace('zinc', 'Цинк').replace('selenium', 'Селен').replace('iodine', 'Йод')
-            .replace('Вит. a', 'Вит. A').replace('Вит. b1', 'Вит. B1').replace('Вит. b2', 'Вит. B2')
-            .replace('Вит. b3', 'Вит. B3').replace('Вит. b5', 'Вит. B5').replace('Вит. b6', 'Вит. B6')
-            .replace('Вит. b9', 'Вит. B9').replace('Вит. b12', 'Вит. B12').replace('Вит. c', 'Вит. C')
-            .replace('Вит. d', 'Вит. D').replace('Вит. e', 'Вит. E').replace('Вит. k', 'Вит. K');
         return `<div class="nutrient-row">
-            <div class="nutrient-info"><span class="nutrient-name">${label}</span><span class="nutrient-val">${item.amount.toFixed(1)} ${item.unit} · ${Math.round(item.percent_dv)}%</span></div>
+            <div class="nutrient-info"><span class="nutrient-name">${nutrientName(key)}</span><span class="nutrient-val">${item.amount.toFixed(1)} · ${Math.round(item.percent)}%</span></div>
             <div class="nutrient-bar"><div class="nutrient-fill" style="width:${pct}%;background:${color}"></div></div>
         </div>`;
     }
@@ -318,21 +325,21 @@ async function loadNutrients() {
     container.innerHTML = `
         <div class="date-nav" style="margin-bottom:16px">
             <button class="btn-icon" onclick="changeNutrientDate(-1)">◀</button>
-            <span id="nutrient-date-display" class="date-text">${formatDate(currentDate)}</span>
+            <span class="date-text">${formatDate(currentDate)}</span>
             <button class="btn-icon" onclick="changeNutrientDate(1)">▶</button>
         </div>
         <div class="card">
             <div class="card-title">Макронутриенты</div>
             <div class="macros" style="flex-direction:row;justify-content:space-around">
-                <div class="macro" style="text-align:center"><div class="macro-value">${Math.round(macros.calories)}</div><div class="macro-label">ккал</div></div>
-                <div class="macro macro-protein" style="text-align:center"><div class="macro-value">${Math.round(macros.protein)}г</div><div class="macro-label">белки</div></div>
-                <div class="macro macro-fat" style="text-align:center"><div class="macro-value">${Math.round(macros.fat)}г</div><div class="macro-label">жиры</div></div>
-                <div class="macro macro-carbs" style="text-align:center"><div class="macro-value">${Math.round(macros.carbohydrates)}г</div><div class="macro-label">углеводы</div></div>
+                <div class="macro" style="text-align:center"><div class="macro-value">${Math.round(macros.calories || 0)}</div><div class="macro-label">ккал</div></div>
+                <div class="macro macro-protein" style="text-align:center"><div class="macro-value">${Math.round(macros.protein || 0)}г</div><div class="macro-label">белки</div></div>
+                <div class="macro macro-fat" style="text-align:center"><div class="macro-value">${Math.round(macros.fat || 0)}г</div><div class="macro-label">жиры</div></div>
+                <div class="macro macro-carbs" style="text-align:center"><div class="macro-value">${Math.round(macros.carbohydrates || 0)}г</div><div class="macro-label">углеводы</div></div>
             </div>
         </div>
         ${vitamins.length ? `<div class="card"><div class="card-title">Витамины</div>${vitamins.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
         ${minerals.length ? `<div class="card"><div class="card-title">Минералы</div>${minerals.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
-        ${!vitamins.length && !minerals.length ? '<div class="card" style="padding:20px;color:var(--text2);text-align:center">Нет данных о микронутриентах для записей за этот день</div>' : ''}
+        ${!vitamins.length && !minerals.length ? '<div class="card" style="padding:20px;color:var(--text2);text-align:center">Нет данных о микронутриентах.<br>Базовые продукты не содержат витаминов — добавьте продукты из онлайн-базы или USDA.</div>' : ''}
     `;
 }
 
@@ -377,8 +384,8 @@ async function loadHealth() {
             ${conditions.length ? conditions.map(c => `
                 <div class="condition-row">
                     <div>
-                        <div class="condition-name">${c.condition?.name_ru || c.condition?.name_en || 'N/A'}</div>
-                        <div class="condition-code">${c.condition?.code || ''} · ${c.condition?.category || ''}</div>
+                        <div class="condition-name">${c.name || 'N/A'}</div>
+                        <div class="condition-code">${c.code || ''}</div>
                     </div>
                     <button class="btn-delete" onclick="removeCondition('${c.id}')" title="Удалить">✕</button>
                 </div>
@@ -418,7 +425,7 @@ async function searchConditions(q) {
         return;
     }
     container.innerHTML = results.map(c => `
-        <div class="product-row" onclick="addCondition('${c.code}')">
+        <div class="product-row" onclick="addCondition('${c.id}')">
             <div>
                 <div class="p-name">${c.name_ru || c.name_en}</div>
                 <div class="p-brand">${c.code} · ${c.category}</div>
@@ -427,10 +434,10 @@ async function searchConditions(q) {
     `).join('');
 }
 
-async function addCondition(code) {
+async function addCondition(conditionId) {
     await api('/health/profile/conditions', {
         method: 'POST',
-        body: JSON.stringify({ condition_code: code })
+        body: JSON.stringify({ condition_id: conditionId })
     });
     closeModal('condition-modal');
     loadHealth();
@@ -454,10 +461,10 @@ function renderStats(data) {
         <div class="card">
             <div class="card-title">Среднее за неделю</div>
             <div class="macros" style="flex-direction:row;justify-content:space-around">
-                <div class="macro" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_calories)}</div><div class="macro-label">ккал</div></div>
-                <div class="macro macro-protein" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_protein)}г</div><div class="macro-label">белки</div></div>
-                <div class="macro macro-fat" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_fat)}г</div><div class="macro-label">жиры</div></div>
-                <div class="macro macro-carbs" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_carbohydrates)}г</div><div class="macro-label">углеводы</div></div>
+                <div class="macro" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_calories || 0)}</div><div class="macro-label">ккал</div></div>
+                <div class="macro macro-protein" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_protein || 0)}г</div><div class="macro-label">белки</div></div>
+                <div class="macro macro-fat" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_fat || 0)}г</div><div class="macro-label">жиры</div></div>
+                <div class="macro macro-carbs" style="text-align:center"><div class="macro-value">${Math.round(avg.avg_carbohydrates || 0)}г</div><div class="macro-label">углеводы</div></div>
             </div>
         </div>
         <div class="card">
