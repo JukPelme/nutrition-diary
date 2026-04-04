@@ -349,6 +349,22 @@
                 <h3>Настройки</h3>
                 <button class="btn-icon" onclick="closeModal('settings-modal')">✕</button>
             </div>
+
+            <div class="theme-section">
+                <div class="card-title">Тема</div>
+                <div class="theme-toggle-row">
+                    <button class="theme-toggle-btn" onclick="setTheme('dark')" id="theme-dark-btn">🌙 Тёмная</button>
+                    <button class="theme-toggle-btn" onclick="setTheme('light')" id="theme-light-btn">☀️ Светлая</button>
+                </div>
+                <div class="card-title" style="margin-bottom:8px">Акцент</div>
+                <div class="accent-row">
+                    <div class="accent-dot" data-color="blue" onclick="setAccent('blue')"></div>
+                    <div class="accent-dot" data-color="green" onclick="setAccent('green')"></div>
+                    <div class="accent-dot" data-color="purple" onclick="setAccent('purple')"></div>
+                    <div class="accent-dot" data-color="orange" onclick="setAccent('orange')"></div>
+                    <div class="accent-dot" data-color="pink" onclick="setAccent('pink')"></div>
+                </div>
+            </div>
             <div class="card-title">Дневная норма</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">

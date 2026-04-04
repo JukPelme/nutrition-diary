@@ -222,3 +222,37 @@ a { color:var(--accent); text-decoration:none; }
 .water-glass.filled { background:rgba(79,140,255,0.2); border-color:var(--accent); }
 .water-actions { display:flex; gap:8px; justify-content:center; }
 .water-btn { font-size:20px; width:36px; height:36px; background:var(--bg3); border-radius:8px; }
+
+/* ---- Theme: Light Mode ---- */
+[data-theme="light"] {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #e8e8ed;
+    --border: #d1d1d6;
+    --text: #1c1c1e;
+    --text2: #6e6e73;
+}
+[data-theme="light"] .modal { background:rgba(0,0,0,0.3); }
+
+/* ---- Accent Colors ---- */
+[data-accent="blue"]   { --accent:#4f8cff; --protein:#60a5fa; }
+[data-accent="green"]  { --accent:#34d399; --protein:#60a5fa; }
+[data-accent="purple"] { --accent:#a78bfa; --protein:#60a5fa; }
+[data-accent="orange"] { --accent:#fb923c; --protein:#60a5fa; }
+[data-accent="pink"]   { --accent:#f472b6; --protein:#60a5fa; }
+
+/* ---- Theme picker in settings ---- */
+.theme-section { margin-bottom:16px; }
+.theme-toggle-row { display:flex; gap:0; background:var(--bg); border-radius:8px; padding:3px; margin-bottom:12px; }
+.theme-toggle-btn { flex:1; padding:10px; border:none; background:transparent; color:var(--text2); font-size:13px; font-weight:500; cursor:pointer; border-radius:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+.theme-toggle-btn.active { background:var(--accent); color:#fff; }
+
+.accent-row { display:flex; gap:10px; justify-content:center; }
+.accent-dot { width:32px; height:32px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all 0.2s; }
+.accent-dot:hover { transform:scale(1.15); }
+.accent-dot.active { border-color:var(--text); transform:scale(1.15); }
+.accent-dot[data-color="blue"]   { background:#4f8cff; }
+.accent-dot[data-color="green"]  { background:#34d399; }
+.accent-dot[data-color="purple"] { background:#a78bfa; }
+.accent-dot[data-color="orange"] { background:#fb923c; }
+.accent-dot[data-color="pink"]   { background:#f472b6; }

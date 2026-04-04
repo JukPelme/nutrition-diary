@@ -1,3 +1,45 @@
+
+// ---- Theme & Accent ----
+function initTheme() {
+    const theme = localStorage.getItem('theme') || 'dark';
+    const accent = localStorage.getItem('accent') || 'blue';
+    applyTheme(theme);
+    applyAccent(accent);
+}
+
+function setTheme(theme) {
+    localStorage.setItem('theme', theme);
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const darkBtn = document.getElementById('theme-dark-btn');
+    const lightBtn = document.getElementById('theme-light-btn');
+    if (darkBtn && lightBtn) {
+        darkBtn.classList.toggle('active', theme === 'dark');
+        lightBtn.classList.toggle('active', theme === 'light');
+    }
+    // Update meta theme-color for PWA
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = theme === 'light' ? '#ffffff' : '#0f1117';
+}
+
+function setAccent(color) {
+    localStorage.setItem('accent', color);
+    applyAccent(color);
+}
+
+function applyAccent(color) {
+    document.documentElement.setAttribute('data-accent', color);
+    document.querySelectorAll('.accent-dot').forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.color === color);
+    });
+}
+
+// Apply theme immediately on script load
+initTheme();
+
 // State
 let currentDate = new Date().toISOString().slice(0, 10);
 let meals = [];
@@ -91,6 +133,9 @@ async function loadUserSettings() {
 function openSettings() {
     document.getElementById('settings-modal').classList.add('active');
     loadDevices();
+    // Highlight current theme & accent
+    applyTheme(localStorage.getItem('theme') || 'dark');
+    applyAccent(localStorage.getItem('accent') || 'blue');
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;
