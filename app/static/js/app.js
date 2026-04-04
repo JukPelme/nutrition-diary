@@ -1024,8 +1024,18 @@ async function addCondition(conditionId) {
 }
 
 // ---- Export ----
-function exportCSV(days) {
-    window.open(`/api/v1/export/csv?days=${days}`, '_blank');
+async function exportCSV(days) {
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const resp = await fetch(`/api/v1/export/csv?days=${days}`, { headers });
+    if (!resp.ok) { alert('Ошибка экспорта'); return; }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `diary_${days}d.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // ---- Stats ----
