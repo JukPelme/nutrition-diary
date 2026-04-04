@@ -1023,6 +1023,11 @@ async function addCondition(conditionId) {
     loadHealth();
 }
 
+// ---- Export ----
+function exportCSV(days) {
+    window.open(`/api/v1/export/csv?days=${days}`, '_blank');
+}
+
 // ---- Stats ----
 async function loadStats() {
     const data = await api('/stats/week');
@@ -1038,6 +1043,14 @@ function renderStats(data) {
     const maxCal = Math.max(...days.map(d => d.calories), 1);
 
     container.innerHTML = `
+        <div class="card">
+            <div class="card-title">Экспорт данных</div>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(7)">7 дней</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(30)">30 дней</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">3 месяца</button>
+            </div>
+        </div>
         <div class="card">
             <div class="card-title">Среднее за неделю</div>
             <div class="macros" style="flex-direction:row;justify-content:space-around">
