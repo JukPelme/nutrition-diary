@@ -144,12 +144,18 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Штрихкод</h3>
-                <button class="btn-icon" onclick="closeModal('barcode-modal')">✕</button>
+                <button class="btn-icon" onclick="closeBarcodeModal()">✕</button>
+            </div>
+            <div id="barcode-scanner-area" class="hidden" style="margin-bottom:12px;border-radius:12px;overflow:hidden">
+                <div id="barcode-reader" style="width:100%"></div>
             </div>
             <div class="form-group">
                 <input type="text" id="barcode-input" class="input" placeholder="Введите штрихкод..." inputmode="numeric">
             </div>
-            <button class="btn btn-primary" onclick="searchBarcode()">Найти</button>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary" style="flex:1" id="scan-toggle-btn" onclick="toggleBarcodeScanner()">📷 Сканировать</button>
+                <button class="btn btn-primary" style="flex:1" onclick="searchBarcode()">Найти</button>
+            </div>
             <div id="barcode-status" style="text-align:center;padding:12px;color:var(--text2)"></div>
         </div>
     </div>
@@ -193,6 +199,7 @@
 
 </div>
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/app.js"></script>
 </body>

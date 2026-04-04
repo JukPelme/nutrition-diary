@@ -220,6 +220,9 @@ async function searchProducts(q) {
 }
 
 // ---- Barcode ----
+let barcodeScanner = null;
+let scannerActive = false;
+
 async function searchBarcode() {
     const code = document.getElementById('barcode-input').value.trim();
     if (!code) return;
@@ -227,7 +230,7 @@ async function searchBarcode() {
     const product = await api(`/barcode/${code}`);
     if (product?.id) {
         document.getElementById('barcode-status').textContent = '';
-        closeModal('barcode-modal');
+        closeBarcodeModal();
         selectProduct(product);
     } else {
         document.getElementById('barcode-status').textContent = 'Продукт не найден';
@@ -239,7 +242,71 @@ function openBarcode(mealId) {
     document.getElementById('barcode-modal').classList.add('active');
     document.getElementById('barcode-input').value = '';
     document.getElementById('barcode-status').textContent = '';
+    document.getElementById('barcode-scanner-area').classList.add('hidden');
+    scannerActive = false;
+    document.getElementById('scan-toggle-btn').textContent = '📷 Сканировать';
     document.getElementById('barcode-input').focus();
+}
+
+function closeBarcodeModal() {
+    stopBarcodeScanner();
+    closeModal('barcode-modal');
+}
+
+async function toggleBarcodeScanner() {
+    const area = document.getElementById('barcode-scanner-area');
+    const btn = document.getElementById('scan-toggle-btn');
+
+    if (scannerActive) {
+        stopBarcodeScanner();
+        area.classList.add('hidden');
+        btn.textContent = '📷 Сканировать';
+        scannerActive = false;
+        return;
+    }
+
+    area.classList.remove('hidden');
+    btn.textContent = '⏹ Остановить';
+    scannerActive = true;
+
+    if (!barcodeScanner) {
+        barcodeScanner = new Html5Qrcode('barcode-reader');
+    }
+
+    try {
+        await barcodeScanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]},
+            (code) => {
+                document.getElementById('barcode-input').value = code;
+                stopBarcodeScanner();
+                area.classList.add('hidden');
+                btn.textContent = '📷 Сканировать';
+                scannerActive = false;
+                searchBarcode();
+            },
+            () => {}
+        );
+    } catch (err) {
+        area.classList.add('hidden');
+        btn.textContent = '📷 Сканировать';
+        scannerActive = false;
+        document.getElementById('barcode-status').textContent = 'Камера недоступна';
+    }
+}
+
+function stopBarcodeScanner() {
+    if (barcodeScanner && scannerActive) {
+        barcodeScanner.stop().catch(() => {});
+    }
+    scannerActive = false;
 }
 
 // ---- Portion ----
