@@ -11,15 +11,8 @@ BASE_DIR = pathlib.Path(__file__).resolve().parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup
-    from sqlalchemy.ext.asyncio import create_async_engine
-    from app.db.base import Base
-    from app.models import User, Product, Meal, DiaryEntry, ICD11Condition, UserCondition, DeviceIntegration, HealthMetric  # noqa
-
-    engine = create_async_engine(settings.database_url)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await engine.dispose()
+    from app.db.session import create_tables
+    await create_tables()
     print("Database tables ready")
 
     yield

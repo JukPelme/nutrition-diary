@@ -107,10 +107,10 @@ def parse_off_product(p: dict) -> dict | None:
 
 async def import_data(pages: int = 5, db_url: str | None = None):
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from sqlalchemy.dialects.postgresql import insert
+    from scripts.db_helper import get_insert_func; insert = get_insert_func()
     from app.models.product import Product
 
-    url = db_url or os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_diary")
+    url = db_url or os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///nutrition_diary.db")
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

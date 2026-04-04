@@ -137,7 +137,7 @@ NUTRIENT_DATA = {
 
 
 async def update_nutrients(db_url=None):
-    url = db_url or os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_diary")
+    url = db_url or os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///nutrition_diary.db")
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

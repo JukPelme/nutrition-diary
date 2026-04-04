@@ -196,10 +196,10 @@ def get_dietary_rules(category: str | None) -> dict | None:
 
 async def import_icd11(client_id: str, client_secret: str, max_items: int = 20000, db_url: str | None = None):
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from sqlalchemy.dialects.postgresql import insert
+    from scripts.db_helper import get_insert_func; insert = get_insert_func()
     from app.models.health import ICD11Condition
 
-    url = db_url or "postgresql+asyncpg://nutrition:nutrition@localhost:5432/nutrition_diary"
+    url = db_url or "sqlite+aiosqlite:///nutrition_diary.db"
     engine = create_async_engine(url, echo=False)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 

@@ -18,6 +18,7 @@ os.environ.setdefault("SECRET_KEY", "desktop-local-key-change-me")
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
+os.chdir(project_root)
 
 HOST = "127.0.0.1"
 PORT = 8000
@@ -30,32 +31,43 @@ def open_browser():
 
 
 def seed_if_empty():
-    """Seed database with products if empty."""
+    """Create tables and seed database with products if empty."""
     import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from sqlalchemy import select, func
 
     async def check_and_seed():
-        db_url = os.environ["DATABASE_URL"]
-        engine = create_async_engine(db_url)
+        # Create tables first
+        from app.db.session import create_tables
+        await create_tables()
+        print("Tables created.")
+
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+        from app.db.session import engine
+        from sqlalchemy import select, func as sa_func
+
         Session = async_sessionmaker(engine, expire_on_commit=False)
 
         async with Session() as session:
-            # Import after path is set
             from app.models.product import Product
-            result = await session.execute(select(func.count()).select_from(Product))
+            result = await session.execute(select(sa_func.count()).select_from(Product))
             count = result.scalar() or 0
-
-        await engine.dispose()
 
         if count == 0:
             print("Database is empty, seeding products...")
-            from scripts.seed_products import seed
-            await seed(db_url)
-            from scripts.seed_conditions import seed as seed_conditions
-            await seed_conditions(db_url)
-            from scripts.seed_vitamins import update_nutrients
-            await update_nutrients(db_url)
+            try:
+                from scripts.seed_products import seed
+                await seed(os.environ["DATABASE_URL"])
+            except Exception as e:
+                print(f"  seed_products: {e}")
+            try:
+                from scripts.seed_conditions import seed as seed_conditions
+                await seed_conditions(os.environ["DATABASE_URL"])
+            except Exception as e:
+                print(f"  seed_conditions: {e}")
+            try:
+                from scripts.seed_vitamins import update_nutrients
+                await update_nutrients(os.environ["DATABASE_URL"])
+            except Exception as e:
+                print(f"  seed_vitamins: {e}")
             print("Seeding complete!")
         else:
             print(f"Database has {count} products, skipping seed.")
@@ -71,7 +83,7 @@ if __name__ == "__main__":
     print("  Нажмите Ctrl+C для остановки")
     print("=" * 50)
 
-    # Seed on first run
+    # Create tables + seed on first run
     try:
         seed_if_empty()
     except Exception as e:

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, delete, func
 from app.models.product import Product
 
-DB_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://nutrition:nutrition@db:5432/nutrition_db")
+DB_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///nutrition_diary.db")
 
 # Source priority: lower = keep
 SOURCE_PRIORITY = {"manual": 0, "offline": 0, "openfoodfacts": 1, "usda": 2, "custom": 3}
