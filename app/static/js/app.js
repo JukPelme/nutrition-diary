@@ -361,12 +361,56 @@ async function loadHealth() {
     const conditions = profile.conditions || [];
     const recs = profile.recommendations || {};
 
+    // Словарь переводов
+    const T = {
+        // Нутриенты
+        sugar: 'Сахар', fiber: 'Клетчатка', sodium: 'Натрий', potassium: 'Калий',
+        calcium: 'Кальций', iron: 'Железо', magnesium: 'Магний', phosphorus: 'Фосфор',
+        zinc: 'Цинк', selenium: 'Селен', iodine: 'Йод', omega_3: 'Омега-3',
+        saturated_fat: 'Насыщ. жиры', trans_fat: 'Транс-жиры', cholesterol: 'Холестерин',
+        purine: 'Пурины', fructose: 'Фруктоза', caffeine: 'Кофеин', alcohol: 'Алкоголь',
+        carbohydrates_percent: 'Углеводы %', protein_per_kg: 'Белок (г/кг)', water_ml: 'Вода (мл)',
+        vitamin_c: 'Вит. C', vitamin_d: 'Вит. D', vitamin_b12: 'Вит. B12', vitamin_k: 'Вит. K',
+        folate: 'Фолат',
+        // Продукты / категории
+        sugary_drinks: 'Сладкие напитки', refined_sugar: 'Рафинированный сахар',
+        white_bread: 'Белый хлеб', processed_food: 'Обработанная еда',
+        whole_grains: 'Цельнозерновые', legumes: 'Бобовые',
+        non_starchy_vegetables: 'Некрахмалистые овощи', vegetables: 'Овощи',
+        lean_protein: 'Нежирный белок', nuts: 'Орехи', fruits: 'Фрукты',
+        fish: 'Рыба', olive_oil: 'Оливковое масло', oats: 'Овсянка',
+        low_fat_dairy: 'Нежирная молочка', dairy: 'Молочные',
+        canned_food: 'Консервы', pickles: 'Соленья', salty_snacks: 'Солёные снеки',
+        fried_food: 'Жареная еда', processed_meat: 'Колбасы',
+        dark_cola: 'Тёмная кола', bananas: 'Бананы', oranges: 'Апельсины',
+        rice: 'Рис', apples: 'Яблоки', berries: 'Ягоды', cabbage: 'Капуста',
+        gluten: 'Глютен', wheat: 'Пшеница', barley: 'Ячмень', rye: 'Рожь',
+        corn: 'Кукуруза', quinoa: 'Киноа', buckwheat: 'Гречка', gluten_free: 'Без глютена',
+        raw_vegetables: 'Сырые овощи', seeds: 'Семена', popcorn: 'Попкорн',
+        high_fiber: 'Грубая клетчатка', cooked_vegetables: 'Варёные овощи',
+        white_rice: 'Белый рис', fast_food: 'Фастфуд', water: 'Вода',
+        organ_meat: 'Субпродукты', shellfish: 'Моллюски', beer: 'Пиво',
+        red_meat: 'Красное мясо', cherries: 'Вишня', coffee: 'Кофе',
+        tea_with_meals: 'Чай с едой', coffee_with_meals: 'Кофе с едой',
+        calcium_with_iron: 'Кальций с железом', liver: 'Печень', spinach: 'Шпинат',
+        fortified_cereals: 'Обогащ. каши', excessive_alcohol: 'Много алкоголя',
+        excessive_caffeine: 'Много кофеина', high_sodium: 'Солёная еда',
+        sardines: 'Сардины', leafy_greens: 'Зелень', fortified_foods: 'Обогащ. продукты',
+        plant_milk: 'Растительное молоко', yogurt: 'Йогурт',
+        hard_cheese: 'Твёрдый сыр', lactose_free_dairy: 'Безлактозная молочка',
+        seafood: 'Морепродукты', seaweed: 'Морская капуста', brazil_nuts: 'Бразильский орех',
+        eggs: 'Яйца', raw_cruciferous_excess: 'Много сырых крестоцветных',
+        soy_excess: 'Много сои', milk: 'Молоко', ice_cream: 'Мороженое',
+        soft_cheese: 'Мягкий сыр', cream: 'Сливки',
+    };
+    function tr(key) { return T[key] || key.replace(/_/g, ' '); }
+
     let recsHtml = '';
     if (conditions.length) {
-        const restrict = recs.restrict ? Object.entries(recs.restrict).map(([k,v]) => `<span class="tag tag-red">${k}: макс ${v}</span>`).join('') : '';
-        const increase = recs.increase ? Object.entries(recs.increase).map(([k,v]) => `<span class="tag tag-green">${k}: мин ${v}</span>`).join('') : '';
-        const avoid = (recs.avoid || []).map(a => `<span class="tag tag-red">${a}</span>`).join('');
-        const prefer = (recs.prefer || []).map(a => `<span class="tag tag-green">${a}</span>`).join('');
+        const restrict = recs.restrict ? Object.entries(recs.restrict).map(([k,v]) => `<span class="tag tag-red">${tr(k)}: макс ${v}</span>`).join('') : '';
+        const increase = recs.increase ? Object.entries(recs.increase).map(([k,v]) => `<span class="tag tag-green">${tr(k)}: мин ${v}</span>`).join('') : '';
+        const avoid = (recs.avoid || []).map(a => `<span class="tag tag-red">${tr(a)}</span>`).join('');
+        const prefer = (recs.prefer || []).map(a => `<span class="tag tag-green">${tr(a)}</span>`).join('');
 
         recsHtml = `
             <div class="card">

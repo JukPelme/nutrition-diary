@@ -38,6 +38,13 @@ async def main():
     from scripts.seed_conditions import seed as seed_conditions
     await seed_conditions(args.db_url)
 
+    # 2.5. Vitamins & minerals for offline products
+    print("\n" + "=" * 50)
+    print("2.5  Витамины и минералы (офлайн)")
+    print("=" * 50)
+    from scripts.seed_vitamins import update_nutrients
+    await update_nutrients(args.db_url)
+
     # 3. Online imports
     if args.online:
         print("\n" + "=" * 50)
