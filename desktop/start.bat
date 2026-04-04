@@ -28,6 +28,9 @@ if not exist "venv" (
     call venv\Scripts\activate.bat
 )
 
+REM Remove passlib if present (incompatible with bcrypt 4.1+)
+pip uninstall passlib -y >nul 2>&1
+
 echo.
 echo Starting app...
 python desktop\run.py
