@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Database
-    database_url: str = "postgresql+asyncpg://nutrition:nutrition@localhost:5432/nutrition_diary"
+    database_url: str = "sqlite+aiosqlite:///nutrition_diary.db"
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

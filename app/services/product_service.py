@@ -3,6 +3,7 @@ from sqlalchemy import select, func, or_, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
+from app.db.compat import is_sqlite
 
 
 async def search_products(
@@ -20,27 +21,33 @@ async def search_products(
         query = query.where(Product.barcode == barcode)
         count_query = count_query.where(Product.barcode == barcode)
     elif q:
-        # Use trigram similarity for fuzzy search
-        similarity = func.similarity(Product.name, q)
-        query = query.where(
-            or_(
-                Product.name.ilike(f"%{q}%"),
-                similarity > 0.1,
+        if is_sqlite():
+            # SQLite: use LIKE for search
+            like_q = f"%{q}%"
+            query = query.where(Product.name.ilike(like_q)).order_by(
+                desc(Product.is_verified),
+                Product.name,
             )
-        ).order_by(
-            # Verified products first (USDA, lab data)
-            desc(Product.is_verified),
-            # Then by relevance
-            similarity.desc(),
-        )
-        count_query = count_query.where(
-            or_(
-                Product.name.ilike(f"%{q}%"),
-                similarity > 0.1,
+            count_query = count_query.where(Product.name.ilike(like_q))
+        else:
+            # PostgreSQL: use trigram similarity for fuzzy search
+            similarity = func.similarity(Product.name, q)
+            query = query.where(
+                or_(
+                    Product.name.ilike(f"%{q}%"),
+                    similarity > 0.1,
+                )
+            ).order_by(
+                desc(Product.is_verified),
+                similarity.desc(),
             )
-        )
+            count_query = count_query.where(
+                or_(
+                    Product.name.ilike(f"%{q}%"),
+                    similarity > 0.1,
+                )
+            )
     else:
-        # Default: verified first, then by name
         query = query.order_by(desc(Product.is_verified), Product.name)
 
     if category:

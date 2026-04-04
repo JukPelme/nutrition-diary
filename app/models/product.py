@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Float, DateTime, Text, Index, func
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from app.db.compat import UUIDType, JSONType
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -9,7 +9,7 @@ from app.db.base import Base
 class Product(Base):
     __tablename__ = "products"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=uuid.uuid4)
     
     # Identification
     name: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
@@ -35,8 +35,8 @@ class Product(Base):
     
     # Extended nutrients (JSONB for flexibility)
     # Structure: {"vitamin_a": 900, "vitamin_c": 45, "iron": 8, "calcium": 1000, ...}
-    vitamins: Mapped[dict | None] = mapped_column(JSONB)
-    minerals: Mapped[dict | None] = mapped_column(JSONB)
+    vitamins: Mapped[dict | None] = mapped_column(JSONType)
+    minerals: Mapped[dict | None] = mapped_column(JSONType)
     
     # Additional info
     description: Mapped[str | None] = mapped_column(Text)

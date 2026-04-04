@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, func, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from app.db.compat import UUIDType, JSONType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -10,8 +10,8 @@ class Meal(Base):
     """Configurable meal types per user (breakfast, lunch, dinner, snacks, custom)."""
     __tablename__ = "meals"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)  # "Завтрак", "Обед", etc.
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     icon: Mapped[str | None] = mapped_column(String(10))  # emoji
@@ -32,10 +32,10 @@ class DiaryEntry(Base):
     """Single food entry in the diary."""
     __tablename__ = "diary_entries"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    meal_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("meals.id", ondelete="SET NULL"), nullable=True)
-    product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    meal_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("meals.id", ondelete="SET NULL"), nullable=True)
+    product_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
 
     # Entry data
     entry_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
