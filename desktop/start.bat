@@ -1,16 +1,18 @@
 @echo off
-title Дневник питания
+chcp 65001 >/dev/null 2>&1
+title Nutrition Diary
+
+cd /d "%~dp0\.."
+
 echo ============================================
-echo   Дневник питания - Desktop
+echo   Nutrition Diary - Desktop
 echo ============================================
 echo.
 
-cd /d "%~dp0.."
-
 REM Check Python
-python --version >/dev/null 2>&1
+where python >/dev/null 2>&1
 if errorlevel 1 (
-    echo Python не найден! Установите Python 3.12+
+    echo Python not found! Install Python 3.12+
     echo https://python.org/downloads/
     pause
     exit /b
@@ -18,16 +20,16 @@ if errorlevel 1 (
 
 REM Install dependencies on first run
 if not exist "venv" (
-    echo Первый запуск - устанавливаю зависимости...
+    echo First run - installing dependencies...
     python -m venv venv
-    call venv\Scripts\activate
+    call venv\Scripts\activate.bat
     pip install -r requirements-desktop.txt
 ) else (
-    call venv\Scripts\activate
+    call venv\Scripts\activate.bat
 )
 
 echo.
-echo Запускаю приложение...
-python desktop/run.py
+echo Starting app...
+python desktop\run.py
 
 pause

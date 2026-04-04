@@ -77,10 +77,10 @@ def seed_if_empty():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  Дневник питания — Desktop")
+    print("  Nutrition Diary — Desktop")
     print("=" * 50)
-    print(f"  Запускаю на http://{HOST}:{PORT}")
-    print("  Нажмите Ctrl+C для остановки")
+    print(f"  Starting at http://{HOST}:{PORT}")
+    print("  Press Ctrl+C to stop")
     print("=" * 50)
 
     # Create tables + seed on first run
