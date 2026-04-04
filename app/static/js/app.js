@@ -230,6 +230,7 @@ function openSettings() {
     applyTheme(localStorage.getItem('theme') || 'dark');
     applyAccent(localStorage.getItem('accent') || 'blue');
     updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;

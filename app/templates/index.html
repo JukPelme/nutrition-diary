@@ -134,23 +134,23 @@
     <nav class="bottom-nav">
         <div class="nav-tab active" data-tab="diary" onclick="setActiveTab('diary')">
             <div class="nav-icon">📖</div>
-            <div class="nav-label">Дневник</div>
+            <div class="nav-label" data-i18n="diary">Дневник</div>
         </div>
         <div class="nav-tab" data-tab="plan" onclick="setActiveTab('plan')">
             <div class="nav-icon">📅</div>
-            <div class="nav-label">План</div>
+            <div class="nav-label" data-i18n="plan">План</div>
         </div>
         <div class="nav-tab" data-tab="nutrients" onclick="setActiveTab('nutrients')">
             <div class="nav-icon">💊</div>
-            <div class="nav-label">Нутриенты</div>
+            <div class="nav-label" data-i18n="nutrients">Нутриенты</div>
         </div>
         <div class="nav-tab" data-tab="stats" onclick="setActiveTab('stats')">
             <div class="nav-icon">📊</div>
-            <div class="nav-label">Статистика</div>
+            <div class="nav-label" data-i18n="stats">Статистика</div>
         </div>
         <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
             <div class="nav-icon">🏥</div>
-            <div class="nav-label">Здоровье</div>
+            <div class="nav-label" data-i18n="health">Здоровье</div>
         </div>
     </nav>
 
@@ -365,6 +365,14 @@
                 <button class="btn-icon" onclick="closeModal('settings-modal')">✕</button>
             </div>
 
+
+            <div class="theme-section">
+                <div class="card-title" data-i18n="language">Язык</div>
+                <div class="theme-toggle-row">
+                    <button class="mode-btn lang-btn" data-lang="ru" onclick="setLang('ru')">🇷🇺 Русский</button>
+                    <button class="mode-btn lang-btn" data-lang="en" onclick="setLang('en')">🇬🇧 English</button>
+                </div>
+            </div>
             <div class="theme-section">
                 <div class="card-title">Тема</div>
                 <div class="theme-toggle-row">
@@ -477,7 +485,8 @@
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="/static/js/api.js"></script>
+<script src="/static/js/i18n.js"></script>
+    <script src="/static/js/api.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
