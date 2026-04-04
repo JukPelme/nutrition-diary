@@ -1,5 +1,5 @@
 @echo off
-chcp 65001 >/dev/null 2>&1
+chcp 65001 >nul 2>&1
 title Nutrition Diary
 
 cd /d "%~dp0\.."
@@ -10,7 +10,7 @@ echo ============================================
 echo.
 
 REM Check Python
-where python >/dev/null 2>&1
+where python >nul 2>&1
 if errorlevel 1 (
     echo Python not found! Install Python 3.12+
     echo https://python.org/downloads/
