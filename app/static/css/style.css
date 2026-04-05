@@ -256,3 +256,35 @@ a { color:var(--accent); text-decoration:none; }
 .accent-dot[data-color="purple"] { background:#a78bfa; }
 .accent-dot[data-color="orange"] { background:#fb923c; }
 .accent-dot[data-color="pink"]   { background:#f472b6; }
+
+/* Settings tabs */
+.settings-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 4px;
+}
+.settings-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.settings-tab.active {
+    background: var(--accent);
+    color: #fff;
+}
+.settings-tab-content {
+    display: none;
+}
+.settings-tab-content.active {
+    display: block;
+}

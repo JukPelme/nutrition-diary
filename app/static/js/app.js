@@ -223,6 +223,13 @@ async function loadUserSettings() {
     waterCount = parseInt(localStorage.getItem(`water_${currentDate}`) || '0');
 }
 
+function switchSettingsTab(tab) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.settings-tab[onclick*="${tab}"]`).classList.add('active');
+    document.getElementById('settings-tab-' + tab).classList.add('active');
+}
+
 function openSettings() {
     document.getElementById('settings-modal').classList.add('active');
     loadDevices();
