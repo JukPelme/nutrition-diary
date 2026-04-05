@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.db.compat import is_sqlite
+from app.services.barcode_service import search_and_save_off
 
 
 async def search_products(
@@ -56,6 +57,16 @@ async def search_products(
 
     total = (await db.execute(count_query)).scalar() or 0
     results = (await db.execute(query.offset(offset).limit(limit))).scalars().all()
+
+    # If few local results and there's a search query, try OpenFoodFacts
+    if q and len(results) < limit and offset == 0:
+        try:
+            off_products = await search_and_save_off(db, q, limit=limit - len(results))
+            if off_products:
+                results = list(results) + off_products
+                total += len(off_products)
+        except Exception:
+            pass  # OFF unavailable, return local results only
 
     return results, total
 

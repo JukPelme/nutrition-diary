@@ -504,7 +504,7 @@ function openAddFood(mealId) {
             favs.map(p => `
             <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
                 <div>
-                    <div class="p-name">⭐ ${p.name}</div>
+                    <div class="p-name">⭐ ${p.name}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
                 </div>
                 <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
@@ -555,7 +555,7 @@ async function searchProducts(q, category, sort) {
     container.innerHTML = products.map(p => `
         <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
             <div>
-                <div class="p-name">${p.name}${p.is_verified ? ' ✓' : ''}</div>
+                <div class="p-name">${p.name}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                 <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
             </div>
             <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>

@@ -106,3 +106,58 @@ async def lookup_barcode(db: AsyncSession, barcode: str) -> Product | None:
     await db.flush()
 
     return product
+
+
+OFF_SEARCH_API = "https://world.openfoodfacts.org/cgi/search.pl"
+
+
+async def search_off(query: str, limit: int = 20) -> list[dict]:
+    """Search Open Food Facts by product name. Returns parsed product dicts."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(OFF_SEARCH_API, params={
+                "search_terms": query,
+                "search_simple": 1,
+                "action": "process",
+                "json": 1,
+                "page_size": limit,
+                "fields": "code,product_name,brands,categories_tags,nutriments,image_url",
+            })
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+    except Exception:
+        return []
+
+    results = []
+    for item in data.get("products", []):
+        parsed = _parse_off_product({"product": item, "code": item.get("code", ""), "status": 1})
+        if parsed and parsed.get("calories") is not None:
+            results.append(parsed)
+    return results
+
+
+async def search_and_save_off(db: AsyncSession, query: str, limit: int = 20) -> list[Product]:
+    """Search OFF, save new products to local DB, return Product objects."""
+    off_results = await search_off(query, limit)
+    if not off_results:
+        return []
+
+    saved = []
+    for item in off_results:
+        # Skip if already in local DB (by barcode)
+        if item.get("barcode"):
+            existing = await db.execute(
+                select(Product).where(Product.barcode == item["barcode"])
+            )
+            if existing.scalar_one_or_none():
+                continue
+
+        product = Product(**item)
+        db.add(product)
+        saved.append(product)
+
+    if saved:
+        await db.flush()
+
+    return saved
