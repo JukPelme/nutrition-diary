@@ -8,7 +8,6 @@ import traceback
 
 def main():
     try:
-        # Show console immediately
         print("Starting Nutrition Diary...")
         print(f"Python: {sys.version}")
         print(f"Frozen: {getattr(sys, 'frozen', False)}")
@@ -17,8 +16,9 @@ def main():
             print(f"Executable: {sys.executable}")
         print()
 
-        # Import and run the real app
-        import app_exe
+        # Run app_exe as __main__ so its if-block executes
+        import runpy
+        runpy.run_module("app_exe", run_name="__main__", alter_sys=True)
     except Exception as e:
         print(f"\n{'='*50}")
         print(f"FATAL ERROR: {e}")
