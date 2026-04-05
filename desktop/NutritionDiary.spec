@@ -6,7 +6,7 @@ block_cipher = None
 ROOT = os.path.abspath(os.path.join(SPECPATH, '..'))
 
 a = Analysis(
-    [os.path.join(ROOT, 'desktop', 'app_exe.py')],
+    [os.path.join(ROOT, 'desktop', 'launcher.py')],
     pathex=[ROOT],
     binaries=[],
     datas=[
@@ -19,6 +19,7 @@ a = Analysis(
         (os.path.join(ROOT, 'app', 'schemas'), 'app/schemas'),
         (os.path.join(ROOT, 'app', 'services'), 'app/services'),
         (os.path.join(ROOT, 'scripts'), 'scripts'),
+        (os.path.join(ROOT, 'desktop', 'app_exe.py'), '.'),
     ],
     hiddenimports=[
         'uvicorn.logging',
