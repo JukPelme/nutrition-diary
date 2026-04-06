@@ -20,6 +20,48 @@ def _safe_float(val) -> float | None:
         return None
 
 
+def _validate_nutriments(parsed: dict) -> bool:
+    """Filter out obviously wrong OFF data."""
+    cal = parsed.get("calories")
+    protein = parsed.get("protein")
+    fat = parsed.get("fat")
+    carbs = parsed.get("carbohydrates")
+
+    # Must have calories
+    if cal is None or cal <= 0:
+        return False
+
+    # Sanity limits per 100g
+    if cal > 900:  # fat is 9 kcal/g, max ~900 for pure oil
+        return False
+    if protein is not None and protein > 100:
+        return False
+    if fat is not None and fat > 100:
+        return False
+    if carbs is not None and carbs > 100:
+        return False
+
+    # БЖУ не может быть больше 100г суммарно на 100г продукта
+    total_macros = (protein or 0) + (fat or 0) + (carbs or 0)
+    if total_macros > 105:  # small margin for rounding
+        return False
+
+    # Калории vs БЖУ — грубая проверка
+    # Calculated cal = protein*4 + fat*9 + carbs*4
+    if protein is not None and fat is not None and carbs is not None:
+        calc_cal = (protein * 4) + (fat * 9) + (carbs * 4)
+        # Allow 50% deviation (OFF data is imprecise)
+        if calc_cal > 0 and (cal / calc_cal > 2.0 or cal / calc_cal < 0.3):
+            return False
+
+    # Name must have latin or cyrillic chars (skip garbage/emoji-only names)
+    name = parsed.get("name", "")
+    if len(name) < 2:
+        return False
+
+    return True
+
+
 def _parse_off_product(data: dict) -> dict | None:
     """Parse Open Food Facts API response into our product format."""
     product = data.get("product", {})
@@ -53,7 +95,7 @@ def _parse_off_product(data: dict) -> dict | None:
         if val is not None:
             minerals[our_key] = val
 
-    return {
+    result = {
         "name": name[:500],
         "brand": (product.get("brands") or "")[:255] or None,
         "barcode": str(data.get("code", ""))[:50],
@@ -73,6 +115,11 @@ def _parse_off_product(data: dict) -> dict | None:
         "image_url": product.get("image_url", "")[:500] or None,
         "is_verified": False,
     }
+
+    if not _validate_nutriments(result):
+        return None
+
+    return result
 
 
 async def lookup_barcode(db: AsyncSession, barcode: str) -> Product | None:
