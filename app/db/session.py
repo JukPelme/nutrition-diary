@@ -20,6 +20,9 @@ if is_sqlite():
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+        # Override built-in lower() with Python's unicode-aware version
+        # Fixes case-insensitive search for Cyrillic (SQLite only handles ASCII)
+        dbapi_conn.create_function("lower", 1, lambda s: s.lower() if s else s)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
