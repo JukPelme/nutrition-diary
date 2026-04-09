@@ -23,13 +23,13 @@ async def search_products(
         count_query = count_query.where(Product.barcode == barcode)
     elif q:
         if is_sqlite():
-            # SQLite: use LIKE for search
-            like_q = f"%{q}%"
-            query = query.where(Product.name.ilike(like_q)).order_by(
+            # SQLite: use custom contains_ci() for unicode case-insensitive search
+            ci_filter = func.contains_ci(Product.name, q) == 1
+            query = query.where(ci_filter).order_by(
                 desc(Product.is_verified),
                 Product.name,
             )
-            count_query = count_query.where(Product.name.ilike(like_q))
+            count_query = count_query.where(ci_filter)
         else:
             # PostgreSQL: use trigram similarity for fuzzy search
             similarity = func.similarity(Product.name, q)

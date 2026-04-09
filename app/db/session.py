@@ -20,9 +20,9 @@ if is_sqlite():
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
-        # Override built-in lower() with Python's unicode-aware version
-        # Fixes case-insensitive search for Cyrillic (SQLite only handles ASCII)
+        # Register unicode-aware functions for Cyrillic case-insensitive search
         dbapi_conn.create_function("lower", 1, lambda s: s.lower() if s else s)
+        dbapi_conn.create_function("contains_ci", 2, lambda text, pattern: 1 if (text and pattern and pattern.lower() in text.lower()) else 0)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
