@@ -22,6 +22,11 @@ class User(Base):
     daily_fat_goal: Mapped[float | None] = mapped_column()
     daily_carb_goal: Mapped[float | None] = mapped_column()
 
+    # Weight goals
+    current_weight: Mapped[float | None] = mapped_column()  # kg
+    target_weight: Mapped[float | None] = mapped_column()  # kg
+    height: Mapped[float | None] = mapped_column()  # cm
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)
 

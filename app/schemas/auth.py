@@ -32,6 +32,9 @@ class UserResponse(BaseModel):
     daily_protein_goal: float | None
     daily_fat_goal: float | None
     daily_carb_goal: float | None
+    current_weight: float | None = None
+    target_weight: float | None = None
+    height: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -42,3 +45,6 @@ class UserUpdate(BaseModel):
     daily_protein_goal: float | None = None
     daily_fat_goal: float | None = None
     daily_carb_goal: float | None = None
+    current_weight: float | None = None
+    target_weight: float | None = None
+    height: float | None = None

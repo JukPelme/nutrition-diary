@@ -93,3 +93,144 @@ async def remove_condition(
     removed = await health_service.remove_user_condition(db, condition_id, user.id)
     if not removed:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Condition not found in profile")
+
+
+# ---- Weight Goals & Metrics ----
+from pydantic import BaseModel
+from datetime import datetime, timezone, timedelta
+from sqlalchemy import select, desc
+from app.models.device import HealthMetric
+
+
+class WeightGoalUpdate(BaseModel):
+    current_weight: float | None = None
+    target_weight: float | None = None
+    height: float | None = None
+
+
+class MetricAdd(BaseModel):
+    metric_type: str
+    value: float
+    unit: str = ""
+
+
+@router.patch("/weight-goal")
+async def update_weight_goal(
+    data: WeightGoalUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if data.current_weight is not None:
+        user.current_weight = data.current_weight
+    if data.target_weight is not None:
+        user.target_weight = data.target_weight
+    if data.height is not None:
+        user.height = data.height
+    await db.flush()
+
+    # Auto-record weight metric if current_weight changed
+    if data.current_weight is not None:
+        metric = HealthMetric(
+            user_id=user.id,
+            provider="manual",
+            metric_type="weight",
+            value=data.current_weight,
+            unit="kg",
+            measured_at=datetime.now(timezone.utc),
+        )
+        db.add(metric)
+        await db.flush()
+
+    return {
+        "current_weight": user.current_weight,
+        "target_weight": user.target_weight,
+        "height": user.height,
+    }
+
+
+@router.get("/weight-goal")
+async def get_weight_goal(
+    user: User = Depends(get_current_user),
+):
+    bmi = None
+    if user.current_weight and user.height and user.height > 0:
+        h_m = user.height / 100
+        bmi = round(user.current_weight / (h_m * h_m), 1)
+
+    return {
+        "current_weight": user.current_weight,
+        "target_weight": user.target_weight,
+        "height": user.height,
+        "bmi": bmi,
+    }
+
+
+@router.post("/metrics")
+async def add_metric(
+    data: MetricAdd,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    units = {"weight": "kg", "glucose": "mmol/L", "blood_pressure": "mmHg", "heart_rate": "bpm", "steps": "steps"}
+    metric = HealthMetric(
+        user_id=user.id,
+        provider="manual",
+        metric_type=data.metric_type,
+        value=data.value,
+        unit=data.unit or units.get(data.metric_type, ""),
+        measured_at=datetime.now(timezone.utc),
+    )
+    db.add(metric)
+    await db.flush()
+    return {"id": str(metric.id), "metric_type": metric.metric_type, "value": metric.value}
+
+
+@router.get("/weight-history")
+async def get_weight_history(
+    days: int = Query(90, ge=7, le=365),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    result = await db.execute(
+        select(HealthMetric)
+        .where(
+            HealthMetric.user_id == user.id,
+            HealthMetric.metric_type == "weight",
+            HealthMetric.measured_at >= since,
+        )
+        .order_by(HealthMetric.measured_at)
+    )
+    metrics = result.scalars().all()
+
+    # Forecast
+    forecast = None
+    if len(metrics) >= 2 and user.target_weight:
+        first = metrics[0]
+        last = metrics[-1]
+        first_at = first.measured_at
+        last_at = last.measured_at
+        if first_at.tzinfo is None:
+            first_at = first_at.replace(tzinfo=timezone.utc)
+        if last_at.tzinfo is None:
+            last_at = last_at.replace(tzinfo=timezone.utc)
+        days_elapsed = max(1, (last_at - first_at).days)
+        rate = (last.value - first.value) / days_elapsed  # kg per day
+        if rate != 0:
+            remaining = user.target_weight - last.value
+            days_to_goal = int(remaining / rate)
+            if 0 < days_to_goal < 3650:
+                forecast = {
+                    "rate_per_week": round(rate * 7, 2),
+                    "days_to_goal": days_to_goal,
+                    "estimated_date": (last_at + timedelta(days=days_to_goal)).strftime("%Y-%m-%d"),
+                }
+
+    return {
+        "data": [
+            {"date": m.measured_at.strftime("%Y-%m-%d"), "weight": m.value}
+            for m in metrics
+        ],
+        "target_weight": user.target_weight,
+        "forecast": forecast,
+    }

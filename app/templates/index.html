@@ -124,7 +124,19 @@
         </div>
 
         <!-- Health View -->
-        <div id="health-view" class="hidden">
+        <div id="health-view" class="hidden" style="padding-bottom:80px">
+            <!-- Weight Goals Card -->
+            <div class="card">
+                <div class="card-title">Цель по весу</div>
+                <div id="weight-goal-content"></div>
+            </div>
+            <!-- Weight Chart -->
+            <div class="card" id="weight-chart-card" style="display:none">
+                <div class="card-title">График веса</div>
+                <canvas id="weight-chart" height="200"></canvas>
+                <div id="weight-forecast" style="margin-top:8px"></div>
+            </div>
+            <!-- Health conditions -->
             <div id="health-content"></div>
         </div>
 

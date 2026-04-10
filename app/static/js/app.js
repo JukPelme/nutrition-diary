@@ -1198,6 +1198,7 @@ function changeNutrientDate(delta) {
 
 // ---- Health Profile ----
 async function loadHealth() {
+    loadWeightGoal();
     const container = document.getElementById('health-content');
     container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">Загрузка...</div>';
 
@@ -1827,4 +1828,170 @@ async function loadFastingHistory() {
             <span style="color:var(--text2)">${hours}ч</span>
         </div>`;
     }).join('');
+}
+
+
+// ---- Weight Goals ----
+async function loadWeightGoal() {
+    const container = document.getElementById('weight-goal-content');
+    const goal = await api('/health/weight-goal');
+    if (!goal) return;
+
+    const bmi = goal.bmi ? `<span style="color:var(--text2)">ИМТ: <b>${goal.bmi}</b></span>` : '';
+    const diff = (goal.current_weight && goal.target_weight)
+        ? (goal.target_weight - goal.current_weight).toFixed(1)
+        : null;
+    const diffText = diff ? `<span style="color:${diff > 0 ? 'var(--green)' : 'var(--accent)'}"> (${diff > 0 ? '+' : ''}${diff} кг)</span>` : '';
+
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="stat-box">
+                <div class="stat-value">${goal.current_weight || '—'}</div>
+                <div class="stat-label">Текущий, кг</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">${goal.target_weight || '—'}</div>
+                <div class="stat-label">Цель, кг</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">${goal.height || '—'}</div>
+                <div class="stat-label">Рост, см</div>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            ${bmi} ${diffText}
+        </div>
+        <button class="btn btn-secondary" style="width:100%" onclick="openWeightGoalEdit()">Изменить</button>
+        <div id="weight-goal-edit" style="display:none;margin-top:12px">
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Текущий вес, кг</label>
+                    <input type="number" id="wg-current" class="input" step="0.1" value="${goal.current_weight || ''}">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Цель, кг</label>
+                    <input type="number" id="wg-target" class="input" step="0.1" value="${goal.target_weight || ''}">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Рост, см</label>
+                    <input type="number" id="wg-height" class="input" step="1" value="${goal.height || ''}">
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="saveWeightGoal()">Сохранить</button>
+        </div>
+    `;
+
+    loadWeightHistory();
+}
+
+function openWeightGoalEdit() {
+    const el = document.getElementById('weight-goal-edit');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveWeightGoal() {
+    const current = parseFloat(document.getElementById('wg-current').value) || null;
+    const target = parseFloat(document.getElementById('wg-target').value) || null;
+    const height = parseFloat(document.getElementById('wg-height').value) || null;
+
+    await api('/health/weight-goal', {
+        method: 'PATCH',
+        body: JSON.stringify({ current_weight: current, target_weight: target, height: height })
+    });
+
+    loadWeightGoal();
+}
+
+async function loadWeightHistory() {
+    const data = await api('/health/weight-history?days=90');
+    const card = document.getElementById('weight-chart-card');
+    if (!data || !data.data || data.data.length < 2) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    const canvas = document.getElementById('weight-chart');
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width - 32;
+    canvas.height = 200;
+
+    const points = data.data;
+    const weights = points.map(p => p.weight);
+    const target = data.target_weight;
+    const allVals = [...weights];
+    if (target) allVals.push(target);
+
+    const minW = Math.min(...allVals) - 1;
+    const maxW = Math.max(...allVals) + 1;
+    const range = maxW - minW || 1;
+
+    const pad = { top: 20, right: 16, bottom: 30, left: 40 };
+    const w = canvas.width - pad.left - pad.right;
+    const h = canvas.height - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Y axis labels
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#888';
+    ctx.font = '11px sans-serif';
+    for (let i = 0; i <= 4; i++) {
+        const val = minW + (range * i / 4);
+        const y = pad.top + h - (i / 4) * h;
+        ctx.fillText(val.toFixed(1), 2, y + 4);
+        ctx.strokeStyle = 'rgba(128,128,128,0.15)';
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    }
+
+    // X axis labels
+    const step = Math.max(1, Math.floor(points.length / 5));
+    for (let i = 0; i < points.length; i += step) {
+        const x = pad.left + (i / (points.length - 1)) * w;
+        const label = points[i].date.slice(5); // MM-DD
+        ctx.fillText(label, x - 12, canvas.height - 5);
+    }
+
+    // Target line
+    if (target) {
+        const ty = pad.top + h - ((target - minW) / range) * h;
+        ctx.strokeStyle = 'var(--green, #4caf50)';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.moveTo(pad.left, ty); ctx.lineTo(pad.left + w, ty); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'var(--green, #4caf50)';
+        ctx.fillText('Цель: ' + target, pad.left + w - 60, ty - 5);
+    }
+
+    // Weight line
+    ctx.strokeStyle = 'var(--accent, #4a9eff)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach((p, i) => {
+        const x = pad.left + (i / (points.length - 1)) * w;
+        const y = pad.top + h - ((p.weight - minW) / range) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots
+    ctx.fillStyle = 'var(--accent, #4a9eff)';
+    points.forEach((p, i) => {
+        const x = pad.left + (i / (points.length - 1)) * w;
+        const y = pad.top + h - ((p.weight - minW) / range) * h;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Forecast
+    const forecastEl = document.getElementById('weight-forecast');
+    if (data.forecast) {
+        const f = data.forecast;
+        const rateColor = f.rate_per_week < 0 ? 'var(--green)' : 'var(--accent)';
+        forecastEl.innerHTML = `
+            <div style="font-size:12px;color:var(--text2)">
+                Темп: <b style="color:${rateColor}">${f.rate_per_week > 0 ? '+' : ''}${f.rate_per_week} кг/нед</b>
+                · Прогноз цели: <b>${f.estimated_date}</b> (${f.days_to_goal} дн.)
+            </div>
+        `;
+    } else {
+        forecastEl.innerHTML = '';
+    }
 }
