@@ -659,6 +659,7 @@ let recipeIngredients = [];
 let createMode = 'manual';
 
 function openCreateProduct() {
+    setTimeout(() => renderSavedRecipes(), 100);
     document.getElementById('create-product-modal').classList.add('active');
     document.getElementById('cp-name').value = '';
     document.getElementById('cp-category').value = 'Готовые блюда';
@@ -762,12 +763,15 @@ function updateRecipeTotals() {
     // Per 100g
     const per100 = totalWeight > 0 ? 100 / totalWeight : 0;
 
+    const portions = parseInt(document.getElementById('recipe-portions')?.value) || 1;
+    const perPortion = totalWeight > 0 ? 1 / portions : 0;
+
     document.getElementById('recipe-totals').classList.remove('hidden');
-    document.getElementById('recipe-total-weight').textContent = Math.round(totalWeight) + 'г всего';
-    document.getElementById('recipe-total-cal').textContent = Math.round(totalCal * per100) + ' ккал';
-    document.getElementById('recipe-total-p').textContent = Math.round(totalP * per100) + 'г';
-    document.getElementById('recipe-total-f').textContent = Math.round(totalF * per100) + 'г';
-    document.getElementById('recipe-total-c').textContent = Math.round(totalC * per100) + 'г';
+    document.getElementById('recipe-total-weight').textContent = Math.round(totalWeight) + 'г всего (' + Math.round(totalWeight / portions) + 'г/порция)';
+    document.getElementById('recipe-total-cal').textContent = Math.round(totalCal * per100) + ' ккал/100г · ' + Math.round(totalCal * perPortion) + ' ккал/порция';
+    document.getElementById('recipe-total-p').textContent = Math.round(totalP * per100) + 'г/100г · ' + Math.round(totalP * perPortion) + 'г/порция';
+    document.getElementById('recipe-total-f').textContent = Math.round(totalF * per100) + 'г/100г · ' + Math.round(totalF * perPortion) + 'г/порция';
+    document.getElementById('recipe-total-c').textContent = Math.round(totalC * per100) + 'г/100г · ' + Math.round(totalC * perPortion) + 'г/порция';
 }
 
 async function createCustomProduct() {
@@ -1994,4 +1998,78 @@ async function loadWeightHistory() {
     } else {
         forecastEl.innerHTML = '';
     }
+}
+
+
+// ---- Saved Recipes ----
+function getSavedRecipes() {
+    return JSON.parse(localStorage.getItem('savedRecipes') || '[]');
+}
+
+function saveRecipe() {
+    const name = document.getElementById('cp-name').value.trim();
+    if (!name || !recipeIngredients.length) { alert('Введите название и добавьте ингредиенты'); return; }
+    const portions = parseInt(document.getElementById('recipe-portions')?.value) || 1;
+
+    const recipes = getSavedRecipes();
+    const existing = recipes.findIndex(r => r.name === name);
+    const recipe = {
+        name,
+        portions,
+        ingredients: recipeIngredients.map(i => ({
+            id: i.id, name: i.name, amount: i.amount,
+            calories: i.calories, protein: i.protein, fat: i.fat, carbohydrates: i.carbohydrates,
+        })),
+        savedAt: new Date().toISOString(),
+    };
+
+    if (existing >= 0) recipes[existing] = recipe;
+    else recipes.unshift(recipe);
+
+    localStorage.setItem('savedRecipes', JSON.stringify(recipes));
+    alert('Рецепт сохранён!');
+    renderSavedRecipes();
+}
+
+function loadRecipe(idx) {
+    const recipes = getSavedRecipes();
+    const recipe = recipes[idx];
+    if (!recipe) return;
+
+    document.getElementById('cp-name').value = recipe.name;
+    if (document.getElementById('recipe-portions')) {
+        document.getElementById('recipe-portions').value = recipe.portions || 1;
+    }
+    recipeIngredients = recipe.ingredients.map(i => ({ ...i }));
+    setCreateMode('recipe');
+    renderRecipeIngredients();
+}
+
+function deleteRecipe(idx) {
+    const recipes = getSavedRecipes();
+    recipes.splice(idx, 1);
+    localStorage.setItem('savedRecipes', JSON.stringify(recipes));
+    renderSavedRecipes();
+}
+
+function renderSavedRecipes() {
+    const container = document.getElementById('saved-recipes-list');
+    if (!container) return;
+    const recipes = getSavedRecipes();
+    if (!recipes.length) { container.innerHTML = '<div style="color:var(--text2);font-size:12px">Нет сохранённых рецептов</div>'; return; }
+
+    container.innerHTML = recipes.map((r, i) => {
+        const totalCal = r.ingredients.reduce((s, ing) => s + (ing.calories || 0) * ing.amount / 100, 0);
+        const perPortion = r.portions > 0 ? Math.round(totalCal / r.portions) : Math.round(totalCal);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bg2)">
+            <div>
+                <div style="font-weight:500">${r.name}</div>
+                <div style="font-size:11px;color:var(--text2)">${r.ingredients.length} ингр. · ${perPortion} ккал/порция · ${r.portions || 1} порц.</div>
+            </div>
+            <div style="display:flex;gap:4px">
+                <button class="btn-icon" onclick="loadRecipe(${i})" title="Загрузить">📝</button>
+                <button class="btn-icon" onclick="deleteRecipe(${i})" title="Удалить">🗑</button>
+            </div>
+        </div>`;
+    }).join('');
 }
