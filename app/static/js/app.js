@@ -85,42 +85,88 @@ function updateNotifButton(on) {
 }
 
 function startReminderLoop() {
-    checkAndNotify(); // check immediately
-    window._reminderInterval = setInterval(checkAndNotify, 60 * 60 * 1000); // every hour
+    checkAndNotify();
+    window._reminderInterval = setInterval(checkAndNotify, 30 * 60 * 1000); // every 30 min
 }
 
-function checkAndNotify() {
+async function checkAndNotify() {
     const now = new Date();
     const hour = now.getHours();
-    const todayKey = 'lastNotif_' + now.toISOString().slice(0, 10);
+    const minute = now.getMinutes();
+    const todayStr = now.toISOString().slice(0, 10);
+    const todayKey = 'lastNotif_' + todayStr;
     const sent = JSON.parse(localStorage.getItem(todayKey) || '{}');
-    
+
     const reminders = getReminders();
-    
+
+    // Fetch today's diary to check what's logged
+    let todayEntries = entries; // use global if same date
+    if (currentDate !== todayStr) {
+        try {
+            const summary = await api('/diary/summary?entry_date=' + todayStr);
+            todayEntries = summary?.entries || [];
+        } catch(e) { todayEntries = []; }
+    }
+
+    // Map meal names to meal IDs
+    const mealMap = {};
+    for (const m of meals) {
+        const n = (m.name || '').toLowerCase();
+        if (n.includes('завтрак')) mealMap['breakfast'] = m.id;
+        else if (n.includes('обед')) mealMap['lunch'] = m.id;
+        else if (n.includes('ужин')) mealMap['dinner'] = m.id;
+        else if (n.includes('перекус')) mealMap['snack'] = m.id;
+    }
+
     for (const r of reminders) {
-        if (hour >= r.hour && !sent[r.id]) {
-            sendNotification(r.title, r.body, r.id);
+        // Smart check: remind only AFTER the meal hour + delay, and only if nothing logged
+        const checkHour = r.hour + (r.delay || 1); // default: check 1 hour after meal time
+        if (hour >= checkHour && !sent[r.id]) {
+            const mealId = mealMap[r.id];
+            const hasFood = mealId ? todayEntries.some(e => e.meal_id === mealId) : false;
+            if (!hasFood) {
+                sendNotification(r.title, r.smartBody || r.body, r.id);
+            }
             sent[r.id] = true;
             localStorage.setItem(todayKey, JSON.stringify(sent));
         }
     }
-    
+
     // Water reminder: every 2 hours from 9 to 21 if water < goal
     if (hour >= 9 && hour <= 21 && hour % 2 === 0 && !sent['water_' + hour]) {
-        const water = parseInt(localStorage.getItem('water_' + currentDate) || '0');
+        const water = parseInt(localStorage.getItem('water_' + todayStr) || '0');
         if (water < waterGoal) {
-            sendNotification('💧 Выпей воды', `${water} из ${waterGoal} стаканов`, 'water_' + hour);
+            sendNotification('💧 Выпей воды', water + ' из ' + waterGoal + ' стаканов', 'water_' + hour);
             sent['water_' + hour] = true;
             localStorage.setItem(todayKey, JSON.stringify(sent));
         }
     }
+
+    // Fasting reminder: if active fasting session is ending soon
+    if (!sent['fasting_end'] && hour >= 6) {
+        try {
+            const fasting = await api('/fasting/current');
+            if (fasting && fasting.id) {
+                const targetEnd = new Date(fasting.target_end);
+                const diff = (targetEnd - now) / (1000 * 60); // minutes
+                if (diff > 0 && diff <= 30) {
+                    sendNotification('⏰ Голодание заканчивается', 'Осталось ' + Math.round(diff) + ' мин до конца окна голодания', 'fasting_end');
+                    sent['fasting_end'] = true;
+                    localStorage.setItem(todayKey, JSON.stringify(sent));
+                }
+            }
+        } catch(e) {}
+    }
+
+    // Update PWA badge with remaining calories
+    updateAppBadge();
 }
 
 function getReminders() {
     return JSON.parse(localStorage.getItem('mealReminders') || JSON.stringify([
-        { id: 'breakfast', hour: 8, title: '🌅 Завтрак', body: 'Пора завтракать!' },
-        { id: 'lunch', hour: 13, title: '☀️ Обед', body: 'Время обеда!' },
-        { id: 'dinner', hour: 19, title: '🌙 Ужин', body: 'Пора ужинать!' },
+        { id: 'breakfast', hour: 8, delay: 2, title: '🌅 Завтрак', body: 'Пора завтракать!', smartBody: 'Ты не записал завтрак' },
+        { id: 'lunch', hour: 13, delay: 1, title: '☀️ Обед', body: 'Время обеда!', smartBody: 'Ты не записал обед' },
+        { id: 'dinner', hour: 19, delay: 2, title: '🌙 Ужин', body: 'Пора ужинать!', smartBody: 'Ты не записал ужин' },
     ]));
 }
 
@@ -130,6 +176,27 @@ function sendNotification(title, body, tag) {
             type: 'SHOW_NOTIFICATION', title, body, tag
         });
     }
+}
+
+// PWA badge: show remaining calories on app icon
+async function updateAppBadge() {
+    if (!('setAppBadge' in navigator)) return;
+    try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        let cal = 0;
+        if (currentDate === todayStr && entries.length > 0) {
+            cal = entries.reduce((s, e) => s + (e.calories || 0), 0);
+        } else {
+            const summary = await api('/diary/summary?entry_date=' + todayStr);
+            cal = summary?.total_calories || 0;
+        }
+        const remaining = Math.max(0, Math.round((userGoals.calories - cal) / 100)); // in hundreds
+        if (remaining > 0) {
+            navigator.setAppBadge(remaining);
+        } else {
+            navigator.clearAppBadge();
+        }
+    } catch(e) {}
 }
 
 // State

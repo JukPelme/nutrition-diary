@@ -581,7 +581,16 @@
 <script src="/static/js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/static/sw.js').then(async (reg) => {
+        // Register periodic background sync for reminders
+        if ('periodicSync' in reg) {
+            try {
+                await reg.periodicSync.register('check-reminders', {
+                    minInterval: 60 * 60 * 1000 // 1 hour
+                });
+            } catch(e) {}
+        }
+    }).catch(() => {});
 }
 </script>
 </body>

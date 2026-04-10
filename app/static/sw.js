@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nutrition-diary-v1';
+const CACHE_NAME = 'nutrition-diary-v2';
 const STATIC_ASSETS = [
   '/',
   '/static/css/style.css',
@@ -57,6 +57,42 @@ self.addEventListener('message', event => {
       icon: '/static/icon-192.png',
       badge: '/static/icon-192.png',
       tag: event.data.tag || 'nutrition-reminder',
+      actions: [
+        { action: 'open', title: 'Открыть' },
+        { action: 'dismiss', title: 'Позже' }
+      ],
+      requireInteraction: false,
+      silent: false,
     });
   }
 });
+
+// Periodic background sync — check reminders even when tab is closed
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'check-reminders') {
+    event.waitUntil(checkBackgroundReminders());
+  }
+});
+
+async function checkBackgroundReminders() {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  // Simple background check: if it's meal time and no recent notification
+  const mealTimes = [
+    { hour: 10, title: '🌅 Завтрак', body: 'Ты не записал завтрак', tag: 'bg_breakfast' },
+    { hour: 14, title: '☀️ Обед', body: 'Ты не записал обед', tag: 'bg_lunch' },
+    { hour: 21, title: '🌙 Ужин', body: 'Ты не записал ужин', tag: 'bg_dinner' },
+  ];
+  
+  for (const m of mealTimes) {
+    if (hour === m.hour) {
+      self.registration.showNotification(m.title, {
+        body: m.body,
+        icon: '/static/icon-192.png',
+        badge: '/static/icon-192.png',
+        tag: m.tag,
+      });
+    }
+  }
+}
