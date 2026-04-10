@@ -497,12 +497,30 @@ function openAddFood(mealId) {
     document.getElementById('food-search').value = '';
     document.getElementById('food-category-filter').value = '';
     document.getElementById('food-sort').value = '';
-    // Show favorites
-    const favs = getFavorites();
+
     const container = document.getElementById('search-results');
+    let html = '';
+
+    // Recent products (from diary entries)
+    const recent = getRecentProducts();
+    if (recent.length) {
+        html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">🕐 Недавние</div>';
+        html += recent.map(p => `
+            <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                <div>
+                    <div class="p-name">${p.name}</div>
+                    <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
+                </div>
+                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
+            </div>
+        `).join('');
+    }
+
+    // Favorites
+    const favs = getFavorites();
     if (favs.length) {
-        container.innerHTML = '<div class="card-title" style="padding:8px 0 4px;font-size:11px">Избранное</div>' +
-            favs.map(p => `
+        html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">⭐ Избранное</div>';
+        html += favs.map(p => `
             <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
                 <div>
                     <div class="p-name">⭐ ${p.name}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
@@ -511,10 +529,29 @@ function openAddFood(mealId) {
                 <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
             </div>
         `).join('');
-    } else {
-        container.innerHTML = '';
     }
+
+    container.innerHTML = html;
     document.getElementById('food-search').focus();
+}
+
+function getRecentProducts() {
+    const stored = JSON.parse(localStorage.getItem('recentProducts') || '[]');
+    return stored.slice(0, 8);
+}
+
+function addToRecent(product) {
+    let recent = JSON.parse(localStorage.getItem('recentProducts') || '[]');
+    // Remove duplicate
+    recent = recent.filter(p => p.id !== product.id);
+    recent.unshift({
+        id: product.id, name: product.name, calories: product.calories,
+        protein: product.protein, fat: product.fat, carbohydrates: product.carbohydrates,
+        serving_size: product.serving_size, serving_unit: product.serving_unit,
+        brand: product.brand, source: product.source,
+    });
+    if (recent.length > 20) recent = recent.slice(0, 20);
+    localStorage.setItem('recentProducts', JSON.stringify(recent));
 }
 
 function closeModal(id) {
@@ -1093,6 +1130,7 @@ function deleteTemplate(templateId) {
 
 // ---- Portion ----
 function selectProduct(product) {
+    window._lastSelectedProduct = product;
     closeModal('add-food-modal');
     closeModal('barcode-modal');
     document.getElementById('portion-modal').classList.add('active');
@@ -2132,4 +2170,39 @@ async function saveMoodData() {
         const names = { 1: 'Ужасно', 2: 'Плохо', 3: 'Нормально', 4: 'Хорошо', 5: 'Отлично' };
         label.textContent = names[currentMood.mood] || '';
     }
+}
+
+// ---- Copy entire day ----
+async function copyDay() {
+    // Get entries from previous day
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = prevDate.toISOString().slice(0, 10);
+
+    const summary = await api(`/diary/summary?entry_date=${prevDateStr}`);
+    const prevEntries = summary?.entries || [];
+
+    if (!prevEntries.length) {
+        alert('Вчера нет записей для копирования');
+        return;
+    }
+
+    if (!confirm(`Копировать ${prevEntries.length} записей из ${formatDate(prevDateStr)}?`)) return;
+
+    let copied = 0;
+    for (const entry of prevEntries) {
+        const result = await api('/diary', {
+            method: 'POST',
+            body: JSON.stringify({
+                product_id: entry.product_id,
+                meal_id: entry.meal_id,
+                serving_amount: entry.serving_amount,
+                entry_date: currentDate,
+            })
+        });
+        if (result && !result._error) copied++;
+    }
+
+    if (copied > 0) loadDiary();
+    alert(`Скопировано ${copied} из ${prevEntries.length} записей`);
 }
