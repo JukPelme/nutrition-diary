@@ -288,3 +288,21 @@ a { color:var(--accent); text-decoration:none; }
 .settings-tab-content.active {
     display: block;
 }
+
+/* Stat boxes */
+.stat-box {
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+}
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text1);
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+}

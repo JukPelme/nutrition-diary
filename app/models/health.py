@@ -52,3 +52,22 @@ class UserCondition(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "condition_id", name="uq_user_condition"),
     )
+
+
+class FastingSession(Base):
+    """Intermittent fasting session tracker."""
+    __tablename__ = "fasting_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    plan_type: Mapped[str] = mapped_column(String(20), nullable=False)  # "16:8", "18:6", "20:4", "5:2", "custom"
+    fasting_hours: Mapped[float] = mapped_column(Float, nullable=False)  # planned fasting duration
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    target_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # actual end (null = still active)
+    completed: Mapped[bool | None] = mapped_column(default=None)  # True=completed, False=broken early, None=active
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
+
+    user = relationship("User")

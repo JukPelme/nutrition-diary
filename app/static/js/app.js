@@ -1644,7 +1644,7 @@ function setActiveTab(tab) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
 
-    ['diary-view','plan-view','stats-view','nutrients-view','health-view'].forEach(v =>
+    ['diary-view','plan-view','stats-view','nutrients-view','health-view','fasting-view'].forEach(v =>
         document.getElementById(v)?.classList.add('hidden'));
 
     if (tab === 'diary') {
@@ -1662,9 +1662,169 @@ function setActiveTab(tab) {
     } else if (tab === 'health') {
         document.getElementById('health-view').classList.remove('hidden');
         loadHealth();
+    } else if (tab === 'fasting') {
+        document.getElementById('fasting-view').classList.remove('hidden');
+        loadFasting();
     }
 }
 
 function showError(msg) {
     alert(msg);
+}
+
+
+// ---- Intermittent Fasting ----
+let fastingTimer = null;
+
+async function loadFasting() {
+    const container = document.getElementById('fasting-content');
+    const current = await api('/fasting/current');
+
+    if (current) {
+        renderActiveFasting(current);
+        startFastingTimer(current);
+    } else {
+        renderFastingStart();
+    }
+
+    loadFastingStats();
+    loadFastingHistory();
+}
+
+function renderFastingStart() {
+    const container = document.getElementById('fasting-content');
+    container.innerHTML = `
+        <p style="color:var(--text2);margin-bottom:16px">Выберите план голодания и нажмите старт</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+            <button class="mode-btn fasting-plan-btn active" data-plan="16:8" onclick="selectFastingPlan(this)">16:8</button>
+            <button class="mode-btn fasting-plan-btn" data-plan="18:6" onclick="selectFastingPlan(this)">18:6</button>
+            <button class="mode-btn fasting-plan-btn" data-plan="20:4" onclick="selectFastingPlan(this)">20:4</button>
+            <button class="mode-btn fasting-plan-btn" data-plan="14:10" onclick="selectFastingPlan(this)">14:10</button>
+            <button class="mode-btn fasting-plan-btn" data-plan="23:1" onclick="selectFastingPlan(this)">23:1</button>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">
+            <b>16:8</b> — 16ч голод / 8ч еда (популярный)<br>
+            <b>18:6</b> — 18ч голод / 6ч еда<br>
+            <b>20:4</b> — 20ч голод / 4ч еда (продвинутый)
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="startFasting()">Начать голодание</button>
+    `;
+}
+
+function selectFastingPlan(btn) {
+    document.querySelectorAll('.fasting-plan-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function renderActiveFasting(data) {
+    const container = document.getElementById('fasting-content');
+    const progress = data.progress_percent || 0;
+    const elapsed = data.elapsed_hours || 0;
+    const remaining = data.remaining_hours || 0;
+    const circumference = 2 * Math.PI * 70;
+    const offset = circumference - (progress / 100) * circumference;
+    const color = progress >= 100 ? 'var(--green)' : 'var(--accent)';
+
+    const elapsedH = Math.floor(elapsed);
+    const elapsedM = Math.round((elapsed - elapsedH) * 60);
+    const remainH = Math.floor(remaining);
+    const remainM = Math.round((remaining - remainH) * 60);
+
+    container.innerHTML = `
+        <div style="text-align:center;margin:16px 0">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="70" fill="none" stroke="var(--bg2)" stroke-width="8"/>
+                <circle cx="80" cy="80" r="70" fill="none" stroke="${color}" stroke-width="8"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+                    stroke-linecap="round" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1s"/>
+                <text x="80" y="70" text-anchor="middle" fill="var(--text1)" font-size="24" font-weight="bold">
+                    ${elapsedH}ч ${elapsedM}м
+                </text>
+                <text x="80" y="92" text-anchor="middle" fill="var(--text2)" font-size="13">
+                    из ${data.fasting_hours}ч
+                </text>
+                <text x="80" y="112" text-anchor="middle" fill="${color}" font-size="14" font-weight="bold">
+                    ${Math.round(progress)}%
+                </text>
+            </svg>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <span style="color:var(--text2)">План: <b>${data.plan_type}</b></span>
+            <span style="color:var(--text2)">Осталось: <b>${remainH}ч ${remainM}м</b></span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">
+            Начало: ${new Date(data.started_at).toLocaleString()}
+        </div>
+        ${progress >= 100 ? '<div style="text-align:center;color:var(--green);font-weight:bold;margin-bottom:12px">Цель достигнута! Можете завершить</div>' : ''}
+        <button class="btn ${progress >= 100 ? 'btn-primary' : 'btn-secondary'}" style="width:100%" onclick="stopFasting()">
+            ${progress >= 100 ? 'Завершить голодание' : 'Прервать голодание'}
+        </button>
+    `;
+}
+
+function startFastingTimer(data) {
+    if (fastingTimer) clearInterval(fastingTimer);
+    fastingTimer = setInterval(async () => {
+        const current = await api('/fasting/current');
+        if (current) renderActiveFasting(current);
+        else { clearInterval(fastingTimer); renderFastingStart(); }
+    }, 60000); // update every minute
+}
+
+async function startFasting() {
+    const activeBtn = document.querySelector('.fasting-plan-btn.active');
+    const plan = activeBtn ? activeBtn.dataset.plan : '16:8';
+    const result = await api('/fasting/start', {
+        method: 'POST',
+        body: JSON.stringify({ plan_type: plan })
+    });
+    if (result && !result._error) {
+        renderActiveFasting(result);
+        startFastingTimer(result);
+    }
+}
+
+async function stopFasting() {
+    const result = await api('/fasting/stop', { method: 'POST' });
+    if (result && !result._error) {
+        if (fastingTimer) clearInterval(fastingTimer);
+        renderFastingStart();
+        loadFastingStats();
+        loadFastingHistory();
+    }
+}
+
+async function loadFastingStats() {
+    const stats = await api('/fasting/stats?days=30');
+    const card = document.getElementById('fasting-stats-card');
+    const container = document.getElementById('fasting-stats-content');
+    if (!stats || stats.total_sessions === 0) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="stat-box"><div class="stat-value">${stats.total_sessions}</div><div class="stat-label">Сессий</div></div>
+            <div class="stat-box"><div class="stat-value">${stats.completed}</div><div class="stat-label">Завершено</div></div>
+            <div class="stat-box"><div class="stat-value">${stats.avg_hours}ч</div><div class="stat-label">Среднее</div></div>
+            <div class="stat-box"><div class="stat-value">${stats.longest_hours}ч</div><div class="stat-label">Рекорд</div></div>
+            <div class="stat-box"><div class="stat-value">${stats.completion_rate || 0}%</div><div class="stat-label">Успешность</div></div>
+            <div class="stat-box"><div class="stat-value">${stats.streak}</div><div class="stat-label">Серия дней</div></div>
+        </div>
+    `;
+}
+
+async function loadFastingHistory() {
+    const history = await api('/fasting/history?limit=10');
+    const card = document.getElementById('fasting-history-card');
+    const container = document.getElementById('fasting-history-content');
+    if (!history || history.length === 0) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    container.innerHTML = history.map(h => {
+        const date = new Date(h.started_at).toLocaleDateString();
+        const hours = h.elapsed_hours;
+        const icon = h.completed ? '✅' : '❌';
+        return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg2)">
+            <span>${icon} ${date} — ${h.plan_type}</span>
+            <span style="color:var(--text2)">${hours}ч</span>
+        </div>`;
+    }).join('');
 }

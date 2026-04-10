@@ -128,6 +128,23 @@
             <div id="health-content"></div>
         </div>
 
+        <!-- Fasting View -->
+        <div id="fasting-view" class="hidden" style="padding-bottom:80px">
+            <div class="card" id="fasting-active-card">
+                <div class="card-title">Интервальное голодание</div>
+                <div id="fasting-content">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+            <div class="card" id="fasting-stats-card" style="display:none">
+                <div class="card-title">Статистика голодания</div>
+                <div id="fasting-stats-content"></div>
+            </div>
+            <div class="card" id="fasting-history-card" style="display:none">
+                <div class="card-title">История</div>
+                <div id="fasting-history-content"></div>
+            </div>
+        </div>
     </main>
 
     <!-- Bottom Navigation -->
@@ -147,6 +164,10 @@
         <div class="nav-tab" data-tab="stats" onclick="setActiveTab('stats')">
             <div class="nav-icon">📊</div>
             <div class="nav-label" data-i18n="stats">Статистика</div>
+        </div>
+        <div class="nav-tab" data-tab="fasting" onclick="setActiveTab('fasting')">
+            <div class="nav-icon">⏱</div>
+            <div class="nav-label">Голодание</div>
         </div>
         <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
             <div class="nav-icon">🏥</div>
