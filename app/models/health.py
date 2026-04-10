@@ -71,3 +71,24 @@ class FastingSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
 
     user = relationship("User")
+
+
+class MoodEntry(Base):
+    """Daily mood tracking linked to nutrition."""
+    __tablename__ = "mood_entries"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUIDType, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDType, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    date: Mapped[str] = mapped_column(String(10), nullable=False)  # YYYY-MM-DD
+    mood: Mapped[int] = mapped_column(nullable=False)  # 1-5 (terrible to great)
+    energy: Mapped[int | None] = mapped_column()  # 1-5
+    sleep_hours: Mapped[float | None] = mapped_column()
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="uq_mood_user_date"),
+    )

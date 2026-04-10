@@ -371,6 +371,7 @@ async function loadDiary() {
     const summary = await api(`/diary/summary?entry_date=${currentDate}`);
     entries = summary?.entries || [];
     renderDiary(summary);
+    loadMood();
 }
 
 function renderDiary(summary) {
@@ -2072,4 +2073,63 @@ function renderSavedRecipes() {
             </div>
         </div>`;
     }).join('');
+}
+
+// ---- Mood Diary ----
+let currentMood = { mood: null, energy: null, sleep_hours: null };
+
+async function loadMood() {
+    const data = await api(`/mood?date=${currentDate}`);
+    currentMood = data || { mood: null, energy: null, sleep_hours: null };
+
+    document.querySelectorAll('.mood-btn[data-mood]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.mood) === currentMood.mood);
+    });
+    document.querySelectorAll('.mood-btn[data-energy]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.energy) === currentMood.energy);
+    });
+
+    const sleepInput = document.getElementById('mood-sleep');
+    if (sleepInput && currentMood.sleep_hours) sleepInput.value = currentMood.sleep_hours;
+
+    const label = document.getElementById('mood-current');
+    if (label) {
+        const names = { 1: 'Ужасно', 2: 'Плохо', 3: 'Нормально', 4: 'Хорошо', 5: 'Отлично' };
+        label.textContent = currentMood.mood ? names[currentMood.mood] : '';
+    }
+}
+
+function setMood(val) {
+    currentMood.mood = val;
+    document.querySelectorAll('.mood-btn[data-mood]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.mood) === val);
+    });
+    saveMoodData();
+}
+
+function setEnergy(val) {
+    currentMood.energy = val;
+    document.querySelectorAll('.mood-btn[data-energy]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.energy) === val);
+    });
+    saveMoodData();
+}
+
+async function saveMoodData() {
+    if (!currentMood.mood) return;
+    const sleep = parseFloat(document.getElementById('mood-sleep')?.value) || null;
+    await api('/mood', {
+        method: 'POST',
+        body: JSON.stringify({
+            date: currentDate,
+            mood: currentMood.mood,
+            energy: currentMood.energy,
+            sleep_hours: sleep,
+        })
+    });
+    const label = document.getElementById('mood-current');
+    if (label) {
+        const names = { 1: 'Ужасно', 2: 'Плохо', 3: 'Нормально', 4: 'Хорошо', 5: 'Отлично' };
+        label.textContent = names[currentMood.mood] || '';
+    }
 }

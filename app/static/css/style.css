@@ -306,3 +306,36 @@ a { color:var(--accent); text-decoration:none; }
     color: var(--text2);
     margin-top: 4px;
 }
+
+/* Mood tracker */
+.mood-card { padding: 12px 16px; }
+.mood-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: space-around;
+}
+.mood-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--bg2);
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.mood-btn.small {
+    width: 32px; height: 32px;
+    font-size: 13px;
+    color: var(--text2);
+}
+.mood-btn.active {
+    border-color: var(--accent);
+    background: rgba(74, 158, 255, 0.15);
+    transform: scale(1.15);
+}
+.mood-btn.small.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}

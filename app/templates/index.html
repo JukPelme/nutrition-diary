@@ -100,6 +100,37 @@
                     <button class="btn-icon water-btn" onclick="changeWater(1)">+</button>
                 </div>
             </div>
+            <!-- Mood tracker -->
+            <div class="card mood-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <span>Настроение</span>
+                    <span id="mood-current" style="font-size:12px;color:var(--text2)"></span>
+                </div>
+                <div class="mood-buttons" id="mood-buttons">
+                    <button class="mood-btn" data-mood="1" onclick="setMood(1)">😫</button>
+                    <button class="mood-btn" data-mood="2" onclick="setMood(2)">😔</button>
+                    <button class="mood-btn" data-mood="3" onclick="setMood(3)">😐</button>
+                    <button class="mood-btn" data-mood="4" onclick="setMood(4)">🙂</button>
+                    <button class="mood-btn" data-mood="5" onclick="setMood(5)">😄</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                    <div class="form-group" style="flex:1">
+                        <label class="label" style="font-size:11px">Энергия</label>
+                        <div class="mood-buttons" id="energy-buttons" style="justify-content:center">
+                            <button class="mood-btn small" data-energy="1" onclick="setEnergy(1)">1</button>
+                            <button class="mood-btn small" data-energy="2" onclick="setEnergy(2)">2</button>
+                            <button class="mood-btn small" data-energy="3" onclick="setEnergy(3)">3</button>
+                            <button class="mood-btn small" data-energy="4" onclick="setEnergy(4)">4</button>
+                            <button class="mood-btn small" data-energy="5" onclick="setEnergy(5)">5</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="label" style="font-size:11px">Сон, ч</label>
+                        <input type="number" id="mood-sleep" class="input" step="0.5" min="0" max="24" placeholder="7.5" style="text-align:center" onchange="saveMoodData()">
+                    </div>
+                </div>
+            </div>
+
             <div id="meals-container"></div>
         </div>
 

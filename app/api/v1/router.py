@@ -24,3 +24,6 @@ api_router.include_router(sync_router)
 
 from app.api.v1.endpoints.fasting import router as fasting_router
 api_router.include_router(fasting_router)
+
+from app.api.v1.endpoints.mood import router as mood_router
+api_router.include_router(mood_router)
