@@ -48,3 +48,31 @@ async def create_tables():
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Migrate existing tables: add missing columns
+    async with engine.begin() as conn:
+        await conn.run_sync(_add_missing_columns)
+
+
+def _add_missing_columns(conn):
+    """Add columns that were added after initial table creation."""
+    import sqlalchemy as sa
+    inspector = sa.inspect(conn)
+
+    migrations = {
+        "users": [
+            ("current_weight", "FLOAT"),
+            ("target_weight", "FLOAT"),
+            ("height", "FLOAT"),
+        ],
+        "fasting_sessions": [],  # new table, created by create_all
+        "mood_entries": [],      # new table, created by create_all
+    }
+
+    for table_name, columns in migrations.items():
+        if not inspector.has_table(table_name):
+            continue
+        existing = {c["name"] for c in inspector.get_columns(table_name)}
+        for col_name, col_type in columns:
+            if col_name not in existing:
+                conn.execute(sa.text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"))
