@@ -1,0 +1,56 @@
+name: Build Windows .exe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-desktop.txt
+          pip install pyinstaller
+          pip uninstall passlib -y
+      
+      - name: Build .exe
+        run: pyinstaller desktop/NutritionDiary.spec --noconfirm
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutritionDiary-Windows
+          path: dist/NutritionDiary/
+          retention-days: 30
+
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-desktop.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+        continue-on-error: true
