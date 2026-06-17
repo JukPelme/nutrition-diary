@@ -491,3 +491,41 @@ a { color:var(--accent); text-decoration:none; }
     color: var(--text);
     margin-top: 6px;
 }
+
+/* Offline indicator + toasts */
+.offline-indicator {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.offline-indicator.hidden { display: none; }
+.offline-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ff6b6b;
+    box-shadow: 0 0 6px #ff6b6b;
+    animation: offline-pulse 1.5s infinite;
+}
+@keyframes offline-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+.offline-count:empty { display: none; }
+.toast {
+    background: var(--bg2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-top: 6px;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    animation: toast-in 0.2s ease;
+}
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -60,6 +60,10 @@
                 <div class="header-action-icon">👤</div>
                 <div class="header-action-label">Профиль</div>
             </button>
+            <div id="offline-indicator" class="offline-indicator hidden" title="Офлайн">
+                <span class="offline-dot"></span>
+                <span class="offline-count" id="offline-count"></span>
+            </div>
             <button class="header-action" onclick="openSettings()" title="Настройки">
                 <div class="header-action-icon">⚙</div>
                 <div class="header-action-label" data-i18n="settings">Настройки</div>
@@ -674,8 +678,11 @@
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/dexie@3.2.7/dist/dexie.min.js"></script>
 <script src="/static/js/i18n.js"></script>
     <script src="/static/js/api.js"></script>
+<script src="/static/js/db.js"></script>
+<script src="/static/js/sync.js"></script>
 <script src="/static/js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {

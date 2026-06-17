@@ -229,6 +229,9 @@ async function showApp() {
     await loadUserSettings();
     initNotifications();
     migrateLegacyWater().catch(()=>{});
+    setupOfflineIndicator();
+    flushSyncQueue().catch(()=>{});
+    cacheProductCatalog().catch(()=>{});
     loadDiary();
     setActiveTab('diary');
 }
@@ -543,7 +546,7 @@ async function renderWater() {
 }
 
 async function addWater(amount_ml, drink_type) {
-    await api('/water', { method: 'POST', body: JSON.stringify({ amount_ml, drink_type }) });
+    await apiQueued('/water', { method: 'POST', body: JSON.stringify({ amount_ml, drink_type }) });
     renderWater();
 }
 
@@ -558,7 +561,7 @@ async function addWaterCustom() {
 }
 
 async function deleteWater(id) {
-    await api(`/water/${id}`, { method: 'DELETE' });
+    await apiQueued(`/water/${id}`, { method: 'DELETE' });
     renderWater();
 }
 
@@ -2465,4 +2468,28 @@ async function autoCalcGoals() {
     document.getElementById('set-fat').value = res.fat;
     document.getElementById('set-carbs').value = res.carbs;
     hint.textContent = `BMR ${res.details.bmr} · TDEE ${res.details.tdee} · возраст ${res.details.age} · активность ×${res.details.activity_factor}`;
+}
+
+
+function setupOfflineIndicator() {
+    const el = document.getElementById('offline-indicator');
+    const cnt = document.getElementById('offline-count');
+    if (!el) return;
+    const render = (s) => {
+        const showQ = s.queueCount > 0;
+        if (!s.online) {
+            el.classList.remove('hidden');
+            el.title = showQ ? `Офлайн · ${s.queueCount} в очереди` : 'Офлайн';
+            cnt.textContent = showQ ? s.queueCount : '';
+        } else if (showQ) {
+            el.classList.remove('hidden');
+            el.title = `Синхронизация · ${s.queueCount} ожидают`;
+            cnt.textContent = s.queueCount;
+        } else {
+            el.classList.add('hidden');
+        }
+    };
+    offlineState.listeners.push(render);
+    refreshQueueCount();
+    render(offlineState);
 }
