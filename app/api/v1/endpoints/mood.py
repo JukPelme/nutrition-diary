@@ -117,10 +117,10 @@ async def mood_nutrition_correlation(
         d = e.entry_date.strftime("%Y-%m-%d") if hasattr(e.entry_date, "strftime") else str(e.entry_date)
         if d not in daily_nutrition:
             daily_nutrition[d] = {"calories": 0, "protein": 0, "fat": 0, "carbs": 0}
-        daily_nutrition[d]["calories"] += (e.calories or 0) * (e.serving_amount or 1)
-        daily_nutrition[d]["protein"] += (e.protein or 0) * (e.serving_amount or 1)
-        daily_nutrition[d]["fat"] += (e.fat or 0) * (e.serving_amount or 1)
-        daily_nutrition[d]["carbs"] += (e.carbohydrates or 0) * (e.serving_amount or 1)
+        daily_nutrition[d]["calories"] += e.calories or 0
+        daily_nutrition[d]["protein"] += e.protein or 0
+        daily_nutrition[d]["fat"] += e.fat or 0
+        daily_nutrition[d]["carbs"] += e.carbohydrates or 0
 
     # Build correlation data
     data = []
