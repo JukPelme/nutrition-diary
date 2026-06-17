@@ -123,6 +123,14 @@ async def update_me(
         current_user.target_weight = data.target_weight
     if data.height is not None:
         current_user.height = data.height
+    if data.birth_year is not None:
+        current_user.birth_year = data.birth_year
+    if data.sex is not None:
+        current_user.sex = data.sex or None
+    if data.activity_level is not None:
+        current_user.activity_level = data.activity_level or None
+    if data.goal_type is not None:
+        current_user.goal_type = data.goal_type or None
     if data.username is not None:
         new_username = data.username.strip() or None
         if new_username and new_username != current_user.username:

@@ -331,6 +331,10 @@ async function openProfile() {
         document.getElementById('prof-height').value = me.height || '';
         document.getElementById('prof-weight').value = me.current_weight || '';
         document.getElementById('prof-target-weight').value = me.target_weight || '';
+        document.getElementById('prof-birth-year').value = me.birth_year || '';
+        if (me.sex) document.getElementById('prof-sex').value = me.sex;
+        if (me.activity_level) document.getElementById('prof-activity').value = me.activity_level;
+        if (me.goal_type) document.getElementById('prof-goal').value = me.goal_type;
         renderBMI(me.current_weight, me.height);
     }
     ['prof-height', 'prof-weight'].forEach(id => {
@@ -402,6 +406,11 @@ async function saveSettings() {
     const weightVal = parseFloat(document.getElementById('prof-weight').value);
     const targetVal = parseFloat(document.getElementById('prof-target-weight').value);
 
+    const birthYear = parseInt(document.getElementById('prof-birth-year').value);
+    const sex = document.getElementById('prof-sex').value || null;
+    const activityLevel = document.getElementById('prof-activity').value || null;
+    const goalType = document.getElementById('prof-goal').value || null;
+
     const meResp = await api('/auth/me', {
         method: 'PATCH',
         body: JSON.stringify({
@@ -414,6 +423,10 @@ async function saveSettings() {
             height: isNaN(heightVal) ? null : heightVal,
             current_weight: isNaN(weightVal) ? null : weightVal,
             target_weight: isNaN(targetVal) ? null : targetVal,
+            birth_year: isNaN(birthYear) ? null : birthYear,
+            sex,
+            activity_level: activityLevel,
+            goal_type: goalType,
         })
     });
     if (meResp?.detail) { showError(meResp.detail); return; }
@@ -2413,4 +2426,37 @@ async function copyDay() {
 
     if (copied > 0) loadDiary();
     alert(`Скопировано ${copied} из ${prevEntries.length} записей`);
+}
+
+
+async function autoCalcGoals() {
+    // First persist current profile fields (so backend uses fresh data)
+    const heightVal = parseFloat(document.getElementById('prof-height').value);
+    const weightVal = parseFloat(document.getElementById('prof-weight').value);
+    const birthYear = parseInt(document.getElementById('prof-birth-year').value);
+    const sex = document.getElementById('prof-sex').value || null;
+    const activity = document.getElementById('prof-activity').value || null;
+    const goal = document.getElementById('prof-goal').value || null;
+    await api('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+            height: isNaN(heightVal) ? null : heightVal,
+            current_weight: isNaN(weightVal) ? null : weightVal,
+            birth_year: isNaN(birthYear) ? null : birthYear,
+            sex,
+            activity_level: activity,
+            goal_type: goal,
+        })
+    });
+    const res = await api('/nutrition/auto-goals');
+    const hint = document.getElementById('auto-goal-hint');
+    if (!res || res.ready === false) {
+        hint.textContent = (res && res.message) || 'Не хватает данных';
+        return;
+    }
+    document.getElementById('set-cal').value = res.calories;
+    document.getElementById('set-protein').value = res.protein;
+    document.getElementById('set-fat').value = res.fat;
+    document.getElementById('set-carbs').value = res.carbs;
+    hint.textContent = `BMR ${res.details.bmr} · TDEE ${res.details.tdee} · возраст ${res.details.age} · активность ×${res.details.activity_factor}`;
 }

@@ -23,6 +23,10 @@ class User(Base):
     daily_fat_goal: Mapped[float | None] = mapped_column()
     daily_carb_goal: Mapped[float | None] = mapped_column()
     daily_water_goal_ml: Mapped[int | None] = mapped_column()
+    birth_year: Mapped[int | None] = mapped_column()
+    sex: Mapped[str | None] = mapped_column(String(10))
+    activity_level: Mapped[str | None] = mapped_column(String(20))
+    goal_type: Mapped[str | None] = mapped_column(String(20))
 
     # Weight goals
     current_weight: Mapped[float | None] = mapped_column()  # kg

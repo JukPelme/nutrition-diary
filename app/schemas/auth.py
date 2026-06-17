@@ -39,6 +39,10 @@ class UserResponse(BaseModel):
     current_weight: float | None = None
     target_weight: float | None = None
     height: float | None = None
+    birth_year: int | None = None
+    sex: str | None = None
+    activity_level: str | None = None
+    goal_type: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -46,6 +50,10 @@ class UserResponse(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = None
     username: str | None = None
+    birth_year: int | None = None
+    sex: str | None = None
+    activity_level: str | None = None
+    goal_type: str | None = None
     daily_calorie_goal: int | None = None
     daily_protein_goal: float | None = None
     daily_fat_goal: float | None = None

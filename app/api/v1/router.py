@@ -30,3 +30,6 @@ api_router.include_router(mood_router)
 
 from app.api.v1.endpoints.water import router as water_router
 api_router.include_router(water_router)
+
+from app.api.v1.endpoints.nutrition_goals import router as nutrition_goals_router
+api_router.include_router(nutrition_goals_router)
