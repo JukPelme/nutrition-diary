@@ -58,7 +58,12 @@ async def main():
     async with Session() as s:
         existing = (await s.execute(select(User).where(User.email == DEMO_EMAIL))).scalar_one_or_none()
         if existing:
-            print(f"[demo] {DEMO_EMAIL} already exists — skipping fixture")
+            if existing.username != "demo":
+                existing.username = "demo"
+                await s.commit()
+                print(f"[demo] {DEMO_EMAIL} exists — patched username='demo'")
+            else:
+                print(f"[demo] {DEMO_EMAIL} already exists with username — skipping")
             await engine.dispose()
             return
 
