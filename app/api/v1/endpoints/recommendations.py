@@ -1,5 +1,6 @@
 """
-AI-powered dietary recommendations based on diary + health conditions.
+Rule-based dietary recommendations from diary + ICD-11 health conditions.
+No external API required.
 """
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends
@@ -23,25 +24,34 @@ async def get_recommendations(
     today = date.today()
     week_ago = today - timedelta(days=7)
 
-    # Get week averages
-    result = await db.execute(
+    # Daily totals first, then average across tracked days (correct daily KBJU)
+    daily_sub = (
         select(
-            func.avg(DiaryEntry.calories).label("avg_cal"),
-            func.avg(DiaryEntry.protein).label("avg_prot"),
-            func.avg(DiaryEntry.fat).label("avg_fat"),
-            func.avg(DiaryEntry.carbohydrates).label("avg_carb"),
-            func.count(DiaryEntry.id).label("total_entries"),
-        ).where(
-            DiaryEntry.user_id == user.id,
-            DiaryEntry.entry_date >= week_ago,
+            DiaryEntry.entry_date.label("d"),
+            func.sum(DiaryEntry.calories).label("cal"),
+            func.sum(DiaryEntry.protein).label("prot"),
+            func.sum(DiaryEntry.fat).label("fat"),
+            func.sum(DiaryEntry.carbohydrates).label("carb"),
         )
+        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date >= week_ago)
+        .group_by(DiaryEntry.entry_date)
+        .subquery()
     )
-    row = result.one()
-    avg_cal = float(row.avg_cal or 0)
-    avg_prot = float(row.avg_prot or 0)
-    avg_fat = float(row.avg_fat or 0)
-    avg_carb = float(row.avg_carb or 0)
-    total_entries = row.total_entries or 0
+    row = (await db.execute(
+        select(
+            func.avg(daily_sub.c.cal),
+            func.avg(daily_sub.c.prot),
+            func.avg(daily_sub.c.fat),
+            func.avg(daily_sub.c.carb),
+            func.count(daily_sub.c.d),
+        )
+    )).one()
+    avg_cal = float(row[0] or 0)
+    avg_prot = float(row[1] or 0)
+    avg_fat = float(row[2] or 0)
+    avg_carb = float(row[3] or 0)
+    days_tracked = int(row[4] or 0)
+    total_entries = days_tracked  # kept name for downstream code
 
     # Get user conditions
     result = await db.execute(
@@ -175,7 +185,7 @@ async def get_recommendations(
             "avg_protein": round(avg_prot, 1),
             "avg_fat": round(avg_fat, 1),
             "avg_carbs": round(avg_carb, 1),
-            "days_tracked": total_entries,
+            "days_tracked": days_tracked,
         },
         "top_products": top_products,
     }
