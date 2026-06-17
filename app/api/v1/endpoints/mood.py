@@ -100,11 +100,13 @@ async def mood_nutrition_correlation(
     if not mood_map:
         return {"message": "Недостаточно данных", "data": []}
 
-    # Get diary entries for those dates
+    # Get diary entries for those dates (mood.date is str, DiaryEntry.entry_date is date)
+    from datetime import date as _date_cls
+    mood_dates = [_date_cls.fromisoformat(k) for k in mood_map.keys()]
     diary = await db.execute(
         select(DiaryEntry).where(
             DiaryEntry.user_id == user.id,
-            DiaryEntry.date.in_(list(mood_map.keys())),
+            DiaryEntry.entry_date.in_(mood_dates),
         )
     )
     entries = diary.scalars().all()
@@ -112,7 +114,7 @@ async def mood_nutrition_correlation(
     # Aggregate nutrition per date
     daily_nutrition = {}
     for e in entries:
-        d = e.date if isinstance(e.date, str) else e.date.strftime("%Y-%m-%d")
+        d = e.entry_date.strftime("%Y-%m-%d") if hasattr(e.entry_date, "strftime") else str(e.entry_date)
         if d not in daily_nutrition:
             daily_nutrition[d] = {"calories": 0, "protein": 0, "fat": 0, "carbs": 0}
         daily_nutrition[d]["calories"] += (e.calories or 0) * (e.serving_amount or 1)
