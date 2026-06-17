@@ -228,6 +228,7 @@ async function showApp() {
     document.getElementById('app-page').classList.remove('hidden');
     await loadUserSettings();
     initNotifications();
+    migrateLegacyWater().catch(()=>{});
     loadDiary();
     setActiveTab('diary');
 }
@@ -314,14 +315,26 @@ function switchSettingsTab(tab) {
     document.getElementById('settings-tab-' + tab).classList.add('active');
 }
 
-function openProfile() {
+async function openProfile() {
     document.getElementById('profile-modal').classList.add('active');
     loadDevices();
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;
     document.getElementById('set-carbs').value = userGoals.carbs;
-    document.getElementById('set-water').value = waterGoal;
+    document.getElementById('set-water').value = '';
+    const goal = await api('/water/goal').catch(() => null);
+    const hint = document.getElementById('water-goal-hint');
+    if (goal) {
+        if (goal.is_auto) {
+            hint.textContent = goal.source_weight_kg
+                ? `Авто: ${goal.daily_water_goal_ml} мл (${goal.source_weight_kg} кг × 30)`
+                : `Авто: ${goal.daily_water_goal_ml} мл (вес не указан — стандарт)`;
+        } else {
+            hint.textContent = `Своя цель: ${goal.daily_water_goal_ml} мл`;
+            document.getElementById('set-water').value = goal.daily_water_goal_ml;
+        }
+    }
 }
 
 function openSettings() {
@@ -337,7 +350,8 @@ async function saveSettings() {
     const protein = parseFloat(document.getElementById('set-protein').value) || 120;
     const fat = parseFloat(document.getElementById('set-fat').value) || 65;
     const carbs = parseFloat(document.getElementById('set-carbs').value) || 250;
-    const water = parseInt(document.getElementById('set-water').value) || 8;
+    const waterRaw = document.getElementById('set-water').value.trim();
+    const waterMl = waterRaw ? parseInt(waterRaw) : null;
 
     await api('/auth/me', {
         method: 'PATCH',
@@ -349,9 +363,12 @@ async function saveSettings() {
         })
     });
 
+    await api('/water/goal', {
+        method: 'PATCH',
+        body: JSON.stringify({ daily_water_goal_ml: waterMl })
+    });
+
     userGoals = { calories: cal, protein, fat, carbs };
-    waterGoal = water;
-    localStorage.setItem('waterGoal', water);
     closeModal('profile-modal');
     loadDiary();
 }
@@ -428,28 +445,77 @@ async function addMetric() {
     alert('Записано');
 }
 
-// ---- Water Tracker ----
-function renderWater() {
-    waterCount = parseInt(localStorage.getItem(`water_${currentDate}`) || '0');
-    document.getElementById('water-count').textContent = `${waterCount} / ${waterGoal} стаканов`;
-    const container = document.getElementById('water-glasses');
-    let html = '';
-    for (let i = 0; i < waterGoal; i++) {
-        html += `<div class="water-glass ${i < waterCount ? 'filled' : ''}" onclick="setWater(${i + 1})">💧</div>`;
+// ---- Water Tracker v2 (DB-backed) ----
+const DRINK_ICONS = { water: '💧', tea: '🍵', coffee: '☕', juice: '🧃', milk: '🥛', other: '🥤' };
+
+async function renderWater() {
+    const data = await api('/water/today');
+    if (!data || data.detail) {
+        // fallback: localStorage compat for offline
+        const lsCount = parseInt(localStorage.getItem(`water_${currentDate}`) || '0');
+        document.getElementById('water-summary').textContent = `${lsCount*250} / ${waterGoal*250} мл`;
+        document.getElementById('water-progress-fill').style.width = Math.min(lsCount/waterGoal*100,100) + '%';
+        return;
     }
-    container.innerHTML = html;
+    const { total_ml, goal_ml, percent, entries } = data;
+    document.getElementById('water-summary').textContent = `${total_ml} / ${goal_ml} мл`;
+    document.getElementById('water-percent').textContent = `${percent}%`;
+    const fill = document.getElementById('water-progress-fill');
+    fill.style.width = Math.min(percent, 100) + '%';
+    fill.classList.toggle('full', percent >= 100);
+
+    const list = document.getElementById('water-entries');
+    list.innerHTML = entries.map(e => {
+        const t = new Date(e.drunk_at);
+        const hh = String(t.getHours()).padStart(2, '0');
+        const mm = String(t.getMinutes()).padStart(2, '0');
+        const icon = DRINK_ICONS[e.drink_type] || '💧';
+        return `<span class="water-entry">${hh}:${mm} ${icon} ${e.amount_ml}мл<button class="water-entry-del" onclick="deleteWater('${e.id}')">✕</button></span>`;
+    }).join('');
 }
 
-function setWater(count) {
-    waterCount = count;
-    localStorage.setItem(`water_${currentDate}`, waterCount);
+async function addWater(amount_ml, drink_type) {
+    await api('/water', { method: 'POST', body: JSON.stringify({ amount_ml, drink_type }) });
     renderWater();
 }
 
-function changeWater(delta) {
-    waterCount = Math.max(0, Math.min(waterGoal, waterCount + delta));
-    localStorage.setItem(`water_${currentDate}`, waterCount);
+async function addWaterCustom() {
+    const raw = prompt('Сколько мл? (10-5000)', '300');
+    if (!raw) return;
+    const ml = parseInt(raw);
+    if (!ml || ml < 10 || ml > 5000) { alert('Введите число от 10 до 5000'); return; }
+    const typeRaw = prompt('Тип? water / tea / coffee / juice / milk / other', 'water');
+    const type = ['water','tea','coffee','juice','milk','other'].includes(typeRaw) ? typeRaw : 'water';
+    await addWater(ml, type);
+}
+
+async function deleteWater(id) {
+    await api(`/water/${id}`, { method: 'DELETE' });
     renderWater();
+}
+
+// One-time migration from localStorage glasses → DB ml (legacy users)
+async function migrateLegacyWater() {
+    if (localStorage.getItem('waterMigrated_v2')) return;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('water_') && k !== 'waterGoal');
+    if (keys.length === 0) { localStorage.setItem('waterMigrated_v2', '1'); return; }
+    for (const k of keys) {
+        const dateStr = k.replace('water_', '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+        const glasses = parseInt(localStorage.getItem(k) || '0');
+        if (glasses <= 0) continue;
+        // Convert to ml using saved waterGoal mapping (1 glass = 250 ml as legacy default)
+        const ml = glasses * 250;
+        try {
+            await api('/water', { method: 'POST', body: JSON.stringify({
+                amount_ml: ml,
+                drink_type: 'water',
+                drunk_at: `${dateStr}T12:00:00Z`,
+                notes: 'imported from localStorage'
+            }) });
+        } catch (e) { /* ignore */ }
+    }
+    localStorage.setItem('waterMigrated_v2', '1');
 }
 
 // ---- Diary ----

@@ -27,3 +27,6 @@ api_router.include_router(fasting_router)
 
 from app.api.v1.endpoints.mood import router as mood_router
 api_router.include_router(mood_router)
+
+from app.api.v1.endpoints.water import router as water_router
+api_router.include_router(water_router)

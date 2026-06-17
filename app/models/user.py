@@ -22,6 +22,7 @@ class User(Base):
     daily_protein_goal: Mapped[float | None] = mapped_column()
     daily_fat_goal: Mapped[float | None] = mapped_column()
     daily_carb_goal: Mapped[float | None] = mapped_column()
+    daily_water_goal_ml: Mapped[int | None] = mapped_column()
 
     # Weight goals
     current_weight: Mapped[float | None] = mapped_column()  # kg
