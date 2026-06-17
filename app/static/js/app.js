@@ -1477,9 +1477,15 @@ async function loadHealth() {
 
     // AI Recommendations block
     let aiHtml = '';
+    if (aiRecs?.ai_summary) {
+        aiHtml += `<div class="card ai-summary-card">
+            <div class="card-title">🤖 Персональный анализ</div>
+            <div class="ai-summary-text">${aiRecs.ai_summary}</div>
+        </div>`;
+    }
     if (aiRecs?.recommendations?.length) {
         const typeColors = { warning: 'var(--orange)', tip: 'var(--accent)', health: 'var(--green)', success: 'var(--green)', info: 'var(--text2)' };
-        aiHtml = '<div class="card"><div class="card-title">Рекомендации</div>' +
+        aiHtml += '<div class="card"><div class="card-title">Рекомендации</div>' +
             aiRecs.recommendations.map(r =>
                 `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
                     <div style="font-size:14px;font-weight:500">${r.icon} ${r.title}</div>

@@ -479,3 +479,15 @@ a { color:var(--accent); text-decoration:none; }
 .bmi-band-norm { background: rgba(81, 207, 102, 0.18); color: #37b24d; }
 .bmi-band-over { background: rgba(255, 169, 64, 0.18); color: #ffa940; }
 .bmi-band-obese { background: rgba(255, 107, 107, 0.18); color: #ff6b6b; }
+
+/* AI summary card */
+.ai-summary-card {
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.08), rgba(77, 171, 247, 0.08));
+    border: 1px solid rgba(124, 92, 255, 0.25);
+}
+.ai-summary-text {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text);
+    margin-top: 6px;
+}
