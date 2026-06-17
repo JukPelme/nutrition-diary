@@ -52,9 +52,10 @@
             <span class="header-title">Дневник</span>
         </div>
         <div class="header-right">
-            <button class="btn-icon" onclick="shareDay()" title="Поделиться днём">↗</button>
-            <button class="btn-icon" onclick="openSettings()" title="Настройки">⚙</button>
-            <button class="btn-icon" onclick="logout()" title="Выйти">⏻</button>
+            <button class="btn-icon btn-icon-lg" onclick="shareDay()" title="Поделиться днём">↗</button>
+            <button class="btn-icon btn-icon-lg" onclick="openProfile()" title="Профиль">👤</button>
+            <button class="btn-icon btn-icon-lg" onclick="openSettings()" title="Настройки">⚙</button>
+            <button class="btn-icon btn-icon-lg" onclick="logout()" title="Выйти">⏻</button>
         </div>
     </header>
 
@@ -436,114 +437,115 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content modal-content-lg">
             <div class="modal-header">
-                <h3 data-i18n="settings">Настройки</h3>
+                <h3 class="modal-title-lg">👤 Профиль</h3>
+                <button class="btn-icon" onclick="closeModal('profile-modal')">✕</button>
+            </div>
+
+            <div class="card-title">Дневная норма</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label"><span data-i18n="calories">Калории</span></label>
+                    <input type="number" id="set-cal" class="input" placeholder="2000" min="500" max="10000">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Белки, г</label>
+                    <input type="number" id="set-protein" class="input" placeholder="120" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="label">Жиры, г</label>
+                    <input type="number" id="set-fat" class="input" placeholder="65" min="0">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="label">Углеводы, г</label>
+                    <input type="number" id="set-carbs" class="input" placeholder="250" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="label">Стаканов воды в день</label>
+                <input type="number" id="set-water" class="input" value="8" min="1" max="20">
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="saveSettings()" style="margin-top:8px;width:100%" data-i18n="save">Сохранить</button>
+
+            <div class="card-title" style="margin-top:24px" data-i18n="devices">Устройства и приложения</div>
+            <div id="devices-list" style="margin-bottom:12px"></div>
+            <div class="form-group">
+                <select id="device-provider" class="input">
+                    <option value="">Подключить устройство...</option>
+                    <option value="apple_health">Apple Health</option>
+                    <option value="google_fit">Google Fit</option>
+                    <option value="fitbit">Fitbit</option>
+                    <option value="garmin">Garmin</option>
+                    <option value="withings">Withings</option>
+                    <option value="samsung_health">Samsung Health</option>
+                    <option value="mi_fit">Mi Fit / Xiaomi</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary btn-lg" onclick="connectDevice()" style="width:100%">Подключить</button>
+
+            <div class="card-title" style="margin-top:24px">Ввести метрику вручную</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <select id="metric-type" class="input">
+                        <option value="weight">Вес (кг)</option>
+                        <option value="glucose">Глюкоза (ммоль/л)</option>
+                        <option value="blood_pressure">Давление (мм рт.ст.)</option>
+                        <option value="heart_rate">Пульс (уд/мин)</option>
+                        <option value="steps">Шаги</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <input type="number" id="metric-value" class="input" placeholder="Значение" step="0.1">
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-lg" onclick="addMetric()" style="width:100%">Записать</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal (interface only) -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="settings">⚙ Настройки</h3>
                 <button class="btn-icon" onclick="closeModal('settings-modal')">✕</button>
             </div>
 
-            <!-- Tabs -->
-            <div class="settings-tabs">
-                <button class="settings-tab active" onclick="switchSettingsTab('profile')">👤 Профиль</button>
-                <button class="settings-tab" onclick="switchSettingsTab('interface')">🎨 Интерфейс</button>
+            <div class="theme-section">
+                <div class="card-title" data-i18n="language">Язык</div>
+                <div class="theme-toggle-row">
+                    <button class="mode-btn lang-btn" data-lang="ru" onclick="setLang('ru')">🇷🇺 Русский</button>
+                    <button class="mode-btn lang-btn" data-lang="en" onclick="setLang('en')">🇬🇧 English</button>
+                </div>
             </div>
-
-            <!-- Profile Tab -->
-            <div id="settings-tab-profile" class="settings-tab-content active">
-                <div class="card-title">Дневная норма</div>
-                <div class="form-row">
-                    <div class="form-group" style="flex:1">
-                        <label class="label"><span data-i18n="calories">Калории</span></label>
-                        <input type="number" id="set-cal" class="input" placeholder="2000" min="500" max="10000">
-                    </div>
-                    <div class="form-group" style="flex:1">
-                        <label class="label">Белки, г</label>
-                        <input type="number" id="set-protein" class="input" placeholder="120" min="0">
-                    </div>
+            <div class="theme-section">
+                <div class="card-title" data-i18n="theme">Тема</div>
+                <div class="theme-toggle-row">
+                    <button class="theme-toggle-btn" onclick="setTheme('dark')" id="theme-dark-btn">🌙 Тёмная</button>
+                    <button class="theme-toggle-btn" onclick="setTheme('light')" id="theme-light-btn">☀️ Светлая</button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group" style="flex:1">
-                        <label class="label">Жиры, г</label>
-                        <input type="number" id="set-fat" class="input" placeholder="65" min="0">
-                    </div>
-                    <div class="form-group" style="flex:1">
-                        <label class="label">Углеводы, г</label>
-                        <input type="number" id="set-carbs" class="input" placeholder="250" min="0">
-                    </div>
+                <div class="card-title" style="margin-bottom:8px">Акцент</div>
+                <div class="accent-row">
+                    <div class="accent-dot" data-color="blue" onclick="setAccent('blue')"></div>
+                    <div class="accent-dot" data-color="green" onclick="setAccent('green')"></div>
+                    <div class="accent-dot" data-color="purple" onclick="setAccent('purple')"></div>
+                    <div class="accent-dot" data-color="orange" onclick="setAccent('orange')"></div>
+                    <div class="accent-dot" data-color="pink" onclick="setAccent('pink')"></div>
                 </div>
-                <div class="form-group">
-                    <label class="label">Стаканов воды в день</label>
-                    <input type="number" id="set-water" class="input" value="8" min="1" max="20">
-                </div>
-                <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:8px;width:100%" data-i18n="save">Сохранить</button>
-
-                <div class="card-title" style="margin-top:20px" data-i18n="devices">Устройства и приложения</div>
-                <div id="devices-list" style="margin-bottom:12px"></div>
-                <div class="form-group">
-                    <select id="device-provider" class="input">
-                        <option value="">Подключить устройство...</option>
-                        <option value="apple_health">Apple Health</option>
-                        <option value="google_fit">Google Fit</option>
-                        <option value="fitbit">Fitbit</option>
-                        <option value="garmin">Garmin</option>
-                        <option value="withings">Withings</option>
-                        <option value="samsung_health">Samsung Health</option>
-                        <option value="mi_fit">Mi Fit / Xiaomi</option>
-                    </select>
-                </div>
-                <button class="btn btn-secondary" onclick="connectDevice()" style="width:100%">Подключить</button>
-
-                <div class="card-title" style="margin-top:20px">Ввести метрику вручную</div>
-                <div class="form-row">
-                    <div class="form-group" style="flex:1">
-                        <select id="metric-type" class="input">
-                            <option value="weight">Вес (кг)</option>
-                            <option value="glucose">Глюкоза (ммоль/л)</option>
-                            <option value="blood_pressure">Давление (мм рт.ст.)</option>
-                            <option value="heart_rate">Пульс (уд/мин)</option>
-                            <option value="steps">Шаги</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1">
-                        <input type="number" id="metric-value" class="input" placeholder="Значение" step="0.1">
-                    </div>
-                </div>
-                <button class="btn btn-secondary" onclick="addMetric()" style="width:100%">Записать</button>
             </div>
-
-            <!-- Interface Tab -->
-            <div id="settings-tab-interface" class="settings-tab-content">
-                <div class="theme-section">
-                    <div class="card-title" data-i18n="language">Язык</div>
-                    <div class="theme-toggle-row">
-                        <button class="mode-btn lang-btn" data-lang="ru" onclick="setLang('ru')">🇷🇺 Русский</button>
-                        <button class="mode-btn lang-btn" data-lang="en" onclick="setLang('en')">🇬🇧 English</button>
-                    </div>
+            <div class="theme-section">
+                <div class="card-title" data-i18n="notifications">Напоминания</div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button class="mode-btn" id="notif-toggle-btn" onclick="toggleNotifications()" style="flex:1;padding:10px">🔕 Выкл</button>
+                    <span style="font-size:12px;color:var(--text2)">Завтрак 8:00 · Обед 13:00 · Ужин 19:00 · Вода каждые 2ч</span>
                 </div>
-                <div class="theme-section">
-                    <div class="card-title" data-i18n="theme">Тема</div>
-                    <div class="theme-toggle-row">
-                        <button class="theme-toggle-btn" onclick="setTheme('dark')" id="theme-dark-btn">🌙 Тёмная</button>
-                        <button class="theme-toggle-btn" onclick="setTheme('light')" id="theme-light-btn">☀️ Светлая</button>
-                    </div>
-                    <div class="card-title" style="margin-bottom:8px">Акцент</div>
-                    <div class="accent-row">
-                        <div class="accent-dot" data-color="blue" onclick="setAccent('blue')"></div>
-                        <div class="accent-dot" data-color="green" onclick="setAccent('green')"></div>
-                        <div class="accent-dot" data-color="purple" onclick="setAccent('purple')"></div>
-                        <div class="accent-dot" data-color="orange" onclick="setAccent('orange')"></div>
-                        <div class="accent-dot" data-color="pink" onclick="setAccent('pink')"></div>
-                    </div>
-                </div>
-                <div class="theme-section">
-                    <div class="card-title" data-i18n="notifications">Напоминания</div>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <button class="mode-btn" id="notif-toggle-btn" onclick="toggleNotifications()" style="flex:1;padding:10px">🔕 Выкл</button>
-                        <span style="font-size:12px;color:var(--text2)">Завтрак 8:00 · Обед 13:00 · Ужин 19:00 · Вода каждые 2ч</span>
-                    </div>
-                </div>
-                <div class="card-title" style="margin-top:20px">Синхронизация</div>
+            </div>
+            <div class="theme-section">
+                <div class="card-title">Синхронизация</div>
                 <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Экспортируйте данные с одного устройства и импортируйте на другом</p>
                 <div style="display:flex;gap:8px">
                     <button class="btn btn-secondary" style="flex:1" onclick="syncExport()">📤 Экспорт</button>
@@ -551,7 +553,6 @@
                     <input type="file" id="sync-import-file" accept=".json" style="display:none" onchange="syncImport(event)">
                 </div>
             </div>
-
         </div>
     </div>
 

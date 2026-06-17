@@ -314,19 +314,22 @@ function switchSettingsTab(tab) {
     document.getElementById('settings-tab-' + tab).classList.add('active');
 }
 
-function openSettings() {
-    document.getElementById('settings-modal').classList.add('active');
+function openProfile() {
+    document.getElementById('profile-modal').classList.add('active');
     loadDevices();
-    // Highlight current theme & accent
-    applyTheme(localStorage.getItem('theme') || 'dark');
-    applyAccent(localStorage.getItem('accent') || 'blue');
-    updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
     document.getElementById('set-cal').value = userGoals.calories;
     document.getElementById('set-protein').value = userGoals.protein;
     document.getElementById('set-fat').value = userGoals.fat;
     document.getElementById('set-carbs').value = userGoals.carbs;
     document.getElementById('set-water').value = waterGoal;
+}
+
+function openSettings() {
+    document.getElementById('settings-modal').classList.add('active');
+    applyTheme(localStorage.getItem('theme') || 'dark');
+    applyAccent(localStorage.getItem('accent') || 'blue');
+    updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
 }
 
 async function saveSettings() {
@@ -349,7 +352,7 @@ async function saveSettings() {
     userGoals = { calories: cal, protein, fat, carbs };
     waterGoal = water;
     localStorage.setItem('waterGoal', water);
-    closeModal('settings-modal');
+    closeModal('profile-modal');
     loadDiary();
 }
 

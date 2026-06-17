@@ -339,3 +339,33 @@ a { color:var(--accent); text-decoration:none; }
     background: var(--accent);
     color: #fff;
 }
+
+/* === Larger header icons + modals (added 2026-06-17) === */
+.btn-icon-lg {
+    font-size: 24px !important;
+    padding: 10px !important;
+    line-height: 1;
+}
+.btn-icon-lg:hover {
+    background: var(--bg3);
+    transform: scale(1.05);
+    transition: transform 0.15s ease;
+}
+.modal-content-lg {
+    max-width: 560px;
+    padding: 28px;
+}
+.modal-title-lg {
+    font-size: 22px;
+    font-weight: 600;
+}
+.btn-lg {
+    padding: 14px 20px;
+    font-size: 16px;
+}
+@media (min-width: 768px) {
+    .modal-content-lg {
+        max-width: 640px;
+        border-radius: 16px;
+    }
+}
