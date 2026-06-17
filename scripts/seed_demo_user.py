@@ -65,8 +65,8 @@ async def main():
         user = User(
             id=uuid4(),
             email=DEMO_EMAIL,
-            password_hash=hash_password(DEMO_PASSWORD),
-            name=DEMO_NAME,
+            hashed_password=hash_password(DEMO_PASSWORD),
+            full_name=DEMO_NAME,
         )
         s.add(user)
         await s.flush()
