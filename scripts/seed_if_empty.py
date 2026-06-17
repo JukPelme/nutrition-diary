@@ -1,4 +1,4 @@
-"""Idempotent seed: runs seed_all only if products table is empty.
+"""Idempotent seed: runs seed_all only if products table is sparse.
 
 Used in Docker CMD so the prod DB is auto-populated on first start,
 but subsequent restarts skip the work.
@@ -8,6 +8,17 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _normalized_db_url() -> str | None:
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        return None
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 async def main():
@@ -23,13 +34,16 @@ async def main():
         return
 
     print(f"[seed_if_empty] Only {n} products in DB — seeding offline products + ICD-11...")
+
+    db_url = _normalized_db_url()
+
     from scripts.seed_products import seed as seed_products
     from scripts.seed_conditions import seed as seed_conditions
     from scripts.seed_vitamins import update_nutrients
 
-    await seed_products(None)
-    await seed_conditions(None)
-    await update_nutrients(None)
+    await seed_products(db_url)
+    await seed_conditions(db_url)
+    await update_nutrients(db_url)
     print("[seed_if_empty] Done.")
 
 
