@@ -369,3 +369,24 @@ a { color:var(--accent); text-decoration:none; }
         border-radius: 16px;
     }
 }
+
+/* === Header actions: same style as bottom-nav (icon + label) === */
+.header { padding: 8px 12px; }
+.header-right { display: flex; gap: 4px; }
+.header-action {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 8px;
+    gap: 3px;
+    transition: color 0.2s, background 0.15s;
+    min-width: 56px;
+}
+.header-action:hover { background: var(--bg3); color: var(--text); }
+.header-action-icon { font-size: 20px; line-height: 1; }
+.header-action-label { font-size: 11px; }

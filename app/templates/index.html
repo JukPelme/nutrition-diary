@@ -52,10 +52,22 @@
             <span class="header-title">Дневник</span>
         </div>
         <div class="header-right">
-            <button class="btn-icon btn-icon-lg" onclick="shareDay()" title="Поделиться днём">↗</button>
-            <button class="btn-icon btn-icon-lg" onclick="openProfile()" title="Профиль">👤</button>
-            <button class="btn-icon btn-icon-lg" onclick="openSettings()" title="Настройки">⚙</button>
-            <button class="btn-icon btn-icon-lg" onclick="logout()" title="Выйти">⏻</button>
+            <button class="header-action" onclick="shareDay()" title="Поделиться днём">
+                <div class="header-action-icon">↗</div>
+                <div class="header-action-label">Поделиться</div>
+            </button>
+            <button class="header-action" onclick="openProfile()" title="Профиль">
+                <div class="header-action-icon">👤</div>
+                <div class="header-action-label">Профиль</div>
+            </button>
+            <button class="header-action" onclick="openSettings()" title="Настройки">
+                <div class="header-action-icon">⚙</div>
+                <div class="header-action-label" data-i18n="settings">Настройки</div>
+            </button>
+            <button class="header-action" onclick="logout()" title="Выйти">
+                <div class="header-action-icon">⏻</div>
+                <div class="header-action-label">Выйти</div>
+            </button>
         </div>
     </header>
 
