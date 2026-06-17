@@ -18,11 +18,11 @@ async def main():
     async with async_session() as s:
         n = (await s.execute(select(func.count(Product.id)))).scalar() or 0
 
-    if n > 0:
-        print(f"[seed_if_empty] Products table has {n} rows, skipping.")
+    if n >= 100:
+        print(f"[seed_if_empty] Products table has {n} rows (>=100), skipping.")
         return
 
-    print("[seed_if_empty] Empty DB detected — seeding offline products + ICD-11...")
+    print(f"[seed_if_empty] Only {n} products in DB — seeding offline products + ICD-11...")
     from scripts.seed_products import seed as seed_products
     from scripts.seed_conditions import seed as seed_conditions
     from scripts.seed_vitamins import update_nutrients
