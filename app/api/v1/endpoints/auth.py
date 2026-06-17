@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import Meal
-from app.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenRefresh, UserResponse, UserUpdate
+from app.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenRefresh, UserResponse, UserUpdate, RecoverUsernameIn, RecoverUsernameOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -133,3 +133,14 @@ async def update_me(
     await db.commit()
     await db.refresh(current_user)
     return current_user
+
+
+@router.post("/recover-username", response_model=RecoverUsernameOut)
+async def recover_username(data: RecoverUsernameIn, db: AsyncSession = Depends(get_db)):
+    """Return the username for a known email + password — to help users
+    who registered before the username field was wired into the UI."""
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
+    if not user or not verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    return RecoverUsernameOut(email=user.email, username=user.username, full_name=user.full_name)

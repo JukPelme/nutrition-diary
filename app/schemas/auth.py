@@ -53,3 +53,14 @@ class UserUpdate(BaseModel):
     current_weight: float | None = None
     target_weight: float | None = None
     height: float | None = None
+
+
+class RecoverUsernameIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RecoverUsernameOut(BaseModel):
+    email: str
+    username: str | None
+    full_name: str | None
