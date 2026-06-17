@@ -1,7 +1,11 @@
-"""Idempotent seed: runs seed_all only if products table is sparse.
+"""Idempotent seed runner used in Docker CMD.
 
-Used in Docker CMD so the prod DB is auto-populated on first start,
-but subsequent restarts skip the work.
+Sequence on each start:
+  1. Base offline seed (products + ICD-11 + vitamins) — only if products < 100.
+  2. Extended seed via Open Food Facts API — if EXTENDED_SEED=1 and we haven't done it yet.
+  3. Demo user fixture — if DEMO_USER=1 and demo user doesn't exist yet.
+
+After EXTENDED_SEED finishes successfully, you should clear the env var in Railway.
 """
 import asyncio
 import os
@@ -21,30 +25,68 @@ def _normalized_db_url() -> str | None:
     return url
 
 
-async def main():
+async def base_seed_if_needed():
     from sqlalchemy import select, func
     from app.db.session import async_session
     from app.models import Product
 
     async with async_session() as s:
         n = (await s.execute(select(func.count(Product.id)))).scalar() or 0
-
     if n >= 100:
-        print(f"[seed_if_empty] Products table has {n} rows (>=100), skipping.")
+        print(f"[seed] base: skipping ({n} products already)")
         return
 
-    print(f"[seed_if_empty] Only {n} products in DB — seeding offline products + ICD-11...")
-
+    print(f"[seed] base: only {n} products — running offline seed...")
     db_url = _normalized_db_url()
-
     from scripts.seed_products import seed as seed_products
     from scripts.seed_conditions import seed as seed_conditions
     from scripts.seed_vitamins import update_nutrients
-
     await seed_products(db_url)
     await seed_conditions(db_url)
     await update_nutrients(db_url)
-    print("[seed_if_empty] Done.")
+    print("[seed] base: done")
+
+
+async def extended_seed_if_requested():
+    if os.environ.get("EXTENDED_SEED") != "1":
+        return
+    # Pre-flight: skip if we already have a lot of products (rerun safety)
+    from sqlalchemy import select, func
+    from app.db.session import async_session
+    from app.models import Product
+    async with async_session() as s:
+        n = (await s.execute(select(func.count(Product.id)))).scalar() or 0
+    if n >= 1500:
+        print(f"[seed] extended: skipping (already {n} products)")
+        return
+
+    pages = int(os.environ.get("EXTENDED_SEED_PAGES", "2"))
+    print(f"[seed] extended: fetching {pages} pages per category from Open Food Facts...")
+    # dedup_products reads DATABASE_URL directly; normalize it in env
+    norm = _normalized_db_url()
+    if norm:
+        os.environ["DATABASE_URL"] = norm
+
+    from scripts.import_off_api import import_data as import_off
+    await import_off(pages, norm)
+    print("[seed] extended: OFF import done, running dedup...")
+    from scripts.dedup_products import dedup
+    await dedup()
+    print("[seed] extended: done")
+
+
+async def demo_user_if_requested():
+    if os.environ.get("DEMO_USER") != "1":
+        return
+    print("[seed] demo: creating demo fixture if missing...")
+    from scripts.seed_demo_user import main as demo_main
+    await demo_main()
+
+
+async def main():
+    await base_seed_if_needed()
+    await extended_seed_if_requested()
+    await demo_user_if_requested()
 
 
 if __name__ == "__main__":
