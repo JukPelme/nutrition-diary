@@ -323,6 +323,24 @@ async function openProfile() {
     document.getElementById('set-fat').value = userGoals.fat;
     document.getElementById('set-carbs').value = userGoals.carbs;
     document.getElementById('set-water').value = '';
+
+    const me = await api('/auth/me').catch(() => null);
+    if (me) {
+        document.getElementById('prof-name').value = me.full_name || '';
+        document.getElementById('prof-username').value = me.username || '';
+        document.getElementById('prof-height').value = me.height || '';
+        document.getElementById('prof-weight').value = me.current_weight || '';
+        document.getElementById('prof-target-weight').value = me.target_weight || '';
+        renderBMI(me.current_weight, me.height);
+    }
+    ['prof-height', 'prof-weight'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            const w = parseFloat(document.getElementById('prof-weight').value);
+            const h = parseFloat(document.getElementById('prof-height').value);
+            renderBMI(w, h);
+        });
+    });
+
     const goal = await api('/water/goal').catch(() => null);
     const hint = document.getElementById('water-goal-hint');
     if (goal) {
@@ -335,6 +353,31 @@ async function openProfile() {
             document.getElementById('set-water').value = goal.daily_water_goal_ml;
         }
     }
+}
+
+function renderBMI(weight, heightCm) {
+    const block = document.getElementById('bmi-block');
+    if (!block) return;
+    if (!weight || !heightCm) {
+        block.className = 'bmi-block empty';
+        block.innerHTML = 'Укажи рост и вес — посчитаю ИМТ';
+        return;
+    }
+    const h = heightCm / 100;
+    const bmi = weight / (h * h);
+    let band, cls;
+    if (bmi < 18.5) { band = 'Недовес'; cls = 'bmi-band-low'; }
+    else if (bmi < 25) { band = 'Норма'; cls = 'bmi-band-norm'; }
+    else if (bmi < 30) { band = 'Избыток'; cls = 'bmi-band-over'; }
+    else { band = 'Ожирение'; cls = 'bmi-band-obese'; }
+    block.className = 'bmi-block';
+    block.innerHTML = `
+        <div>
+            <div class="bmi-label">ИМТ</div>
+            <div class="bmi-value">${bmi.toFixed(1)}</div>
+        </div>
+        <div class="bmi-band ${cls}">${band}</div>
+    `;
 }
 
 function openSettings() {
@@ -353,15 +396,27 @@ async function saveSettings() {
     const waterRaw = document.getElementById('set-water').value.trim();
     const waterMl = waterRaw ? parseInt(waterRaw) : null;
 
-    await api('/auth/me', {
+    const fullName = document.getElementById('prof-name').value.trim() || null;
+    const username = document.getElementById('prof-username').value.trim() || null;
+    const heightVal = parseFloat(document.getElementById('prof-height').value);
+    const weightVal = parseFloat(document.getElementById('prof-weight').value);
+    const targetVal = parseFloat(document.getElementById('prof-target-weight').value);
+
+    const meResp = await api('/auth/me', {
         method: 'PATCH',
         body: JSON.stringify({
             daily_calorie_goal: cal,
             daily_protein_goal: protein,
             daily_fat_goal: fat,
             daily_carb_goal: carbs,
+            full_name: fullName,
+            username,
+            height: isNaN(heightVal) ? null : heightVal,
+            current_weight: isNaN(weightVal) ? null : weightVal,
+            target_weight: isNaN(targetVal) ? null : targetVal,
         })
     });
+    if (meResp?.detail) { showError(meResp.detail); return; }
 
     await api('/water/goal', {
         method: 'PATCH',

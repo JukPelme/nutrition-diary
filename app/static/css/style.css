@@ -459,3 +459,23 @@ a { color:var(--accent); text-decoration:none; }
     opacity: 0.5;
 }
 .water-entry .water-entry-del:hover { opacity: 1; color: #ff6b6b; }
+
+/* === BMI block === */
+.bmi-block {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.bmi-block.empty { color: var(--text2); font-size: 13px; justify-content: center; }
+.bmi-value { font-size: 22px; font-weight: 700; }
+.bmi-label { font-size: 13px; }
+.bmi-band { font-size: 12px; padding: 4px 10px; border-radius: 12px; }
+.bmi-band-low { background: rgba(77, 171, 247, 0.18); color: #4dabf7; }
+.bmi-band-norm { background: rgba(81, 207, 102, 0.18); color: #37b24d; }
+.bmi-band-over { background: rgba(255, 169, 64, 0.18); color: #ffa940; }
+.bmi-band-obese { background: rgba(255, 107, 107, 0.18); color: #ff6b6b; }

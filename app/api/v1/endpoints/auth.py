@@ -117,6 +117,19 @@ async def update_me(
         current_user.daily_fat_goal = data.daily_fat_goal
     if data.daily_carb_goal is not None:
         current_user.daily_carb_goal = data.daily_carb_goal
+    if data.current_weight is not None:
+        current_user.current_weight = data.current_weight
+    if data.target_weight is not None:
+        current_user.target_weight = data.target_weight
+    if data.height is not None:
+        current_user.height = data.height
+    if data.username is not None:
+        new_username = data.username.strip() or None
+        if new_username and new_username != current_user.username:
+            taken = await db.execute(select(User).where(User.username == new_username, User.id != current_user.id))
+            if taken.scalar_one_or_none():
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+        current_user.username = new_username
     await db.commit()
     await db.refresh(current_user)
     return current_user

@@ -45,6 +45,7 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: str | None = None
+    username: str | None = None
     daily_calorie_goal: int | None = None
     daily_protein_goal: float | None = None
     daily_fat_goal: float | None = None
