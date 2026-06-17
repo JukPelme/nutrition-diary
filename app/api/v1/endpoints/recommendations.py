@@ -178,6 +178,14 @@ async def get_recommendations(
             "text": "Ваш рацион сбалансирован и соответствует целям. Продолжайте в том же духе!",
         })
 
+    ai_summary = await _maybe_claude_summary(
+        recs=recs,
+        stats={"avg_cal": avg_cal, "avg_prot": avg_prot, "avg_fat": avg_fat, "avg_carb": avg_carb, "days": days_tracked},
+        goals=goals,
+        conditions=[c.name for c in conditions],
+        top_products=[p["name"] for p in top_products],
+    )
+
     return {
         "recommendations": recs,
         "stats": {
@@ -188,4 +196,55 @@ async def get_recommendations(
             "days_tracked": days_tracked,
         },
         "top_products": top_products,
+        "ai_summary": ai_summary,
     }
+
+
+async def _maybe_claude_summary(recs, stats, goals, conditions, top_products):
+    """If ANTHROPIC_API_KEY is set, ask Claude for a personal 2-3 sentence summary.
+    Returns None if no key or call fails — endpoint still works without AI.
+    """
+    from app.core.config import settings
+    api_key = settings.anthropic_api_key
+    if not api_key or stats["days"] == 0:
+        return None
+    import httpx
+    summary_input = {
+        "stats_per_day": {
+            "calories": round(stats["avg_cal"]),
+            "protein_g": round(stats["avg_prot"]),
+            "fat_g": round(stats["avg_fat"]),
+            "carbs_g": round(stats["avg_carb"]),
+            "days_tracked": stats["days"],
+        },
+        "goals": goals,
+        "conditions": conditions,
+        "frequent_products": top_products[:5],
+        "rule_based_flags": [r["title"] for r in recs],
+    }
+    prompt = (
+        "Ты — нутрициолог. На основе данных дневника питания дай короткое (2-3 предложения) "
+        "персональное саммари по-русски: что в целом хорошо, что подтянуть, один конкретный "
+        "совет на эту неделю. Без воды, без приветствий, без списков — связный текст. "
+        f"Данные: {summary_input}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-haiku-4-5-20251001",
+                    "max_tokens": 350,
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            )
+            r.raise_for_status()
+            return r.json()["content"][0]["text"].strip()
+    except Exception:
+        return None
+
