@@ -83,9 +83,40 @@ async def demo_user_if_requested():
     await demo_main()
 
 
+async def usda_seed_if_requested():
+    if os.environ.get("USDA_SEED") != "1":
+        return
+    api_key = os.environ.get("USDA_API_KEY")
+    if not api_key:
+        print("[seed] usda: USDA_API_KEY missing — skipping")
+        return
+    # Skip if already done
+    from sqlalchemy import select, func
+    from app.db.session import async_session
+    from app.models import Product
+    async with async_session() as s:
+        n_usda = (await s.execute(select(func.count(Product.id)).where(Product.source == "usda"))).scalar() or 0
+    if n_usda >= 200:
+        print(f"[seed] usda: skipping ({n_usda} USDA products already)")
+        return
+
+    pages = int(os.environ.get("USDA_SEED_PAGES", "15"))
+    print(f"[seed] usda: importing {pages} pages per query from FoodData Central...")
+    norm = _normalized_db_url()
+    if norm:
+        os.environ["DATABASE_URL"] = norm
+    from scripts.import_usda import import_data as import_usda
+    await import_usda(api_key, pages, norm)
+    print("[seed] usda: import done, running dedup...")
+    from scripts.dedup_products import dedup
+    await dedup()
+    print("[seed] usda: done")
+
+
 async def main():
     await base_seed_if_needed()
     await extended_seed_if_requested()
+    await usda_seed_if_requested()
     await demo_user_if_requested()
 
 
