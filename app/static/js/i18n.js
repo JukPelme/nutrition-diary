@@ -23,6 +23,7 @@ const TRANSLATIONS = {
         myConditions: 'Мои состояния', addCondition: 'Добавить',
         grams: 'г', kcal: 'ккал', portion: 'Порция',
         appTitle: 'Дневник питания', appSubtitle: 'Следите за рационом и КБЖУ',
+        addProduct: 'Добавить продукт',
         language: 'Язык',
     },
     en: {
@@ -47,6 +48,7 @@ const TRANSLATIONS = {
         myConditions: 'My conditions', addCondition: 'Add',
         grams: 'g', kcal: 'kcal', portion: 'Portion',
         appTitle: 'Nutrition Diary', appSubtitle: 'Track your diet and macros',
+        addProduct: 'Add product',
         language: 'Language',
     }
 };
@@ -73,3 +75,8 @@ function setLang(lang) {
     const activeTab = document.querySelector('.nav-tab.active')?.dataset.tab;
     if (activeTab) setActiveTab(activeTab);
 }
+
+// Auto-apply saved language on page load
+document.addEventListener('DOMContentLoaded', () => {
+    if (currentLang !== 'ru') setLang(currentLang);
+});
