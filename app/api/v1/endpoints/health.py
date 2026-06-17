@@ -165,6 +165,36 @@ async def get_weight_goal(
     }
 
 
+@router.get("/metrics")
+async def list_metrics(
+    metric_type: str | None = Query(None, description="weight | glucose | blood_pressure | heart_rate | steps"),
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    stmt = (
+        select(HealthMetric)
+        .where(HealthMetric.user_id == user.id, HealthMetric.measured_at >= since)
+        .order_by(desc(HealthMetric.measured_at))
+        .limit(500)
+    )
+    if metric_type:
+        stmt = stmt.where(HealthMetric.metric_type == metric_type)
+    result = await db.execute(stmt)
+    return [
+        {
+            "id": str(m.id),
+            "metric_type": m.metric_type,
+            "value": m.value,
+            "unit": m.unit,
+            "provider": m.provider,
+            "measured_at": m.measured_at.isoformat() if m.measured_at else None,
+        }
+        for m in result.scalars().all()
+    ]
+
+
 @router.post("/metrics")
 async def add_metric(
     data: MetricAdd,
