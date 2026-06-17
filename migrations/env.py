@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -10,6 +11,15 @@ from app.models import User, Product, Meal, DiaryEntry  # noqa: F401
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override sqlalchemy.url from env DATABASE_URL (for Railway/prod)
+_env_url = os.environ.get("DATABASE_URL")
+if _env_url:
+    if _env_url.startswith("postgres://"):
+        _env_url = _env_url.replace("postgres://", "postgresql://", 1)
+    if _env_url.startswith("postgresql://"):
+        _env_url = _env_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    config.set_main_option("sqlalchemy.url", _env_url)
 
 target_metadata = Base.metadata
 
