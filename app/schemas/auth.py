@@ -1,16 +1,19 @@
 from uuid import UUID
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, AliasChoices
 
 
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
     full_name: str | None = None
+    username: str | None = None
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    # Accepts either "login" or "email" in request body
+    login: str = Field(validation_alias=AliasChoices("login", "email"))
     password: str
+    model_config = {"populate_by_name": True}
 
 
 class TokenResponse(BaseModel):
@@ -26,6 +29,7 @@ class TokenRefresh(BaseModel):
 class UserResponse(BaseModel):
     id: UUID
     email: str
+    username: str | None = None
     full_name: str | None
     is_active: bool
     daily_calorie_goal: int | None

@@ -65,6 +65,7 @@ async def main():
         user = User(
             id=uuid4(),
             email=DEMO_EMAIL,
+            username="demo",
             hashed_password=hash_password(DEMO_PASSWORD),
             full_name=DEMO_NAME,
         )

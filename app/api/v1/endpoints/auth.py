@@ -21,15 +21,22 @@ DEFAULT_MEALS = [
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
-    # Check existing
+    # Check existing email
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    # Check existing username if provided
+    if data.username:
+        u_exists = await db.execute(select(User).where(User.username == data.username))
+        if u_exists.scalar_one_or_none():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     # Create user
     try:
         user = User(
             email=data.email,
+            username=data.username,
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
         )
@@ -54,7 +61,12 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email))
+    # Accept email or username in the same field
+    if "@" in data.login:
+        query = select(User).where(User.email == data.login)
+    else:
+        query = select(User).where(User.username == data.login)
+    result = await db.execute(query)
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(data.password, user.hashed_password):

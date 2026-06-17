@@ -234,14 +234,14 @@ async function showApp() {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('auth-email').value;
+    const login = document.getElementById('auth-login').value;
     const password = document.getElementById('auth-password').value;
-    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ login, password }) });
     if (data?.access_token) {
         setToken(data.access_token);
         showApp();
     } else {
-        showError(data?.detail || 'Неверный email или пароль');
+        showError(data?.detail || 'Неверный email/логин или пароль');
     }
 }
 
@@ -250,7 +250,10 @@ async function handleRegister(e) {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
     const name = document.getElementById('auth-name')?.value || '';
-    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, full_name: name }) });
+    const username = document.getElementById('auth-username')?.value?.trim() || null;
+    const body = { email, password, full_name: name };
+    if (username) body.username = username;
+    const data = await api('/auth/register', { method: 'POST', body: JSON.stringify(body) });
     if (data?.access_token) {
         setToken(data.access_token);
         showApp();
@@ -264,15 +267,29 @@ function toggleAuthMode() {
     const btn = document.getElementById('auth-submit');
     const toggle = document.getElementById('auth-toggle-text');
     const nameField = document.getElementById('auth-name-group');
+    const usernameField = document.getElementById('auth-username-group');
+    const emailField = document.getElementById('auth-email-group');
+    const loginInput = document.getElementById('auth-login');
     if (btn.textContent === 'Войти') {
         btn.textContent = 'Зарегистрироваться';
         toggle.innerHTML = 'Уже есть аккаунт? <a href="#" onclick="toggleAuthMode()">Войти</a>';
         nameField.classList.remove('hidden');
+        usernameField.classList.remove('hidden');
+        emailField.classList.remove('hidden');
+        // In register mode the "login" field becomes hidden — we need email + username instead
+        loginInput.removeAttribute('required');
+        loginInput.parentElement.classList.add('hidden');
+        document.getElementById('auth-email').setAttribute('required', '');
         form.onsubmit = handleRegister;
     } else {
         btn.textContent = 'Войти';
         toggle.innerHTML = 'Нет аккаунта? <a href="#" onclick="toggleAuthMode()">Регистрация</a>';
         nameField.classList.add('hidden');
+        usernameField.classList.add('hidden');
+        emailField.classList.add('hidden');
+        loginInput.setAttribute('required', '');
+        loginInput.parentElement.classList.remove('hidden');
+        document.getElementById('auth-email').removeAttribute('required');
         form.onsubmit = handleLogin;
     }
 }
