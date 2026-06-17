@@ -19,9 +19,13 @@ else:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.db.session import create_tables
-    await create_tables()
-    print("Database tables ready")
+    from app.db.compat import is_sqlite
+    if is_sqlite():
+        from app.db.session import create_tables
+        await create_tables()
+        print("SQLite tables ready (desktop mode)")
+    else:
+        print("Postgres mode — schema managed by alembic")
 
     yield
 
