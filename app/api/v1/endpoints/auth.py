@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from app.core.rate_limit import check_rate_limit
+from app.models.security import LoginEvent
+from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
@@ -20,7 +24,10 @@ DEFAULT_MEALS = [
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
+async def register(data: UserRegister, request: Request, db: AsyncSession = Depends(get_db)):
+    ip = _client_ip(request)
+    if not await check_rate_limit(f"reg:ip:{ip}", max_calls=5, window_seconds=3600):
+        raise HTTPException(status_code=429, detail="Too many registrations from this IP, try later")
     # Check existing email
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
@@ -59,23 +66,80 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     )
 
 
+MAX_FAIL = 5
+LOCK_MINUTES = 15
+
+
+def _client_ip(req: Request) -> str:
+    fwd = req.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return req.client.host if req.client else "unknown"
+
+
+async def _log_login(db: AsyncSession, *, user_id, identifier: str, ip: str, ua: str, status: str):
+    db.add(LoginEvent(id=uuid4(), user_id=user_id, identifier=identifier[:255], ip=ip[:45], user_agent=(ua or "")[:500], status=status))
+
+
 @router.post("/login", response_model=TokenResponse)
-async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    # Accept email or username in the same field
+async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+    ip = _client_ip(request)
+    ua = request.headers.get("user-agent", "")
+
+    # Rate limit: 10 attempts per IP per minute
+    if not await check_rate_limit(f"login:ip:{ip}", max_calls=10, window_seconds=60):
+        raise HTTPException(status_code=429, detail="Too many attempts, try again in a minute")
+    # Rate limit per identifier: 8 per 5 min (slows username enumeration)
+    if not await check_rate_limit(f"login:id:{data.login}", max_calls=8, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Too many attempts for this account")
+
     if "@" in data.login:
         query = select(User).where(User.email == data.login)
     else:
         query = select(User).where(User.username == data.login)
-    result = await db.execute(query)
-    user = result.scalar_one_or_none()
+    user = (await db.execute(query)).scalar_one_or_none()
+
+    # Account lockout
+    if user and user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        await _log_login(db, user_id=user.id, identifier=data.login, ip=ip, ua=ua, status="locked")
+        await db.commit()
+        raise HTTPException(status_code=423, detail=f"Account temporarily locked, try later")
 
     if not user or not verify_password(data.password, user.hashed_password):
+        if user:
+            user.failed_login_count = (user.failed_login_count or 0) + 1
+            if user.failed_login_count >= MAX_FAIL:
+                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCK_MINUTES)
+        await _log_login(db, user_id=user.id if user else None, identifier=data.login, ip=ip, ua=ua, status="failed")
+        await db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    # Successful login — reset counter, clear lockout
+    user.failed_login_count = 0
+    user.locked_until = None
+    await _log_login(db, user_id=user.id, identifier=data.login, ip=ip, ua=ua, status="success")
+    await db.commit()
 
     return TokenResponse(
         access_token=create_access_token(str(user.id)),
         refresh_token=create_refresh_token(str(user.id)),
     )
+
+
+@router.get("/audit", summary="Recent login events for current user")
+async def login_audit(
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from sqlalchemy import desc
+    rows = (await db.execute(
+        select(LoginEvent).where(LoginEvent.user_id == current_user.id).order_by(desc(LoginEvent.created_at)).limit(min(limit, 100))
+    )).scalars().all()
+    return [
+        {"created_at": r.created_at.isoformat(), "status": r.status, "ip": r.ip, "user_agent": r.user_agent}
+        for r in rows
+    ]
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -144,7 +208,9 @@ async def update_me(
 
 
 @router.post("/recover-username", response_model=RecoverUsernameOut)
-async def recover_username(data: RecoverUsernameIn, db: AsyncSession = Depends(get_db)):
+async def recover_username(data: RecoverUsernameIn, request: Request, db: AsyncSession = Depends(get_db)):
+    if not await check_rate_limit(f"recover:ip:{_client_ip(request)}", max_calls=5, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Too many attempts")
     """Return the username for a known email + password — to help users
     who registered before the username field was wired into the UI."""
     result = await db.execute(select(User).where(User.email == data.email))

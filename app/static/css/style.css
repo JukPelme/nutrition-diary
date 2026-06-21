@@ -529,3 +529,47 @@ a { color:var(--accent); text-decoration:none; }
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* === Desktop adaptive layout (>= 768px) === */
+@media (min-width: 768px) {
+    body { background: var(--bg); }
+    .header { padding: 12px 24px; }
+    .header-right { gap: 8px; }
+    .main-content {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 24px;
+        padding-bottom: 100px;
+    }
+    .bottom-nav {
+        max-width: 920px;
+        left: 50% !important;
+        transform: translateX(-50%);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+    }
+    .nav-tab { padding: 12px 0; font-size: 12px; }
+    .nav-icon { font-size: 22px; }
+    .nav-label { font-size: 12px; }
+    /* Cards as a 2-col grid on diary page */
+    #view-diary .card { margin-bottom: 16px; }
+    .water-quick-buttons { grid-template-columns: repeat(6, 1fr); }
+    .form-row { gap: 16px; }
+    .modal-content {
+        max-width: 560px;
+        border-radius: 16px;
+        margin: auto;
+    }
+    .modal { align-items: center; }
+}
+
+@media (min-width: 1100px) {
+    .main-content { max-width: 1000px; }
+    /* True 2-col on widescreen: diary content + sidebar (recommendations, water, mood) */
+    .desktop-2col {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+}

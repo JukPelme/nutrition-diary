@@ -31,6 +31,8 @@ class User(Base):
     # Weight goals
     current_weight: Mapped[float | None] = mapped_column()  # kg
     target_weight: Mapped[float | None] = mapped_column()  # kg
+    failed_login_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     height: Mapped[float | None] = mapped_column()  # cm
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())

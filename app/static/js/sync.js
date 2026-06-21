@@ -16,6 +16,7 @@ async function apiQueued(path, options = {}) {
             status: 'pending',
         });
         await refreshQueueCount();
+        registerBackgroundSync();
         return { _offline: true, _queued: true };
     }
 
@@ -34,6 +35,7 @@ async function apiQueued(path, options = {}) {
             error: String(err).slice(0, 200),
         });
         await refreshQueueCount();
+        registerBackgroundSync();
         return { _offline: true, _queued: true };
     }
 }
@@ -102,3 +104,30 @@ window.addEventListener('offline', () => {
 window.addEventListener('focus', () => {
     if (navigator.onLine) flushSyncQueue();
 });
+
+
+async function registerBackgroundSync() {
+    if (!('serviceWorker' in navigator) || !('SyncManager' in window)) return;
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.sync.register('flush-queue');
+    } catch (e) { /* unsupported (Firefox/Safari) — fallback to focus/online events */ }
+}
+
+// Mirror auth token into IndexedDB so the SW can use it during Background Sync
+async function persistTokenForSW(token) {
+    try {
+        if (token) await setMeta('auth_token', token);
+        else await dexieDB.meta.delete('auth_token');
+    } catch (e) {}
+}
+
+// Listen for SW telling us queue was flushed in background
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'QUEUE_FLUSHED') {
+            refreshQueueCount();
+            if (typeof loadDiary === 'function') loadDiary();
+        }
+    });
+}

@@ -4,5 +4,6 @@ from app.models.diary import Meal, DiaryEntry
 from app.models.health import ICD11Condition, UserCondition
 from app.models.device import DeviceIntegration, HealthMetric
 from app.models.water import WaterEntry
+from app.models.security import LoginEvent
 
-__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry"]
+__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry", "LoginEvent"]

@@ -1246,7 +1246,7 @@ async function copyMeal(mealId, fromDate) {
     }
 
     for (const e of prevEntries) {
-        await api('/diary', {
+        await apiQueued('/diary', {
             method: 'POST',
             body: JSON.stringify({
                 meal_id: mealId,
@@ -1326,7 +1326,7 @@ async function applyTemplate(templateId) {
     const mealId = window._templateMealId;
 
     for (const item of tmpl.items) {
-        await api('/diary', {
+        await apiQueued('/diary', {
             method: 'POST',
             body: JSON.stringify({
                 meal_id: mealId,
@@ -1381,7 +1381,7 @@ async function addToDiary() {
     const amount = parseFloat(document.getElementById('portion-amount').value) || 100;
     const factor = amount / 100;
 
-    await api('/diary', {
+    await apiQueued('/diary', {
         method: 'POST',
         body: JSON.stringify({
             meal_id: selectedMealId,
@@ -1397,6 +1397,7 @@ async function addToDiary() {
     });
 
     closeModal('portion-modal');
+    if (typeof showToast === 'function') showToast(navigator.onLine ? 'Добавлено' : 'Добавлено офлайн — синхр. при сети');
     loadDiary();
 }
 
@@ -2421,7 +2422,7 @@ async function copyDay() {
 
     let copied = 0;
     for (const entry of prevEntries) {
-        const result = await api('/diary', {
+        const result = await apiQueued('/diary', {
             method: 'POST',
             body: JSON.stringify({
                 product_id: entry.product_id,

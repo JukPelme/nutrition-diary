@@ -115,7 +115,7 @@
             </div>
             <div class="card water-card-v2">
                 <div class="water-header">
-                    <span class="water-title">💧 Жидкость</span>
+                    <span class="water-title" data-i18n="liquid">💧 Жидкость</span>
                     <span id="water-summary" class="water-summary">0 / 2000 мл</span>
                 </div>
                 <div class="water-progress-bar">
@@ -469,7 +469,7 @@
                 <button class="btn-icon" onclick="closeModal('profile-modal')">✕</button>
             </div>
 
-            <div class="card-title">Аккаунт</div>
+            <div class="card-title" data-i18n="account">Аккаунт</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">
                     <label class="label">Имя</label>
@@ -481,31 +481,31 @@
                 </div>
             </div>
 
-            <div class="card-title" style="margin-top:16px">Тело</div>
+            <div class="card-title" style="margin-top:16px" data-i18n="body">Тело</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">
-                    <label class="label">Рост, см</label>
+                    <label class="label" data-i18n="height">Рост, см</label>
                     <input type="number" id="prof-height" class="input" placeholder="175" min="100" max="250" step="0.5">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label class="label">Текущий вес, кг</label>
+                    <label class="label" data-i18n="currentWeight">Текущий вес, кг</label>
                     <input type="number" id="prof-weight" class="input" placeholder="75" min="20" max="300" step="0.1">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label class="label">Цель веса, кг</label>
+                    <label class="label" data-i18n="targetWeight">Цель веса, кг</label>
                     <input type="number" id="prof-target-weight" class="input" placeholder="70" min="20" max="300" step="0.1">
                 </div>
             </div>
             <div id="bmi-block" class="bmi-block"></div>
 
-            <div class="card-title" style="margin-top:16px">Для авто-расчёта КБЖУ</div>
+            <div class="card-title" style="margin-top:16px" data-i18n="autoGoals">Для авто-расчёта КБЖУ</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">
-                    <label class="label">Год рождения</label>
+                    <label class="label" data-i18n="birthYear">Год рождения</label>
                     <input type="number" id="prof-birth-year" class="input" placeholder="1990" min="1920" max="2026">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label class="label">Пол</label>
+                    <label class="label" data-i18n="sex">Пол</label>
                     <select id="prof-sex" class="input">
                         <option value="">—</option>
                         <option value="male">Мужской</option>
@@ -516,7 +516,7 @@
             </div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">
-                    <label class="label">Активность</label>
+                    <label class="label" data-i18n="activity">Активность</label>
                     <select id="prof-activity" class="input">
                         <option value="">—</option>
                         <option value="sedentary">Сидячая (×1.2)</option>
@@ -527,7 +527,7 @@
                     </select>
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label class="label">Цель</label>
+                    <label class="label" data-i18n="goal">Цель</label>
                     <select id="prof-goal" class="input">
                         <option value="">—</option>
                         <option value="lose">Похудеть (-18%)</option>
@@ -536,10 +536,10 @@
                     </select>
                 </div>
             </div>
-            <button class="btn btn-secondary" onclick="autoCalcGoals()" style="width:100%;margin-top:6px">⚡ Рассчитать автоматически</button>
+            <button class="btn btn-secondary" onclick="autoCalcGoals()" style="width:100%;margin-top:6px" data-i18n="calculateAuto">⚡ Рассчитать автоматически</button>
             <div id="auto-goal-hint" style="font-size:11px;color:var(--text2);margin-top:6px"></div>
 
-            <div class="card-title" style="margin-top:16px">Дневная норма</div>
+            <div class="card-title" style="margin-top:16px" data-i18n="dailyNorm">Дневная норма</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">
                     <label class="label"><span data-i18n="calories">Калории</span></label>
@@ -640,7 +640,7 @@
                 </div>
             </div>
             <div class="theme-section">
-                <div class="card-title">Синхронизация</div>
+                <div class="card-title" data-i18n="sync">Синхронизация</div>
                 <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Экспортируйте данные с одного устройства и импортируйте на другом</p>
                 <div style="display:flex;gap:8px">
                     <button class="btn btn-secondary" style="flex:1" onclick="syncExport()">📤 Экспорт</button>

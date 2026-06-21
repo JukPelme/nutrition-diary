@@ -20,6 +20,6 @@ async function api(path, opts = {}) {
     }
 }
 
-function setToken(t) { token = t; localStorage.setItem('token', t); }
-function logout() { token = null; localStorage.removeItem('token'); location.reload(); }
+function setToken(t) { token = t; localStorage.setItem('token', t); if (typeof persistTokenForSW === 'function') persistTokenForSW(t); }
+function logout() { token = null; localStorage.removeItem('token'); if (typeof persistTokenForSW === 'function') persistTokenForSW(null); location.reload(); }
 function isLoggedIn() { return !!token; }
