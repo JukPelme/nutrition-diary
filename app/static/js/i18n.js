@@ -50,6 +50,8 @@ const TRANSLATIONS = {
         sync: 'Синхронизация', export: 'Экспорт', import: 'Импорт',
         offline: 'Офлайн', online: 'Онлайн', syncing: 'Синхронизация',
         perWeek: 'за неделю', kcalShort: 'ккал', kcalPer100g: 'ккал/100г', loading: 'Загрузка...', loadError: 'Ошибка загрузки', addedSynced: 'Добавлено', addedOffline: 'Добавлено офлайн — синхр. при сети', noEntries: 'Записей нет',
+        outOf: 'из',
+        custom: '＋ свой',
     },
     en: {
         diary: 'Diary', plan: 'Plan', nutrients: 'Nutrients', stats: 'Statistics', health: 'Health',
@@ -100,6 +102,8 @@ const TRANSLATIONS = {
         sync: 'Sync', export: 'Export', import: 'Import',
         offline: 'Offline', online: 'Online', syncing: 'Syncing',
         perWeek: 'per week', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: 'Loading...', loadError: 'Loading error', addedSynced: 'Added', addedOffline: 'Added offline — will sync', noEntries: 'No entries',
+        outOf: 'of',
+        custom: '＋ custom',
     },
     ja: {
         diary: '日記', plan: 'プラン', nutrients: '栄養素', stats: '統計', health: '健康',
@@ -150,6 +154,8 @@ const TRANSLATIONS = {
         sync: '同期', import: 'インポート',
         offline: 'オフライン', online: 'オンライン', syncing: '同期中',
         perWeek: '週間', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: '読み込み中...', loadError: '読み込みエラー', addedSynced: '追加しました', addedOffline: 'オフラインで追加 — 接続時に同期', noEntries: '記録なし',
+        outOf: '/',
+        custom: '＋ カスタム',
     }
 };
 

@@ -49,16 +49,16 @@
     <header class="header">
         <div class="header-left">
             <span class="header-logo">🥗</span>
-            <span class="header-title">Дневник</span>
+            <span class="header-title" data-i18n="diary">Дневник</span>
         </div>
         <div class="header-right">
             <button class="header-action" onclick="shareDay()" title="Поделиться днём">
                 <div class="header-action-icon">↗</div>
-                <div class="header-action-label">Поделиться</div>
+                <div class="header-action-label" data-i18n="share">Поделиться</div>
             </button>
             <button class="header-action" onclick="openProfile()" title="Профиль">
                 <div class="header-action-icon">👤</div>
-                <div class="header-action-label">Профиль</div>
+                <div class="header-action-label" data-i18n="account">Профиль</div>
             </button>
             <div id="offline-indicator" class="offline-indicator hidden" title="Офлайн">
                 <span class="offline-dot"></span>
@@ -70,7 +70,7 @@
             </button>
             <button class="header-action" onclick="logout()" title="Выйти">
                 <div class="header-action-icon">⏻</div>
-                <div class="header-action-label">Выйти</div>
+                <div class="header-action-label" data-i18n="logout">Выйти</div>
             </button>
         </div>
     </header>
@@ -128,14 +128,14 @@
                     <button class="water-quick" data-type="water" onclick="addWater(500, 'water')">💧 +500</button>
                     <button class="water-quick" data-type="tea" onclick="addWater(250, 'tea')">🍵 +250</button>
                     <button class="water-quick" data-type="coffee" onclick="addWater(200, 'coffee')">☕ +200</button>
-                    <button class="water-quick water-custom" onclick="addWaterCustom()">＋ свой</button>
+                    <button class="water-quick water-custom" onclick="addWaterCustom()" data-i18n="custom">＋ свой</button>
                 </div>
                 <div id="water-entries" class="water-entries"></div>
             </div>
             <!-- Mood tracker -->
             <div class="card mood-card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                    <span>Настроение</span>
+                    <span data-i18n="mood">Настроение</span>
                     <span id="mood-current" style="font-size:12px;color:var(--text2)"></span>
                 </div>
                 <div class="mood-buttons" id="mood-buttons">
@@ -147,7 +147,7 @@
                 </div>
                 <div style="display:flex;gap:8px;margin-top:8px">
                     <div class="form-group" style="flex:1">
-                        <label class="label" style="font-size:11px">Энергия</label>
+                        <label class="label" style="font-size:11px" data-i18n="energy">Энергия</label>
                         <div class="mood-buttons" id="energy-buttons" style="justify-content:center">
                             <button class="mood-btn small" data-energy="1" onclick="setEnergy(1)">1</button>
                             <button class="mood-btn small" data-energy="2" onclick="setEnergy(2)">2</button>
@@ -157,7 +157,7 @@
                         </div>
                     </div>
                     <div class="form-group" style="flex:1">
-                        <label class="label" style="font-size:11px">Сон, ч</label>
+                        <label class="label" style="font-size:11px" data-i18n="sleepHours">Сон, ч</label>
                         <input type="number" id="mood-sleep" class="input" step="0.5" min="0" max="24" placeholder="7.5" style="text-align:center" onchange="saveMoodData()">
                     </div>
                 </div>
@@ -242,7 +242,7 @@
         </div>
         <div class="nav-tab" data-tab="fasting" onclick="setActiveTab('fasting')">
             <div class="nav-icon">⏱</div>
-            <div class="nav-label">Голодание</div>
+            <div class="nav-label" data-i18n="fasting">Голодание</div>
         </div>
         <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
             <div class="nav-icon">🏥</div>

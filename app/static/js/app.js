@@ -599,7 +599,7 @@ async function loadDiary() {
 }
 
 function renderDiary(summary) {
-    document.getElementById('date-display').textContent = formatDate(currentDate);
+    document.getElementById('date-display').textContent = (typeof formatDateLocale === 'function' && currentLang !== 'ru') ? formatDateLocale(currentDate) : formatDate(currentDate);
 
     const cal = summary?.total_calories || 0;
     const goal = userGoals.calories;
@@ -610,7 +610,7 @@ function renderDiary(summary) {
     document.getElementById('cal-ring').setAttribute('stroke-dasharray', circumference);
     document.getElementById('cal-ring').setAttribute('stroke-dashoffset', offset);
     document.getElementById('cal-num').textContent = Math.round(cal);
-    document.getElementById('cal-left').textContent = `из ${goal}`;
+    document.getElementById('cal-left').textContent = `${typeof t === 'function' ? t('outOf') : 'из'} ${goal}`;
     document.getElementById('cal-ring').style.stroke = pct >= 100 ? 'var(--red)' : 'var(--accent)';
 
     const prot = Math.round(summary?.total_protein || 0);
@@ -654,7 +654,7 @@ function renderDiary(summary) {
                 `).join('')}
             </div>
             <div style="display:flex;gap:6px">
-                <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ Добавить</div>
+                <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ ${typeof t === 'function' ? t('add').replace(/^\+ /, '') : 'Добавить'}</div>
                 <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="openTemplates('${meal.id}')" title="Шаблоны">📂</div>
                 <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="saveTemplate('${meal.id}')" title="Сохранить как шаблон">💾</div>
                 <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="copyMeal('${meal.id}', '${currentDate}')" title="Повторить вчера">📋</div>
