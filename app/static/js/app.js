@@ -541,7 +541,7 @@ async function renderWater() {
         const hh = String(t.getHours()).padStart(2, '0');
         const mm = String(t.getMinutes()).padStart(2, '0');
         const icon = DRINK_ICONS[e.drink_type] || '💧';
-        return `<span class="water-entry">${hh}:${mm} ${icon} ${e.amount_ml}мл<button class="water-entry-del" onclick="deleteWater('${e.id}')">✕</button></span>`;
+        return `<span class="water-entry" title="${typeof trDrinkType === 'function' ? trDrinkType(e.drink_type) : e.drink_type}">${hh}:${mm} ${icon} ${e.amount_ml}мл<button class="water-entry-del" onclick="deleteWater('${e.id}')">✕</button></span>`;
     }).join('');
 }
 
@@ -636,7 +636,7 @@ function renderDiary(summary) {
         section.className = 'card meal-section';
         section.innerHTML = `
             <div class="meal-header">
-                <span><span class="meal-icon">${meal.icon || '🍽'}</span><span class="meal-name">${meal.name}</span></span>
+                <span><span class="meal-icon">${meal.icon || '🍽'}</span><span class="meal-name">${typeof trMeal === "function" ? trMeal(meal.name) : meal.name}</span></span>
                 <span class="meal-cal">${mealCal ? Math.round(mealCal) + ' ккал' : ''}</span>
             </div>
             <div class="meal-entries">
@@ -735,7 +735,7 @@ function openAddFood(mealId) {
                     <div class="p-name">${p.name}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
                 </div>
-                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
+                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
             </div>
         `).join('');
     }
@@ -750,7 +750,7 @@ function openAddFood(mealId) {
                     <div class="p-name">⭐ ${p.name}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
                 </div>
-                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
+                <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
             </div>
         `).join('');
     }
@@ -820,7 +820,7 @@ async function searchProducts(q, category, sort) {
                 <div class="p-name">${p.name}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                 <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
             </div>
-            <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ккал' : '—'}</div>
+            <div class="p-cal">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
         </div>
     `).join('');
 }
@@ -962,7 +962,7 @@ async function searchRecipeIngredients(q) {
         <div class="product-row" onclick='addRecipeIngredient(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
             <div>
                 <div class="p-name" style="font-size:13px">${p.name}</div>
-                <div class="p-brand" style="font-size:11px">${p.calories ? Math.round(p.calories) + ' ккал/100г' : ''}</div>
+                <div class="p-brand" style="font-size:11px">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalPer100g') : 'ккал/100г') : ''}</div>
             </div>
         </div>
     `).join('');
@@ -1397,17 +1397,17 @@ async function addToDiary() {
     });
 
     closeModal('portion-modal');
-    if (typeof showToast === 'function') showToast(navigator.onLine ? 'Добавлено' : 'Добавлено офлайн — синхр. при сети');
+    if (typeof showToast === 'function') showToast(typeof t === 'function' ? (navigator.onLine ? t('addedSynced') : t('addedOffline')) : 'Добавлено');
     loadDiary();
 }
 
 // ---- Nutrients ----
 async function loadNutrients() {
     const container = document.getElementById('nutrients-content');
-    container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">Загрузка...</div>';
+    container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">' + (typeof t === 'function' ? t('loading') : 'Загрузка...') + '</div>';
 
     const data = await api(`/nutrients/daily?entry_date=${currentDate}`);
-    if (!data) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">Ошибка загрузки</div>'; return; }
+    if (!data) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">' + (typeof t === 'function' ? t('loadError') : 'Ошибка загрузки') + '</div>'; return; }
 
     const macros = data.macros || {};
     const nutrients = data.nutrients || {};
@@ -1468,13 +1468,13 @@ function changeNutrientDate(delta) {
 async function loadHealth() {
     loadWeightGoal();
     const container = document.getElementById('health-content');
-    container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">Загрузка...</div>';
+    container.innerHTML = '<div class="card" style="text-align:center;padding:20px;color:var(--text2)">' + (typeof t === 'function' ? t('loading') : 'Загрузка...') + '</div>';
 
     const [profile, aiRecs] = await Promise.all([
         api('/health/profile'),
-        api('/recommendations'),
+        api(`/recommendations?lang=${currentLang}`),
     ]);
-    if (!profile) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">Ошибка загрузки</div>'; return; }
+    if (!profile) { container.innerHTML = '<div class="card" style="padding:20px;color:var(--text2)">' + (typeof t === 'function' ? t('loadError') : 'Ошибка загрузки') + '</div>'; return; }
 
     const conditions = profile.conditions || [];
     const recs = profile.recommendations || {};
@@ -1501,7 +1501,7 @@ async function loadHealth() {
             aiHtml += '<div class="card"><div class="card-title">Часто едите</div>' +
                 aiRecs.top_products.map(p =>
                     `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
-                        <span>${p.name}</span><span style="color:var(--text2)">${p.count}x за неделю</span>
+                        <span>${p.name}</span><span style="color:var(--text2)">${p.count}x ${typeof t === 'function' ? t('perWeek') : 'за неделю'}</span>
                     </div>`
                 ).join('') + '</div>';
         }
@@ -1633,7 +1633,7 @@ async function searchConditions(q) {
         <div class="product-row" onclick="addCondition('${c.id}')">
             <div>
                 <div class="p-name">${c.name_ru || c.name_en}</div>
-                <div class="p-brand">${c.code} · ${c.category}</div>
+                <div class="p-brand">${c.code} · ${typeof trCategory === "function" ? trCategory(c.category) : c.category}</div>
             </div>
         </div>
     `).join('');

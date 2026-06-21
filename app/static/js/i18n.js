@@ -49,6 +49,7 @@ const TRANSLATIONS = {
         heartRate: 'Пульс', steps: 'Шаги', record: 'Записать',
         sync: 'Синхронизация', export: 'Экспорт', import: 'Импорт',
         offline: 'Офлайн', online: 'Онлайн', syncing: 'Синхронизация',
+        perWeek: 'за неделю', kcalShort: 'ккал', kcalPer100g: 'ккал/100г', loading: 'Загрузка...', loadError: 'Ошибка загрузки', addedSynced: 'Добавлено', addedOffline: 'Добавлено офлайн — синхр. при сети', noEntries: 'Записей нет',
     },
     en: {
         diary: 'Diary', plan: 'Plan', nutrients: 'Nutrients', stats: 'Statistics', health: 'Health',
@@ -98,6 +99,7 @@ const TRANSLATIONS = {
         heartRate: 'Heart rate', steps: 'Steps', record: 'Save',
         sync: 'Sync', export: 'Export', import: 'Import',
         offline: 'Offline', online: 'Online', syncing: 'Syncing',
+        perWeek: 'per week', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: 'Loading...', loadError: 'Loading error', addedSynced: 'Added', addedOffline: 'Added offline — will sync', noEntries: 'No entries',
     },
     ja: {
         diary: '日記', plan: 'プラン', nutrients: '栄養素', stats: '統計', health: '健康',
@@ -147,6 +149,7 @@ const TRANSLATIONS = {
         heartRate: '心拍数', steps: '歩数', record: '記録',
         sync: '同期', import: 'インポート',
         offline: 'オフライン', online: 'オンライン', syncing: '同期中',
+        perWeek: '週間', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: '読み込み中...', loadError: '読み込みエラー', addedSynced: '追加しました', addedOffline: 'オフラインで追加 — 接続時に同期', noEntries: '記録なし',
     }
 };
 
@@ -177,3 +180,71 @@ function setLang(lang) {
 document.addEventListener('DOMContentLoaded', () => {
     if (currentLang !== 'ru') setLang(currentLang);
 });
+
+
+// === Category & meal name translators ===
+// Backend stores categories/meals in Russian (free text). UI translates known ones.
+const CATEGORY_MAP = {
+    'Мясо':            { en: 'Meat',           ja: '肉類' },
+    'Рыба':            { en: 'Fish',           ja: '魚' },
+    'Морепродукты':    { en: 'Seafood',        ja: '魚介類' },
+    'Молочные':        { en: 'Dairy',          ja: '乳製品' },
+    'Яйца':            { en: 'Eggs',           ja: '卵' },
+    'Крупы':           { en: 'Grains',         ja: '穀物' },
+    'Хлеб':            { en: 'Bread',          ja: 'パン' },
+    'Макароны':        { en: 'Pasta',          ja: 'パスタ' },
+    'Фрукты':          { en: 'Fruits',         ja: '果物' },
+    'Сухофрукты':      { en: 'Dried fruits',   ja: 'ドライフルーツ' },
+    'Овощи':           { en: 'Vegetables',     ja: '野菜' },
+    'Бобовые':         { en: 'Legumes',        ja: '豆類' },
+    'Орехи':           { en: 'Nuts',           ja: 'ナッツ' },
+    'Семена':          { en: 'Seeds',          ja: '種' },
+    'Масла':           { en: 'Oils',           ja: '油' },
+    'Сладкое':         { en: 'Sweets',         ja: 'スイーツ' },
+    'Напитки':         { en: 'Beverages',      ja: '飲み物' },
+    'Соусы':           { en: 'Sauces',         ja: 'ソース' },
+    'Специи':          { en: 'Spices',         ja: '香辛料' },
+    'Готовые блюда':   { en: 'Ready meals',    ja: '惣菜' },
+    'Готовые гарниры': { en: 'Side dishes',    ja: '付け合わせ' },
+    'Колбасы':         { en: 'Sausages',       ja: 'ソーセージ' },
+    'Каши':            { en: 'Porridge',       ja: 'おかゆ' },
+    'Фастфуд':         { en: 'Fast food',      ja: 'ファストフード' },
+    'Полуфабрикаты':   { en: 'Convenience food', ja: '半加工食品' },
+};
+
+const MEAL_MAP = {
+    'Завтрак': { en: 'Breakfast', ja: '朝食' },
+    'Обед':    { en: 'Lunch',     ja: '昼食' },
+    'Ужин':    { en: 'Dinner',    ja: '夕食' },
+    'Перекус': { en: 'Snack',     ja: 'おやつ' },
+};
+
+const DRINK_TYPE_MAP = {
+    'water':  { en: 'Water',  ja: '水',     ru: 'Вода' },
+    'tea':    { en: 'Tea',    ja: 'お茶',   ru: 'Чай' },
+    'coffee': { en: 'Coffee', ja: 'コーヒー', ru: 'Кофе' },
+    'juice':  { en: 'Juice',  ja: 'ジュース', ru: 'Сок' },
+    'milk':   { en: 'Milk',   ja: '牛乳',   ru: 'Молоко' },
+    'other':  { en: 'Other',  ja: 'その他', ru: 'Другое' },
+};
+
+function trCategory(name) {
+    if (!name || currentLang === 'ru') return name;
+    return CATEGORY_MAP[name]?.[currentLang] || name;
+}
+
+function trMeal(name) {
+    if (!name || currentLang === 'ru') return name;
+    return MEAL_MAP[name]?.[currentLang] || name;
+}
+
+function trDrinkType(key) {
+    return DRINK_TYPE_MAP[key]?.[currentLang] || key;
+}
+
+// Date formatter respecting currentLang
+function formatDateLocale(d) {
+    const date = (d instanceof Date) ? d : new Date(d);
+    const locale = currentLang === 'ja' ? 'ja-JP' : (currentLang === 'en' ? 'en-US' : 'ru-RU');
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', weekday: 'short' });
+}
