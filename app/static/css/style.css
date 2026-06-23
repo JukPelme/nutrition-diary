@@ -573,3 +573,13 @@ a { color:var(--accent); text-decoration:none; }
         align-items: start;
     }
 }
+
+/* Barcode scanner — force colour preview (some html5-qrcode versions apply grayscale filter) */
+#barcode-reader video {
+    filter: none !important;
+    -webkit-filter: none !important;
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+}
+#barcode-reader img { display: none !important; }  /* hide the broken initial logo */

@@ -880,16 +880,38 @@ async function toggleBarcodeScanner() {
     }
 
     try {
+        // Adaptive qrbox: 70% of available width, 28% height
+        const vw = Math.min(window.innerWidth - 40, 480);
+        const qrbox = { width: Math.floor(vw * 0.7), height: Math.floor(vw * 0.28) };
+
         await barcodeScanner.start(
-            { facingMode: 'environment' },
-            { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39
-            ]},
+            {
+                facingMode: { ideal: 'environment' },
+                // Prefer high resolution for sharp barcodes
+                width:  { ideal: 1920 },
+                height: { ideal: 1080 },
+                // Continuous autofocus where supported (Android Chrome)
+                focusMode: 'continuous',
+                advanced: [{ focusMode: 'continuous' }, { zoom: 1.0 }],
+            },
+            {
+                fps: 15,
+                qrbox,
+                aspectRatio: 1.5,
+                // Native BarcodeDetector (Chrome/Edge) — colour preview + HW accel
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                rememberLastUsedCamera: true,
+                showTorchButtonIfSupported: true,
+                showZoomSliderIfSupported: true,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                ],
+            },
             (code) => {
                 document.getElementById('barcode-input').value = code;
                 stopBarcodeScanner();
