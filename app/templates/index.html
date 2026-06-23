@@ -583,6 +583,13 @@
             </div>
             <button class="btn btn-secondary btn-lg" onclick="connectDevice()" style="width:100%">Подключить</button>
 
+            <div class="card-title" style="margin-top:24px" data-i18n="aiQuality">Распознавание еды (AI)</div>
+            <div class="theme-toggle-row" style="margin-bottom:8px">
+                <button class="mode-btn ai-q-btn" data-q="fast" onclick="setAiQuality('fast')">⚡ <span data-i18n="aiFast">Быстро</span></button>
+                <button class="mode-btn ai-q-btn" data-q="precise" onclick="setAiQuality('precise')">🎯 <span data-i18n="aiPrecise">Точно</span></button>
+            </div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:12px" data-i18n="aiQualityHint">Быстро = Haiku 4.5 (1¢/фото), Точно = Sonnet 4.6 (5¢/фото, лучше для сложных блюд)</div>
+
             <div class="card-title" style="margin-top:24px">Ввести метрику вручную</div>
             <div class="form-row">
                 <div class="form-group" style="flex:1">

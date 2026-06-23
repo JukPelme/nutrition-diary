@@ -1115,7 +1115,8 @@ async function onFoodPhotoSelected(event) {
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const resp = await fetch('/api/v1/food-scan', {
+        const _quality = localStorage.getItem('ai_quality') || 'fast';
+        const resp = await fetch(`/api/v1/food-scan?quality=${_quality}`, {
             method: 'POST',
             headers,
             body: formData,
@@ -2494,3 +2495,20 @@ function setupOfflineIndicator() {
     refreshQueueCount();
     render(offlineState);
 }
+
+
+function setAiQuality(q) {
+    localStorage.setItem('ai_quality', q);
+    document.querySelectorAll('.ai-q-btn').forEach(b => b.classList.toggle('active', b.dataset.q === q));
+}
+// Re-highlight on Profile open
+(function(){
+    const prev = window.openProfile;
+    if (typeof prev === 'function') {
+        window.openProfile = async function(){
+            await prev.apply(this, arguments);
+            const cur = localStorage.getItem('ai_quality') || 'fast';
+            document.querySelectorAll('.ai-q-btn').forEach(b => b.classList.toggle('active', b.dataset.q === cur));
+        };
+    }
+})();

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -14,6 +14,7 @@ MAX_SIZE = 10 * 1024 * 1024  # 10MB
 @router.post("")
 async def scan_food_photo(
     file: UploadFile = File(..., description="Food photo (JPEG, PNG, WebP)"),
+    quality: str = Query("fast", pattern="^(fast|precise)$"),
     _: User = Depends(get_current_user),
 ):
     """
@@ -35,7 +36,7 @@ async def scan_food_photo(
             detail="Image too large. Max 10MB.",
         )
 
-    result = await recognize_food(image_bytes, file.content_type)
+    result = await recognize_food(image_bytes, file.content_type, quality=quality)
 
     return {
         "provider": result.get("provider"),

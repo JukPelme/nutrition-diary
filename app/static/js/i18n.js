@@ -52,6 +52,7 @@ const TRANSLATIONS = {
         perWeek: 'за неделю', kcalShort: 'ккал', kcalPer100g: 'ккал/100г', loading: 'Загрузка...', loadError: 'Ошибка загрузки', addedSynced: 'Добавлено', addedOffline: 'Добавлено офлайн — синхр. при сети', noEntries: 'Записей нет',
         outOf: 'из',
         custom: '＋ свой',
+        aiQuality: 'Распознавание еды (AI)', aiFast: 'Быстро', aiPrecise: 'Точно', aiQualityHint: 'Быстро = Haiku 4.5 (~1¢/фото), Точно = Sonnet 4.6 (~5¢/фото, лучше для сложных блюд)',
     },
     en: {
         diary: 'Diary', plan: 'Plan', nutrients: 'Nutrients', stats: 'Statistics', health: 'Health',
@@ -104,6 +105,7 @@ const TRANSLATIONS = {
         perWeek: 'per week', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: 'Loading...', loadError: 'Loading error', addedSynced: 'Added', addedOffline: 'Added offline — will sync', noEntries: 'No entries',
         outOf: 'of',
         custom: '＋ custom',
+        aiQuality: 'Food recognition (AI)', aiFast: 'Fast', aiPrecise: 'Precise', aiQualityHint: 'Fast = Haiku 4.5 (~1¢/photo), Precise = Sonnet 4.6 (~5¢/photo, better for complex dishes)',
     },
     ja: {
         diary: '日記', plan: 'プラン', nutrients: '栄養素', stats: '統計', health: '健康',
@@ -156,6 +158,7 @@ const TRANSLATIONS = {
         perWeek: '週間', kcalShort: 'kcal', kcalPer100g: 'kcal/100g', loading: '読み込み中...', loadError: '読み込みエラー', addedSynced: '追加しました', addedOffline: 'オフラインで追加 — 接続時に同期', noEntries: '記録なし',
         outOf: '/',
         custom: '＋ カスタム',
+        aiQuality: '食品認識 (AI)', aiFast: '高速', aiPrecise: '高精度', aiQualityHint: '高速 = Haiku 4.5 (~1¢/枚), 高精度 = Sonnet 4.6 (~5¢/枚, 複雑な料理に最適)',
     }
 };
 

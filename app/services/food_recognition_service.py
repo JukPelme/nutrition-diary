@@ -12,7 +12,7 @@ import httpx
 from app.core.config import settings
 
 
-async def recognize_food_claude(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict | None:
+async def recognize_food_claude(image_bytes: bytes, mime_type: str = "image/jpeg", model: str = "claude-haiku-4-5-20251001") -> dict | None:
     """Recognize food using Claude Vision API."""
     api_key = settings.anthropic_api_key
     if not api_key:
@@ -50,7 +50,7 @@ Only return valid JSON, no other text."""
                     "content-type": "application/json",
                 },
                 json={
-                    "model": "claude-haiku-4-5-20251001",
+                    "model": model,
                     "max_tokens": 1024,
                     "messages": [
                         {
@@ -147,10 +147,11 @@ async def recognize_food_logmeal(image_bytes: bytes) -> dict | None:
         return {"foods": [], "error": str(e)}
 
 
-async def recognize_food(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict:
+async def recognize_food(image_bytes: bytes, mime_type: str = "image/jpeg", quality: str = "fast") -> dict:
     """Try available providers in order of preference."""
     # Try Claude first (best quality)
-    result = await recognize_food_claude(image_bytes, mime_type)
+    model = "claude-sonnet-4-6" if quality == "precise" else "claude-haiku-4-5-20251001"
+    result = await recognize_food_claude(image_bytes, mime_type, model=model)
     if result and result.get("foods"):
         result["provider"] = "claude"
         return result
