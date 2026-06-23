@@ -859,6 +859,59 @@ function closeBarcodeModal() {
     closeModal('barcode-modal');
 }
 
+let nativeScannerStream = null;
+let nativeScannerLoopRunning = false;
+
+async function startNativeBarcodeScanner(onFound, onError) {
+    const reader = document.getElementById('barcode-reader');
+    reader.innerHTML = '<video id="bc-video" playsinline muted autoplay style="width:100%;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
+    const video = document.getElementById('bc-video');
+    try {
+        nativeScannerStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: 'environment' },
+                width:  { ideal: 1920 },
+                height: { ideal: 1080 },
+                focusMode: 'continuous',
+                advanced: [{ focusMode: 'continuous' }],
+            },
+            audio: false,
+        });
+        video.srcObject = nativeScannerStream;
+        await video.play();
+        // Try continuous focus / torch via track constraints
+        const track = nativeScannerStream.getVideoTracks()[0];
+        try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch(e){}
+
+        const detector = new BarcodeDetector({
+            formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']
+        });
+        nativeScannerLoopRunning = true;
+        const loop = async () => {
+            if (!nativeScannerLoopRunning) return;
+            try {
+                const codes = await detector.detect(video);
+                if (codes && codes.length) {
+                    onFound(codes[0].rawValue);
+                    return;
+                }
+            } catch(e) { /* one-off detect error — keep looping */ }
+            requestAnimationFrame(loop);
+        };
+        loop();
+    } catch (e) {
+        onError && onError(e);
+    }
+}
+
+function stopNativeBarcodeScanner() {
+    nativeScannerLoopRunning = false;
+    if (nativeScannerStream) {
+        nativeScannerStream.getTracks().forEach(t => t.stop());
+        nativeScannerStream = null;
+    }
+}
+
 async function toggleBarcodeScanner() {
     const area = document.getElementById('barcode-scanner-area');
     const btn = document.getElementById('scan-toggle-btn');
@@ -875,6 +928,28 @@ async function toggleBarcodeScanner() {
     btn.textContent = '⏹ Остановить';
     scannerActive = true;
 
+    // Prefer native BarcodeDetector — colour preview, GPU-accelerated, autofocus
+    if ('BarcodeDetector' in window) {
+        await startNativeBarcodeScanner(
+            (code) => {
+                stopNativeBarcodeScanner();
+                document.getElementById('barcode-input').value = code;
+                area.classList.add('hidden');
+                btn.textContent = '📷 Сканировать';
+                scannerActive = false;
+                searchBarcode();
+            },
+            (err) => {
+                area.classList.add('hidden');
+                btn.textContent = '📷 Сканировать';
+                scannerActive = false;
+                document.getElementById('barcode-status').textContent = 'Камера недоступна: ' + (err && err.name || 'error');
+            }
+        );
+        return;
+    }
+
+    // Fallback: html5-qrcode for Safari / older browsers
     if (!barcodeScanner) {
         barcodeScanner = new Html5Qrcode('barcode-reader');
     }
@@ -931,6 +1006,7 @@ async function toggleBarcodeScanner() {
 }
 
 function stopBarcodeScanner() {
+    if (typeof stopNativeBarcodeScanner === 'function') stopNativeBarcodeScanner();
     if (barcodeScanner && scannerActive) {
         barcodeScanner.stop().catch(() => {});
     }
