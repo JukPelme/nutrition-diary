@@ -21,5 +21,14 @@ async function api(path, opts = {}) {
 }
 
 function setToken(t) { token = t; localStorage.setItem('token', t); if (typeof persistTokenForSW === 'function') persistTokenForSW(t); }
-function logout() { token = null; localStorage.removeItem('token'); if (typeof persistTokenForSW === 'function') persistTokenForSW(null); location.reload(); }
+function logout() {
+    token = null;
+    localStorage.removeItem('token');
+    if (typeof persistTokenForSW === 'function') { try { persistTokenForSW(null); } catch(e){} }
+    // Loop guard: if we just reloaded due to logout in the last 5s, don't reload again — just clear UI
+    const last = +sessionStorage.getItem('_lastLogoutAt') || 0;
+    if (Date.now() - last < 5000) { console.warn('[api] logout loop suppressed'); return; }
+    sessionStorage.setItem('_lastLogoutAt', String(Date.now()));
+    location.reload();
+}
 function isLoggedIn() { return !!token; }
