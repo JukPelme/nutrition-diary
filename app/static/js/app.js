@@ -905,8 +905,9 @@ async function startNativeBarcodeScanner(onFound, onError) {
             '</select>';
     }
     selectorHtml += '</div>';
-    reader.innerHTML = selectorHtml +
-        '<video id="bc-video" playsinline muted autoplay style="width:100%;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
+    reader.innerHTML =
+        '<video id="bc-video" playsinline muted autoplay style="width:100%;max-height:50vh;display:block;background:#000;border-radius:8px;object-fit:cover"></video>'
+        + selectorHtml;
     const video = document.getElementById('bc-video');
 
     if (devices.length > 1) {
