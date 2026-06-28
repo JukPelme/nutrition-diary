@@ -51,21 +51,26 @@ async def decode_barcode_image(
 
     b64 = base64.b64encode(img).decode("utf-8")
     prompt = "На изображении штрихкод. Верни ТОЛЬКО его цифры одной строкой, без пробелов и пояснений. Если штрихкод не найден или не читается — верни одно слово NONE."
-    async with httpx.AsyncClient(timeout=20) as client:
-        r = await client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 50,
-                "messages": [{"role": "user", "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": file.content_type, "data": b64}},
-                    {"type": "text", "text": prompt},
-                ]}],
-            },
-        )
-        r.raise_for_status()
-        text = r.json()["content"][0]["text"].strip()
+    async with httpx.AsyncClient(timeout=30) as client:
+        try:
+            r = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                json={
+                    "model": "claude-haiku-4-5-20251001",
+                    "max_tokens": 50,
+                    "messages": [{"role": "user", "content": [
+                        {"type": "image", "source": {"type": "base64", "media_type": file.content_type, "data": b64}},
+                        {"type": "text", "text": prompt},
+                    ]}],
+                },
+            )
+            if r.status_code >= 400:
+                return {"barcode": None, "raw": None, "product": None,
+                        "error": f"Vision API error: {r.status_code} {r.text[:150]}"}
+            text = r.json()["content"][0]["text"].strip()
+        except Exception as e:
+            return {"barcode": None, "raw": None, "product": None, "error": f"Vision call failed: {e}"}
     digits = _re.sub(r"\D+", "", text)
     if not digits or len(digits) < 6:
         return {"barcode": None, "raw": text, "product": None}

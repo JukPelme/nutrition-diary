@@ -2617,24 +2617,56 @@ async function decodeBarcodeFromImage(event) {
     event.target.value = '';
     if (!file) return;
     const status = document.getElementById('barcode-status');
-    status.textContent = (typeof t === 'function' ? t('loading') : 'Распознаю...');
+    status.textContent = 'Сжимаю фото...';
     try {
+        const blob = await compressImage(file, 1280, 0.85);
+        status.textContent = `Распознаю (${Math.round(blob.size/1024)} КБ)...`;
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('file', blob, 'barcode.jpg');
         const resp = await fetch('/api/v1/barcode/decode-image', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
             body: fd,
         });
         const data = await resp.json();
+        if (data.error) {
+            status.textContent = data.error.slice(0, 120);
+            return;
+        }
         if (data.barcode) {
             document.getElementById('barcode-input').value = data.barcode;
-            status.textContent = data.product ? '' : (typeof t === 'function' ? t('loadError') : 'Не найден в базе');
-            searchBarcode();
+            if (data.product) {
+                status.textContent = '';
+                searchBarcode();
+            } else {
+                status.textContent = `Найден ${data.barcode}, но нет в базе. Нажми «Найти» для поиска в OFF.`;
+            }
         } else {
-            status.textContent = 'Штрихкод не распознан на фото';
+            status.textContent = 'Штрихкод не распознан. Снимай ближе и при хорошем свете.';
         }
     } catch (e) {
-        status.textContent = 'Ошибка: ' + e;
+        status.textContent = 'Ошибка: ' + (e?.message || e);
     }
+}
+
+function compressImage(file, maxSide = 1280, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            let { width, height } = img;
+            if (width > maxSide || height > maxSide) {
+                const ratio = Math.min(maxSide / width, maxSide / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+        img.src = url;
+    });
 }
