@@ -237,7 +237,12 @@
                 const idx = parseInt(choice) - 1;
                 if (idx < 0 || idx >= devs.length) { alert('Неверный номер'); return; }
                 localStorage.setItem('preferred_camera_id', devs[idx].deviceId);
-                alert('Выбрано: ' + (devs[idx].label || 'камера ' + (idx+1)) + '. Останови и запусти сканер снова.');
+                // Hard-restart scanner: stop current, then start with new device
+                try {
+                    if (typeof stopNativeBarcodeScanner === 'function') stopNativeBarcodeScanner();
+                } catch(e){}
+                // Reload to fully apply (no half-state with multiple streams)
+                location.reload();
             } catch (e) {
                 alert('Ошибка: ' + (e?.message || e));
             }
