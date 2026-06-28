@@ -225,7 +225,43 @@
             <button class="footer-refresh" onclick="__hardRefresh()" title="Принудительно обновить">↻</button>
         </div>
         <script>
-        // Inline so it works even if app.js is from a stale SW cache.
+        // Inline so these work even when app.js is served from a stale SW cache.
+        window.decodeBarcodeFromImage = async function(event) {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            const status = document.getElementById('barcode-status');
+            const setMsg = (m) => {
+                if (status) { status.textContent = m; status.style.color = '#ffa940'; status.style.fontSize = '14px'; }
+                console.log('[barcode]', m);
+            };
+            if (!file) { setMsg('Файл не получен от камеры'); return; }
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) { setMsg('Нужно войти в аккаунт'); return; }
+                setMsg('Распознаю (' + Math.round(file.size/1024) + ' КБ)...');
+                const fd = new FormData();
+                fd.append('file', file, file.name || 'barcode.jpg');
+                const resp = await fetch('/api/v1/barcode/decode-image', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: fd,
+                });
+                const text = await resp.text();
+                let data;
+                try { data = JSON.parse(text); } catch(e) { setMsg('HTTP ' + resp.status); return; }
+                if (data.error) { setMsg('⚠️ ' + String(data.error).slice(0, 200)); return; }
+                if (data.barcode) {
+                    document.getElementById('barcode-input').value = data.barcode;
+                    if (data.product) { setMsg('✓ Найдено: ' + (data.product.name || data.barcode)); if (typeof searchBarcode === 'function') searchBarcode(); }
+                    else setMsg('Найден ' + data.barcode + ', но нет в базе. Нажми «Найти».');
+                } else {
+                    setMsg('Штрихкод не распознан. Снимай ближе и ровнее.');
+                }
+            } catch (e) {
+                setMsg('Ошибка: ' + (e && e.message ? e.message : e));
+            }
+        };
+
         window.__hardRefresh = async function() {
             try {
                 if ('serviceWorker' in navigator) {
