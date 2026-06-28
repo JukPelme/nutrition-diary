@@ -867,21 +867,62 @@ function closeBarcodeModal() {
 let nativeScannerStream = null;
 let nativeScannerLoopRunning = false;
 
+async function listVideoDevices() {
+    try {
+        // First request a generic stream to unlock device labels (Chrome hides them otherwise)
+        const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+        tmp.getTracks().forEach(t => t.stop());
+    } catch(e) {}
+    const all = await navigator.mediaDevices.enumerateDevices();
+    return all.filter(d => d.kind === 'videoinput');
+}
+
+async function pickCameraByLabel(devices) {
+    // Heuristic: pick the back/main color camera, NOT depth/mono/wide/macro
+    const saved = localStorage.getItem('preferred_camera_id');
+    if (saved && devices.some(d => d.deviceId === saved)) return saved;
+    const bad = /(depth|mono|monochrome|ir|infrared|wide|ultra|macro|telephoto)/i;
+    const goodBack = devices.find(d => /(back|rear|environment|world)/i.test(d.label) && !bad.test(d.label));
+    if (goodBack) return goodBack.deviceId;
+    const anyBack = devices.find(d => /(back|rear|environment)/i.test(d.label));
+    if (anyBack) return anyBack.deviceId;
+    return devices[devices.length - 1]?.deviceId;
+}
+
 async function startNativeBarcodeScanner(onFound, onError) {
     const reader = document.getElementById('barcode-reader');
-    reader.innerHTML = '<video id="bc-video" playsinline muted autoplay style="width:100%;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
+    const devices = await listVideoDevices();
+    const selectedId = await pickCameraByLabel(devices);
+
+    let selectorHtml = '';
+    if (devices.length > 1) {
+        selectorHtml = '<select id="bc-camera-select" style="width:100%;padding:8px;margin-bottom:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px">' +
+            devices.map(d => `<option value="${d.deviceId}" ${d.deviceId===selectedId?'selected':''}>${(d.label||'Camera').slice(0,60)}</option>`).join('') +
+            '</select>';
+    }
+    reader.innerHTML = selectorHtml +
+        '<video id="bc-video" playsinline muted autoplay style="width:100%;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
     const video = document.getElementById('bc-video');
+
+    if (devices.length > 1) {
+        document.getElementById('bc-camera-select').onchange = async (e) => {
+            localStorage.setItem('preferred_camera_id', e.target.value);
+            stopNativeBarcodeScanner();
+            startNativeBarcodeScanner(onFound, onError);
+        };
+    }
+
     try {
-        nativeScannerStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: { ideal: 'environment' },
-                width:  { ideal: 1920 },
-                height: { ideal: 1080 },
-                focusMode: 'continuous',
-                advanced: [{ focusMode: 'continuous' }],
-            },
-            audio: false,
+        const constraints = selectedId
+            ? { deviceId: { exact: selectedId } }
+            : { facingMode: { ideal: 'environment' } };
+        Object.assign(constraints, {
+            width:  { ideal: 1920 },
+            height: { ideal: 1080 },
+            focusMode: 'continuous',
+            advanced: [{ focusMode: 'continuous' }],
         });
+        nativeScannerStream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
         video.srcObject = nativeScannerStream;
         await video.play();
         // Try continuous focus / torch via track constraints
