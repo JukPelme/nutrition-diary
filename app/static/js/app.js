@@ -2620,37 +2620,52 @@ function setAiQuality(q) {
 async function decodeBarcodeFromImage(event) {
     const file = event.target.files && event.target.files[0];
     event.target.value = '';
-    if (!file) return;
+    console.log('[barcode] decodeBarcodeFromImage called, file=', file);
+    if (!file) { alert('Файл не получен от камеры'); return; }
+
     const status = document.getElementById('barcode-status');
-    status.textContent = 'Сжимаю фото...';
+    const setMsg = (m) => {
+        if (status) { status.textContent = m; status.style.color = '#ffa940'; status.style.fontSize = '14px'; }
+        if (typeof showToast === 'function') showToast(m);
+        console.log('[barcode]', m);
+    };
+
+    setMsg(`Сжимаю фото (${Math.round(file.size/1024)} КБ, ${file.type || 'unknown'})...`);
     try {
-        const blob = await compressImage(file, 1280, 0.85);
-        status.textContent = `Распознаю (${Math.round(blob.size/1024)} КБ)...`;
+        let blob;
+        try {
+            blob = await compressImage(file, 1280, 0.85);
+            setMsg(`Сжато до ${Math.round(blob.size/1024)} КБ, распознаю...`);
+        } catch (cErr) {
+            console.warn('[barcode] compress failed, sending original:', cErr);
+            blob = file;
+            setMsg(`Сжатие невозможно, шлю оригинал ${Math.round(file.size/1024)} КБ...`);
+        }
+
         const fd = new FormData();
-        fd.append('file', blob, 'barcode.jpg');
+        fd.append('file', blob, blob.name || 'barcode.jpg');
         const resp = await fetch('/api/v1/barcode/decode-image', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
             body: fd,
         });
-        const data = await resp.json();
-        if (data.error) {
-            status.textContent = data.error.slice(0, 120);
-            return;
-        }
+        console.log('[barcode] HTTP', resp.status);
+        const text = await resp.text();
+        let data;
+        try { data = JSON.parse(text); } catch(e) { data = { error: `HTTP ${resp.status}: ${text.slice(0,200)}` }; }
+        console.log('[barcode] response:', data);
+
+        if (data.error) { setMsg('⚠️ ' + data.error.slice(0, 200)); return; }
         if (data.barcode) {
             document.getElementById('barcode-input').value = data.barcode;
-            if (data.product) {
-                status.textContent = '';
-                searchBarcode();
-            } else {
-                status.textContent = `Найден ${data.barcode}, но нет в базе. Нажми «Найти» для поиска в OFF.`;
-            }
+            if (data.product) { setMsg('✓ ' + data.barcode); searchBarcode(); }
+            else setMsg(`Найден ${data.barcode}, но нет в базе. Нажми «Найти».`);
         } else {
-            status.textContent = 'Штрихкод не распознан. Снимай ближе и при хорошем свете.';
+            setMsg('Штрихкод не распознан. Снимай ближе и ровно, чтобы линии были чёткими.');
         }
     } catch (e) {
-        status.textContent = 'Ошибка: ' + (e?.message || e);
+        console.error('[barcode] exception:', e);
+        setMsg('Ошибка: ' + (e?.message || e));
     }
 }
 
