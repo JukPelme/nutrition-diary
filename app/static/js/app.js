@@ -229,6 +229,7 @@ async function showApp() {
     await loadUserSettings();
     initNotifications();
     migrateLegacyWater().catch(()=>{});
+    checkAppVersion().catch(()=>{});
     setupOfflineIndicator();
     flushSyncQueue().catch(()=>{});
     cacheProductCatalog().catch(()=>{});
@@ -328,6 +329,10 @@ async function openProfile() {
     document.getElementById('set-water').value = '';
 
     const me = await api('/auth/me').catch(() => null);
+    const verEl = document.getElementById('version-info');
+    if (verEl && window._appVersion) {
+        verEl.innerHTML = `Версия: <code>${window._appVersion}</code> · запущена ${window._appStartedAt || ''}`;
+    }
     if (me) {
         document.getElementById('prof-name').value = me.full_name || '';
         document.getElementById('prof-username').value = me.username || '';
@@ -2669,4 +2674,48 @@ function compressImage(file, maxSide = 1280, quality = 0.85) {
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
         img.src = url;
     });
+}
+
+
+async function checkAppVersion() {
+    try {
+        const resp = await fetch('/api/v1/version', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const current = data.version;
+        const saved = localStorage.getItem('app_version');
+        // First load — just remember.
+        if (!saved) { localStorage.setItem('app_version', current); }
+        else if (saved !== current) {
+            // Bump our pointer — but ask user to refresh because SW cache may be stale
+            offerUpdate(current);
+        }
+        // Always expose latest version in Profile/Settings
+        window._appVersion = current;
+        window._appStartedAt = data.started_at;
+    } catch(e) {}
+}
+
+function offerUpdate(newVersion) {
+    if (document.getElementById('update-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'update-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--accent);color:#fff;padding:10px 14px;text-align:center;z-index:300;font-size:13px;display:flex;gap:12px;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    banner.innerHTML = `Доступна новая версия (${newVersion}) <button onclick="hardRefresh()" style="background:#fff;color:var(--accent);border:none;border-radius:8px;padding:6px 12px;font-weight:600;cursor:pointer">Обновить</button>`;
+    document.body.appendChild(banner);
+}
+
+async function hardRefresh() {
+    try {
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+        }
+        if (window.caches) {
+            const keys = await caches.keys();
+            for (const k of keys) await caches.delete(k);
+        }
+        localStorage.setItem('app_version', window._appVersion || '');
+    } catch(e) {}
+    location.reload();
 }

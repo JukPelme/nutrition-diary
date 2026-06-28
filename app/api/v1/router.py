@@ -33,3 +33,13 @@ api_router.include_router(water_router)
 
 from app.api.v1.endpoints.nutrition_goals import router as nutrition_goals_router
 api_router.include_router(nutrition_goals_router)
+
+from fastapi import APIRouter as _AR
+import os, datetime
+_v_router = _AR(prefix="/version", tags=["version"])
+_STARTED_AT = datetime.datetime.utcnow().isoformat() + "Z"
+_BUILD_VERSION = os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")[:7] or _STARTED_AT
+@_v_router.get("")
+async def app_version():
+    return {"version": _BUILD_VERSION, "started_at": _STARTED_AT}
+api_router.include_router(_v_router)
