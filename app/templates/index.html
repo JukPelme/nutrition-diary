@@ -310,10 +310,11 @@
                 <input type="text" id="barcode-input" class="input" placeholder="Введите штрихкод..." inputmode="numeric">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px">
-                <button class="btn btn-secondary" style="flex:1" id="scan-toggle-btn" onclick="toggleBarcodeScanner()">📷 Сканировать</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('barcode-image-input').click()" title="Сделать или выбрать фото штрихкода">📁 Из галереи</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('barcode-camera-input').click()" title="Сделать фото штрихкода камерой">📷 Камера</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('barcode-gallery-input').click()" title="Выбрать фото из галереи">📁 Галерея</button>
             </div>
-            <input type="file" id="barcode-image-input" accept="image/*" capture="environment" style="display:none" onchange="decodeBarcodeFromImage(event)">
+            <input type="file" id="barcode-camera-input" accept="image/*" capture="environment" style="display:none" onchange="decodeBarcodeFromImage(event)">
+            <input type="file" id="barcode-gallery-input" accept="image/*" style="display:none" onchange="decodeBarcodeFromImage(event)">
             <button class="btn btn-primary" style="width:100%" onclick="searchBarcode()">Найти</button>
             <div id="barcode-status" style="text-align:center;padding:12px;color:var(--text2)"></div>
         </div>
