@@ -237,12 +237,7 @@
                 const idx = parseInt(choice) - 1;
                 if (idx < 0 || idx >= devs.length) { alert('Неверный номер'); return; }
                 localStorage.setItem('preferred_camera_id', devs[idx].deviceId);
-                // Hard-restart scanner: stop current, then start with new device
-                try {
-                    if (typeof stopNativeBarcodeScanner === 'function') stopNativeBarcodeScanner();
-                } catch(e){}
-                // Reload to fully apply (no half-state with multiple streams)
-                location.reload();
+                alert('Сохранено: ' + (devs[idx].label || ('камера ' + (idx+1))) + '. DokeOS не различает камеры в WebRTC — для тебя лучше использовать 📷 Камера через системное приложение.');
             } catch (e) {
                 alert('Ошибка: ' + (e?.message || e));
             }
