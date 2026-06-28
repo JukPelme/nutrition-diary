@@ -1,7 +1,7 @@
 // Service Worker v3: network-first API, cache-first static, Background Sync queue, notifications.
 try { importScripts('https://unpkg.com/dexie@3.2.7/dist/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
 
-const CACHE_NAME = 'nutrition-diary-v4';
+const CACHE_NAME = 'nutrition-diary-v5';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
@@ -43,6 +43,10 @@ self.addEventListener('fetch', event => {
     if (url.origin !== self.location.origin) return;
 
     // Network-first for API; fall back to cache if any
+    if (url.pathname.startsWith('/api/v1/version')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
             fetch(event.request)

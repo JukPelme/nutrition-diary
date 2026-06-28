@@ -2679,21 +2679,28 @@ function compressImage(file, maxSide = 1280, quality = 0.85) {
 
 async function checkAppVersion() {
     try {
-        const resp = await fetch('/api/v1/version', { cache: 'no-store' });
+        // Bypass any SW or HTTP cache — append timestamp
+        const resp = await fetch('/api/v1/version?_=' + Date.now(), {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+        });
         if (!resp.ok) return;
         const data = await resp.json();
         const current = data.version;
         const saved = localStorage.getItem('app_version');
-        // First load — just remember.
         if (!saved) { localStorage.setItem('app_version', current); }
-        else if (saved !== current) {
-            // Bump our pointer — but ask user to refresh because SW cache may be stale
-            offerUpdate(current);
-        }
-        // Always expose latest version in Profile/Settings
+        else if (saved !== current) offerUpdate(current);
         window._appVersion = current;
         window._appStartedAt = data.started_at;
-    } catch(e) {}
+        renderVersionFooter();
+    } catch(e) { console.warn('[version] check failed:', e); }
+}
+
+function renderVersionFooter() {
+    const el = document.getElementById('version-footer');
+    if (!el || !window._appVersion) return;
+    const ts = (window._appStartedAt || '').slice(0, 19).replace('T', ' ');
+    el.innerHTML = `v <code>${window._appVersion}</code> · ${ts}`;
 }
 
 function offerUpdate(newVersion) {

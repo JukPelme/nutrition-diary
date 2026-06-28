@@ -583,3 +583,31 @@ a { color:var(--accent); text-decoration:none; }
     object-fit: cover !important;
 }
 #barcode-reader img { display: none !important; }  /* hide the broken initial logo */
+
+/* Footer with app version */
+.app-footer {
+    margin-top: 24px;
+    padding: 12px 16px 76px;
+    text-align: center;
+    color: var(--text2);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0.6;
+}
+.app-footer:hover { opacity: 1; }
+.footer-refresh {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 22px;
+    padding: 0;
+    transition: transform 0.4s;
+}
+.footer-refresh:hover { transform: rotate(180deg); color: var(--text); }
