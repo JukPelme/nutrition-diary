@@ -380,9 +380,10 @@
             <div class="form-group">
                 <input type="text" id="barcode-input" class="input" placeholder="Введите штрихкод..." inputmode="numeric">
             </div>
-            <div style="display:flex;gap:8px;margin-bottom:8px">
-                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('barcode-camera-input').click()" title="Сделать фото штрихкода камерой">📷 Камера</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('barcode-gallery-input').click()" title="Выбрать фото из галереи">📁 Галерея</button>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+                <button class="btn btn-secondary" id="scan-toggle-btn" style="flex:1;font-size:13px;padding:10px 4px" onclick="toggleBarcodeScanner()" title="Live-сканер через камеру (бесплатно)">📡 Сканер</button>
+                <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 4px" onclick="document.getElementById('barcode-camera-input').click()" title="Сделать фото и распознать через AI">📷 Камера</button>
+                <button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px 4px" onclick="document.getElementById('barcode-gallery-input').click()" title="Выбрать фото из галереи">📁 Галерея</button>
             </div>
             <input type="file" id="barcode-camera-input" accept="image/*" capture="environment" style="display:none" onchange="decodeBarcodeFromImage(event)">
             <input type="file" id="barcode-gallery-input" accept="image/*" style="display:none" onchange="decodeBarcodeFromImage(event)">
