@@ -894,12 +894,17 @@ async function startNativeBarcodeScanner(onFound, onError) {
     const devices = await listVideoDevices();
     const selectedId = await pickCameraByLabel(devices);
 
-    let selectorHtml = '';
-    if (devices.length > 1) {
-        selectorHtml = '<select id="bc-camera-select" style="width:100%;padding:8px;margin-bottom:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px">' +
-            devices.map(d => `<option value="${d.deviceId}" ${d.deviceId===selectedId?'selected':''}>${(d.label||'Camera').slice(0,60)}</option>`).join('') +
+    // Always show a small info bar — how many cameras detected + selector
+    let selectorHtml = '<div style="background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;color:var(--text2)">';
+    if (devices.length === 0) {
+        selectorHtml += 'Камер не найдено (попробуй разрешение доступа).';
+    } else {
+        selectorHtml += `Найдено камер: <b style="color:var(--text)">${devices.length}</b>`;
+        selectorHtml += '<select id="bc-camera-select" style="width:100%;padding:8px;margin-top:6px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:13px">' +
+            devices.map((d, i) => `<option value="${d.deviceId}" ${d.deviceId===selectedId?'selected':''}>${i+1}. ${(d.label||'Camera ' + (i+1)).slice(0,60)}</option>`).join('') +
             '</select>';
     }
+    selectorHtml += '</div>';
     reader.innerHTML = selectorHtml +
         '<video id="bc-video" playsinline muted autoplay style="width:100%;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
     const video = document.getElementById('bc-video');
