@@ -222,8 +222,39 @@
         </div>
         <div id="app-footer" class="app-footer">
             <span id="version-footer">…</span>
-            <button class="footer-refresh" onclick="hardRefresh()" title="Принудительно обновить">↻</button>
+            <button class="footer-refresh" onclick="__hardRefresh()" title="Принудительно обновить">↻</button>
         </div>
+        <script>
+        // Inline so it works even if app.js is from a stale SW cache.
+        window.__hardRefresh = async function() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (const r of regs) { try { await r.unregister(); } catch(e){} }
+                }
+                if (window.caches) {
+                    const keys = await caches.keys();
+                    for (const k of keys) { try { await caches.delete(k); } catch(e){} }
+                }
+                try { localStorage.removeItem('app_version'); } catch(e){}
+            } catch(e) {}
+            location.replace(location.pathname + '?_=' + Date.now());
+        };
+        (async () => {
+            try {
+                const r = await fetch('/api/v1/version?_=' + Date.now(), { cache: 'no-store' });
+                const d = await r.json();
+                const ts = (d.started_at || '').slice(0, 19).replace('T', ' ');
+                const el = document.getElementById('version-footer');
+                if (el) el.innerHTML = 'v <code>' + d.version + '</code> · ' + ts;
+                window._appVersion = d.version;
+                window._appStartedAt = d.started_at;
+            } catch(e) {
+                const el = document.getElementById('version-footer');
+                if (el) el.textContent = 'версия недоступна';
+            }
+        })();
+        </script>
     </main>
 
     <!-- Bottom Navigation -->
