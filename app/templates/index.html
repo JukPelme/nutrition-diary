@@ -226,6 +226,22 @@
         </div>
         <script>
         // Inline so these work even when app.js is served from a stale SW cache.
+                window.__showCameras = async function() {
+            try {
+                try { const t = await navigator.mediaDevices.getUserMedia({ video: true }); t.getTracks().forEach(s => s.stop()); } catch(e){}
+                const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+                if (devs.length === 0) { alert('Камер не найдено. Дай разрешение на камеру в настройках сайта.'); return; }
+                const labels = devs.map((d, i) => `${i+1}. ${d.label || 'unnamed'} [${(d.deviceId||'').slice(0,8)}…]`).join('\n');
+                const choice = prompt(`Найдено ${devs.length} камер:\n\n${labels}\n\nВведи номер (1-${devs.length}) чтобы выбрать, или Отмена:`);
+                if (!choice) return;
+                const idx = parseInt(choice) - 1;
+                if (idx < 0 || idx >= devs.length) { alert('Неверный номер'); return; }
+                localStorage.setItem('preferred_camera_id', devs[idx].deviceId);
+                alert('Выбрано: ' + (devs[idx].label || 'камера ' + (idx+1)) + '. Останови и запусти сканер снова.');
+            } catch (e) {
+                alert('Ошибка: ' + (e?.message || e));
+            }
+        };
         window.decodeBarcodeFromImage = async function(event) {
             const file = event.target.files && event.target.files[0];
             event.target.value = '';
@@ -379,6 +395,7 @@
                 <div id="barcode-camera-info"></div>
                 <div id="barcode-reader" style="width:100%;border-radius:12px;overflow:hidden"></div>
             </div>
+            <button class="btn btn-secondary" style="width:100%;margin-top:6px;font-size:12px;padding:8px" onclick="__showCameras()">🎥 Список камер на устройстве</button>
             <div class="form-group">
                 <input type="text" id="barcode-input" class="input" placeholder="Введите штрихкод..." inputmode="numeric">
             </div>
