@@ -906,8 +906,9 @@ async function startNativeBarcodeScanner(onFound, onError) {
     }
     selectorHtml += '</div>';
     reader.innerHTML =
-        '<video id="bc-video" playsinline muted autoplay style="width:100%;max-height:50vh;display:block;background:#000;border-radius:8px;object-fit:cover"></video>'
-        + selectorHtml;
+        '<video id="bc-video" playsinline muted autoplay style="width:100%;max-height:40vh;display:block;background:#000;border-radius:8px;object-fit:cover"></video>';
+    const info = document.getElementById('barcode-camera-info');
+    if (info) info.innerHTML = selectorHtml;
     const video = document.getElementById('bc-video');
 
     if (devices.length > 1) {
