@@ -2610,3 +2610,31 @@ function setAiQuality(q) {
         };
     }
 })();
+
+
+async function decodeBarcodeFromImage(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    const status = document.getElementById('barcode-status');
+    status.textContent = (typeof t === 'function' ? t('loading') : 'Распознаю...');
+    try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const resp = await fetch('/api/v1/barcode/decode-image', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd,
+        });
+        const data = await resp.json();
+        if (data.barcode) {
+            document.getElementById('barcode-input').value = data.barcode;
+            status.textContent = data.product ? '' : (typeof t === 'function' ? t('loadError') : 'Не найден в базе');
+            searchBarcode();
+        } else {
+            status.textContent = 'Штрихкод не распознан на фото';
+        }
+    } catch (e) {
+        status.textContent = 'Ошибка: ' + e;
+    }
+}
