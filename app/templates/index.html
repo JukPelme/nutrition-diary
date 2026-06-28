@@ -280,7 +280,8 @@
             try {
                 const r = await fetch('/api/v1/version?_=' + Date.now(), { cache: 'no-store' });
                 const d = await r.json();
-                const ts = (d.started_at || '').slice(0, 19).replace('T', ' ');
+                const dt = d.started_at ? new Date(d.started_at) : null;
+                const ts = dt ? dt.toLocaleString(navigator.language || 'ru-RU', { dateStyle: 'short', timeStyle: 'short' }) : '';
                 const el = document.getElementById('version-footer');
                 if (el) el.innerHTML = 'v <code>' + d.version + '</code> · ' + ts;
                 window._appVersion = d.version;
