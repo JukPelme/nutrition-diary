@@ -113,8 +113,26 @@ async def usda_seed_if_requested():
     print("[seed] usda: done")
 
 
+async def russian_variants_if_requested():
+    if os.environ.get("RU_VARIANTS_SEED") != "1":
+        return
+    from sqlalchemy import select, func
+    from app.db.session import async_session
+    from app.models import Product
+    async with async_session() as s:
+        n = (await s.execute(select(func.count(Product.id)).where(Product.source == "manual_ru"))).scalar() or 0
+    if n >= 100:
+        print(f"[seed] ru_variants: skipping ({n} already)")
+        return
+    print("[seed] ru_variants: importing Russian variants...")
+    db_url = _normalized_db_url()
+    from scripts.seed_russian_variants import seed as seed_ru
+    await seed_ru(db_url)
+
+
 async def main():
     await base_seed_if_needed()
+    await russian_variants_if_requested()
     await extended_seed_if_requested()
     await usda_seed_if_requested()
     await demo_user_if_requested()

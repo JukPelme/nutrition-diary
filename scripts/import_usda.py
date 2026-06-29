@@ -124,6 +124,49 @@ QUERIES = [
     # Tofu & alternatives
     ("tofu", "Бобовые"), ("tempeh", "Бобовые"), ("soy milk", "Молочные"),
     ("almond milk", "Молочные"), ("oat milk", "Молочные"),
+    # Rice cultivars
+    ("brown rice", "Крупы"), ("white rice", "Крупы"), ("basmati rice", "Крупы"),
+    ("jasmine rice", "Крупы"), ("wild rice", "Крупы"), ("arborio rice", "Крупы"),
+    ("sushi rice", "Крупы"), ("black rice", "Крупы"),
+    # Pasta types
+    ("durum wheat pasta", "Макароны"), ("whole grain pasta", "Макароны"),
+    ("penne pasta", "Макароны"), ("fettuccine", "Макароны"), ("linguine", "Макароны"),
+    ("macaroni", "Макароны"), ("ramen noodles", "Макароны"), ("udon noodles", "Макароны"),
+    ("rice noodles", "Макароны"),
+    # Chicken cuts
+    ("chicken breast skinless", "Мясо"), ("chicken thigh", "Мясо"), ("chicken wing", "Мясо"),
+    ("chicken drumstick", "Мясо"), ("chicken liver", "Мясо"),
+    # Beef cuts
+    ("beef ribeye", "Мясо"), ("beef sirloin", "Мясо"), ("beef tenderloin", "Мясо"),
+    ("beef ground lean", "Мясо"), ("beef ground 80 20", "Мясо"), ("beef brisket", "Мясо"),
+    # Pork cuts
+    ("pork tenderloin", "Мясо"), ("pork chop", "Мясо"), ("pork shoulder", "Мясо"),
+    ("pork ribs", "Мясо"),
+    # More fish
+    ("tilapia", "Рыба"), ("haddock", "Рыба"), ("pollock", "Рыба"), ("anchovy", "Рыба"),
+    ("perch", "Рыба"),
+    # Cheeses
+    ("cheddar cheese", "Молочные"), ("mozzarella", "Молочные"), ("parmesan", "Молочные"),
+    ("gouda", "Молочные"), ("brie", "Молочные"), ("feta", "Молочные"),
+    ("blue cheese", "Молочные"), ("cream cheese", "Молочные"), ("ricotta", "Молочные"),
+    # Milk variants
+    ("skim milk", "Молочные"), ("whole milk", "Молочные"),
+    # Yogurt variants
+    ("greek yogurt", "Молочные"), ("yogurt low fat", "Молочные"),
+    # Grains
+    ("pearl barley", "Крупы"), ("couscous", "Крупы"), ("polenta", "Крупы"),
+    ("steel cut oats", "Крупы"), ("rolled oats", "Крупы"),
+    # Vegetables more
+    ("bell pepper", "Овощи"), ("kale leaf", "Овощи"), ("arugula", "Овощи"),
+    ("lettuce", "Овощи"), ("artichoke", "Овощи"), ("leek", "Овощи"), ("turnip", "Овощи"),
+    # Fruits more
+    ("blackberry", "Фрукты"), ("cranberry", "Фрукты"), ("guava", "Фрукты"),
+    ("papaya", "Фрукты"), ("lychee", "Фрукты"), ("passion fruit", "Фрукты"),
+    # Sweet variants
+    ("dark chocolate", "Сладкое"), ("milk chocolate", "Сладкое"), ("white chocolate", "Сладкое"),
+    # Bread variants
+    ("sourdough bread", "Хлеб"), ("rye bread", "Хлеб"), ("whole grain bread", "Хлеб"),
+    ("baguette", "Хлеб"), ("pita bread", "Хлеб"), ("tortilla", "Хлеб"), ("bagel", "Хлеб"),
 ]
 
 
