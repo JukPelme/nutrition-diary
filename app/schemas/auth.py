@@ -43,6 +43,7 @@ class UserResponse(BaseModel):
     sex: str | None = None
     activity_level: str | None = None
     goal_type: str | None = None
+    preferred_language: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -50,6 +51,7 @@ class UserResponse(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = None
     username: str | None = None
+    preferred_language: str | None = None
     birth_year: int | None = None
     sex: str | None = None
     activity_level: str | None = None

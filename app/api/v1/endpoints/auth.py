@@ -195,6 +195,11 @@ async def update_me(
         current_user.activity_level = data.activity_level or None
     if data.goal_type is not None:
         current_user.goal_type = data.goal_type or None
+    if data.preferred_language is not None:
+        lang = data.preferred_language.strip() or None
+        if lang and lang not in {"ru", "en", "ja"}:
+            raise HTTPException(status_code=400, detail="Unsupported language")
+        current_user.preferred_language = lang
     if data.username is not None:
         new_username = data.username.strip() or None
         if new_username and new_username != current_user.username:

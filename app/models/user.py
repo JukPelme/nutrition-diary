@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, Integer
+from sqlalchemy import String, Boolean, DateTime, Integer, BigInteger
 from app.db.compat import UUIDType, JSONType, server_now, python_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
@@ -33,6 +33,8 @@ class User(Base):
     target_weight: Mapped[float | None] = mapped_column()  # kg
     failed_login_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    preferred_language: Mapped[str | None] = mapped_column(String(5))
+    telegram_user_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, index=True)
     height: Mapped[float | None] = mapped_column()  # cm
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())

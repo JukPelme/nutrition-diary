@@ -171,6 +171,17 @@ function t(key) {
 function setLang(lang) {
     currentLang = lang;
     localStorage.setItem('lang', lang);
+    // Sync to backend if user is logged in
+    try {
+        const tok = localStorage.getItem('token');
+        if (tok) {
+            fetch('/api/v1/auth/me', {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferred_language: lang }),
+            }).catch(()=>{});
+        }
+    } catch(e){}
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
     // Update static elements
     document.querySelectorAll('[data-i18n]').forEach(el => {
