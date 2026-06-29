@@ -310,6 +310,9 @@
         </script>
     </main>
 
+    <!-- Chat FAB -->
+    <button id="chat-fab" class="chat-fab" onclick="openChat()" title="Чат с AI-нутрициологом">💬</button>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <div class="nav-tab active" data-tab="diary" onclick="setActiveTab('diary')">
@@ -764,6 +767,24 @@
             <div id="template-list" class="search-results"></div>
         </div>
     </div>
+    <!-- AI Chat Modal -->
+    <div id="chat-modal" class="modal">
+        <div class="modal-content modal-content-lg" style="display:flex;flex-direction:column;max-height:85vh">
+            <div class="modal-header">
+                <h3 class="modal-title-lg">💬 AI-нутрициолог</h3>
+                <div style="display:flex;gap:8px">
+                    <button class="btn-icon" onclick="clearChat()" title="Очистить">🗑</button>
+                    <button class="btn-icon" onclick="closeModal('chat-modal')">✕</button>
+                </div>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-input" class="input chat-input" placeholder="Спроси что-нибудь про твоё питание…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}">
+                <button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">→</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Condition Search Modal -->
     <div id="condition-modal" class="modal">
         <div class="modal-content">

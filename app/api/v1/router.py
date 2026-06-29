@@ -43,3 +43,6 @@ _BUILD_VERSION = os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")[:7] or _STARTED_AT
 async def app_version():
     return {"version": _BUILD_VERSION, "started_at": _STARTED_AT}
 api_router.include_router(_v_router)
+
+from app.api.v1.endpoints.chat import router as chat_router
+api_router.include_router(chat_router)

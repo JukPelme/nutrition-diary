@@ -2795,3 +2795,66 @@ async function hardRefresh() {
     } catch(e) {}
     location.reload();
 }
+
+
+// === AI Chat ===
+let _chatLoaded = false;
+
+async function openChat() {
+    document.getElementById('chat-modal').classList.add('active');
+    if (!_chatLoaded) { await loadChatHistory(); _chatLoaded = true; }
+    setTimeout(() => document.getElementById('chat-input')?.focus(), 100);
+}
+
+async function loadChatHistory() {
+    const msgs = await api('/chat/history?limit=50');
+    const container = document.getElementById('chat-messages');
+    if (!msgs || !msgs.length) {
+        container.innerHTML = '<div class="chat-empty">Привет! Спроси что-нибудь про твоё питание — я знаю что ты ел за неделю, какие у тебя цели и могу помочь подтянуть рацион.</div>';
+        return;
+    }
+    container.innerHTML = msgs.map(m => renderChatBubble(m.role, m.content)).join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+function renderChatBubble(role, content) {
+    const safe = String(content).replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;');
+    return `<div class="chat-msg ${role}">${safe}</div>`;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    const container = document.getElementById('chat-messages');
+    if (container.querySelector('.chat-empty')) container.innerHTML = '';
+    container.insertAdjacentHTML('beforeend', renderChatBubble('user', text));
+    const loadingId = 'chat-loading-' + Date.now();
+    container.insertAdjacentHTML('beforeend', `<div class="chat-msg assistant loading" id="${loadingId}">Думаю…</div>`);
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        const resp = await api('/chat', {
+            method: 'POST',
+            body: JSON.stringify({ message: text, lang: currentLang || 'ru' })
+        });
+        document.getElementById(loadingId)?.remove();
+        if (resp?.reply) {
+            container.insertAdjacentHTML('beforeend', renderChatBubble('assistant', resp.reply));
+        } else if (resp?.detail) {
+            container.insertAdjacentHTML('beforeend', renderChatBubble('assistant', '⚠️ ' + resp.detail));
+        }
+    } catch (e) {
+        document.getElementById(loadingId)?.remove();
+        container.insertAdjacentHTML('beforeend', renderChatBubble('assistant', 'Ошибка: ' + (e?.message || e)));
+    }
+    container.scrollTop = container.scrollHeight;
+}
+
+async function clearChat() {
+    if (!confirm('Удалить всю историю чата?')) return;
+    await api('/chat/clear', { method: 'DELETE' });
+    _chatLoaded = false;
+    await loadChatHistory();
+}
