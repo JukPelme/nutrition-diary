@@ -80,11 +80,11 @@ async def parse_voice(
 
         # Claude: structured extraction
         prompts = {
-            "ru": "Извлеки из текста съеденные продукты. Верни ТОЛЬКО JSON-массив без пояснений, формат: [{\"name\":\"...\", \"grams\": число}]. Если граммы не названы — оцени разумно (1 яблоко=150г, 1 яйцо=60г, тарелка каши=200г, стакан=200г). Текст: {t}",
-            "en": "Extract foods eaten from the text. Return ONLY a JSON array: [{\"name\":\"...\", \"grams\": number}]. If grams not stated — estimate reasonably (1 apple=150g, 1 egg=60g). Text: {t}",
-            "ja": "テキストから食べたものを抽出してください。JSON配列のみで返答: [{\"name\":\"...\", \"grams\": 数値}]。グラムが指定されていない場合は妥当に推定 (りんご1個=150g, 卵1個=60g)。テキスト: {t}",
+            "ru": "Извлеки из текста съеденные продукты. Верни ТОЛЬКО JSON-массив без пояснений, формат: [{\"name\":\"...\", \"grams\": число}]. Если граммы не названы — оцени разумно (1 яблоко=150г, 1 яйцо=60г, тарелка каши=200г, стакан=200г). Текст: ",
+            "en": "Extract foods eaten from the text. Return ONLY a JSON array: [{\"name\":\"...\", \"grams\": number}]. If grams not stated — estimate reasonably (1 apple=150g, 1 egg=60g). Text: ",
+            "ja": "テキストから食べたものを抽出してください。JSON配列のみで返答: [{\"name\":\"...\", \"grams\": 数値}]。グラムが指定されていない場合は妥当に推定 (りんご1個=150g, 卵1個=60g)。テキスト: ",
         }
-        prompt = prompts.get(lang, prompts["ru"]).format(t=transcript)
+        prompt = prompts.get(lang, prompts["ru"]) + transcript
         cr = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": cl_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
