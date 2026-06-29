@@ -247,7 +247,13 @@ async function handleLogin(e) {
     e.preventDefault();
     const login = document.getElementById('auth-login').value;
     const password = document.getElementById('auth-password').value;
-    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ login, password }) });
+    const body = { login, password };
+    let data = await api('/auth/login', { method: 'POST', body: JSON.stringify(body) });
+    if (data?.detail === 'totp_required') {
+        const totp_code = prompt('Введи 6-значный код из приложения 2FA:');
+        if (!totp_code) return;
+        data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ ...body, totp_code }) });
+    }
     if (data?.access_token) {
         setToken(data.access_token);
         showApp();
@@ -3094,3 +3100,61 @@ function downloadCsvTemplate() {
             setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         });
 }
+
+
+// === 2FA TOTP ===
+async function loadTotpStatus() {
+    const me = await api('/auth/me').catch(() => null);
+    const status = document.getElementById('totp-status');
+    const btns = document.getElementById('totp-buttons');
+    if (!me || !status) return;
+    if (me.totp_enabled) {
+        status.innerHTML = '✓ Включена — при входе спрашивается код из приложения';
+        status.style.color = '#51cf66';
+        btns.innerHTML = '<input type="text" id="totp-disable-code" class="input" placeholder="Код для отключения" maxlength="6" style="margin-bottom:6px"><button class="mode-btn" style="width:100%;padding:10px" onclick="disableTotp()">Отключить 2FA</button>';
+    } else {
+        status.innerHTML = 'Не включена';
+        status.style.color = '';
+        btns.innerHTML = '<button class="mode-btn" style="width:100%;padding:10px" onclick="toggleTotp()">Включить 2FA</button>';
+    }
+}
+
+async function toggleTotp() {
+    const resp = await api('/auth/2fa/setup', { method: 'POST' });
+    if (resp?.detail) { alert(resp.detail); return; }
+    document.getElementById('totp-qr').innerHTML = resp.qr_svg;
+    document.getElementById('totp-secret').textContent = resp.secret;
+    document.getElementById('totp-setup-area').style.display = 'block';
+    document.getElementById('totp-buttons').style.display = 'none';
+}
+
+async function verifyTotp() {
+    const code = document.getElementById('totp-code-input').value.trim();
+    if (!/^\d{6}$/.test(code)) { alert('Введи 6-значный код'); return; }
+    const resp = await api('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ code }) });
+    if (resp?.detail) { alert(resp.detail); return; }
+    if (typeof showToast === 'function') showToast('2FA включена');
+    document.getElementById('totp-setup-area').style.display = 'none';
+    document.getElementById('totp-buttons').style.display = 'block';
+    loadTotpStatus();
+}
+
+async function disableTotp() {
+    const code = document.getElementById('totp-disable-code').value.trim();
+    if (!/^\d{6}$/.test(code)) { alert('Введи текущий код из приложения'); return; }
+    const resp = await api('/auth/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) });
+    if (resp?.detail) { alert(resp.detail); return; }
+    if (typeof showToast === 'function') showToast('2FA отключена');
+    loadTotpStatus();
+}
+
+// Hook into openSettings
+(function(){
+    const prev = window.openSettings;
+    if (typeof prev === 'function') {
+        window.openSettings = function() {
+            prev.apply(this, arguments);
+            loadTotpStatus();
+        };
+    }
+})();

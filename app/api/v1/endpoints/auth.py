@@ -114,6 +114,11 @@ async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(ge
         await db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    # 2FA gate
+    if user.totp_enabled and user.totp_secret:
+        import pyotp
+        if not data.totp_code or not pyotp.TOTP(user.totp_secret).verify(data.totp_code, valid_window=1):
+            raise HTTPException(status_code=401, detail="totp_required")
     # Successful login — reset counter, clear lockout
     user.failed_login_count = 0
     user.locked_until = None
@@ -223,3 +228,73 @@ async def recover_username(data: RecoverUsernameIn, request: Request, db: AsyncS
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     return RecoverUsernameOut(email=user.email, username=user.username, full_name=user.full_name)
+
+
+
+from pydantic import BaseModel as _BM
+
+
+class TotpVerifyIn(_BM):
+    code: str
+
+
+class TotpSetupOut(_BM):
+    secret: str
+    uri: str
+    qr_svg: str
+
+
+@router.post("/2fa/setup", response_model=TotpSetupOut)
+async def totp_setup(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate (or regenerate) a TOTP secret. Not enabled until /verify."""
+    import pyotp
+    import qrcode
+    import qrcode.image.svg
+    secret = pyotp.random_base32()
+    current_user.totp_secret = secret
+    current_user.totp_enabled = False
+    await db.commit()
+    issuer = "Nutrition Diary"
+    label = current_user.email or current_user.username or str(current_user.id)
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=label, issuer_name=issuer)
+    img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgImage)
+    import io
+    buf = io.BytesIO(); img.save(buf)
+    svg = buf.getvalue().decode("utf-8")
+    return TotpSetupOut(secret=secret, uri=uri, qr_svg=svg)
+
+
+@router.post("/2fa/verify")
+async def totp_verify(
+    data: TotpVerifyIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    import pyotp
+    if not current_user.totp_secret:
+        raise HTTPException(400, "Setup not started")
+    if not pyotp.TOTP(current_user.totp_secret).verify(data.code, valid_window=1):
+        raise HTTPException(400, "Invalid code")
+    current_user.totp_enabled = True
+    await db.commit()
+    return {"enabled": True}
+
+
+@router.post("/2fa/disable")
+async def totp_disable(
+    data: TotpVerifyIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    import pyotp
+    if not current_user.totp_enabled or not current_user.totp_secret:
+        return {"enabled": False}
+    if not pyotp.TOTP(current_user.totp_secret).verify(data.code, valid_window=1):
+        raise HTTPException(400, "Invalid code")
+    current_user.totp_enabled = False
+    current_user.totp_secret = None
+    await db.commit()
+    return {"enabled": False}

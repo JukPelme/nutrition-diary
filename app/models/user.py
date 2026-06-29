@@ -35,6 +35,8 @@ class User(Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     preferred_language: Mapped[str | None] = mapped_column(String(5))
     telegram_user_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, index=True)
+    totp_secret: Mapped[str | None] = mapped_column(String(64))
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     height: Mapped[float | None] = mapped_column()  # cm
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())

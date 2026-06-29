@@ -13,6 +13,7 @@ class UserLogin(BaseModel):
     # Accepts either "login" or "email" in request body
     login: str = Field(validation_alias=AliasChoices("login", "email"))
     password: str
+    totp_code: str | None = None
     model_config = {"populate_by_name": True}
 
 
@@ -44,6 +45,7 @@ class UserResponse(BaseModel):
     activity_level: str | None = None
     goal_type: str | None = None
     preferred_language: str | None = None
+    totp_enabled: bool = False
 
     model_config = {"from_attributes": True}
 
