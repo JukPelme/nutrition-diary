@@ -801,3 +801,29 @@ button:focus-visible,
     outline-offset: 2px;
 }
 .btn-icon:focus:not(:focus-visible) { outline: none; }
+
+
+/* AMOLED — pure black for OLED screens */
+[data-theme="amoled"] {
+    --bg: #000000;
+    --bg2: #0a0a0a;
+    --bg3: #141414;
+    --border: #1f1f1f;
+    --text: #f5f5f5;
+    --text2: #888888;
+}
+[data-theme="amoled"] .modal { background: rgba(0, 0, 0, 0.85); }
+
+/* Achievement unlock animation */
+@keyframes ach-pop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    50%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ach-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0.6); }
+    50%      { box-shadow: 0 0 30px 10px rgba(255, 184, 0, 0.4); }
+}
+.ach-toast {
+    animation: ach-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), ach-glow 2s ease-in-out 0.4s 2;
+}

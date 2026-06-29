@@ -66,6 +66,9 @@ const TRANSLATIONS = {
         altTitle: '🔄 Замены продукта', altFor: 'Замены для', altGoal: 'Цель', altSimilar: 'Похоже по КБЖУ', altProtein: 'Больше белка', altLessCarbs: 'Меньше углеводов', altLessFat: 'Меньше жира', altMoreFiber: 'Больше клетчатки', altVegan: 'Растительный аналог',
         deficiencyTitle: 'Анализ дефицитов за 14 дней', analyze: 'Проанализировать', analyzing: 'Claude анализирует…', refresh: 'Обновить', retry: 'Повторить', other: 'Прочее',
         nutrientGoals: '🎯 Цели по витаминам/минералам', nutrientGoalsHint: 'Пусто = дневная норма (RDA). Заполни если у тебя выше потребность.',
+        weeklyReport: '📅 Недельный отчёт', comparePeriods: '⚖️ Сравнение периодов', coachTip: 'Совет на сейчас',
+        wearableImport: '⌚ Импорт из носимых устройств', wearableImportHint: 'Apple Health (export.zip / export.xml) или Garmin Connect CSV — без OAuth, локальный файл.',
+        dataExport: '📦 Мои данные', downloadData: '⬇️ Скачать всё (ZIP)', deleteAccount: '🗑 Удалить аккаунт',
         aiQuality: 'Распознавание еды (AI)', aiFast: 'Быстро', aiPrecise: 'Точно', aiQualityHint: 'Быстро = Haiku 4.5 (~1¢/фото), Точно = Sonnet 4.6 (~5¢/фото, лучше для сложных блюд)',
     },
     en: {
@@ -133,6 +136,9 @@ const TRANSLATIONS = {
         altTitle: '🔄 Product alternatives', altFor: 'Alternatives for', altGoal: 'Goal', altSimilar: 'Similar macros', altProtein: 'More protein', altLessCarbs: 'Less carbs', altLessFat: 'Less fat', altMoreFiber: 'More fiber', altVegan: 'Plant-based',
         deficiencyTitle: '14-day deficiency analysis', analyze: 'Analyze', analyzing: 'Claude is analyzing…', refresh: 'Refresh', retry: 'Retry', other: 'Other',
         nutrientGoals: '🎯 Vitamin & mineral goals', nutrientGoalsHint: 'Empty = RDA default. Set if your need is higher.',
+        weeklyReport: '📅 Weekly report', comparePeriods: '⚖️ Period comparison', coachTip: 'Tip for now',
+        wearableImport: '⌚ Wearable import', wearableImportHint: 'Apple Health (export.zip / export.xml) or Garmin Connect CSV — no OAuth, local file.',
+        dataExport: '📦 My data', downloadData: '⬇️ Download all (ZIP)', deleteAccount: '🗑 Delete account',
         aiQuality: 'Food recognition (AI)', aiFast: 'Fast', aiPrecise: 'Precise', aiQualityHint: 'Fast = Haiku 4.5 (~1¢/photo), Precise = Sonnet 4.6 (~5¢/photo, better for complex dishes)',
     },
     ja: {
@@ -200,6 +206,9 @@ const TRANSLATIONS = {
         altTitle: '🔄 食品の代替', altFor: '代替候補:', altGoal: '目標', altSimilar: '同等のPFC', altProtein: 'タンパク質を多く', altLessCarbs: '炭水化物を減らす', altLessFat: '脂質を減らす', altMoreFiber: '食物繊維を多く', altVegan: '植物性',
         deficiencyTitle: '14日間の不足分析', analyze: '分析する', analyzing: 'Claudeが分析中…', refresh: '更新', retry: 'リトライ', other: 'その他',
         nutrientGoals: '🎯 ビタミン・ミネラル目標', nutrientGoalsHint: '空欄=RDAデフォルト。必要量が多い場合に入力。',
+        weeklyReport: '📅 週間レポート', comparePeriods: '⚖️ 期間比較', coachTip: '今のヒント',
+        wearableImport: '⌚ ウェアラブル取込', wearableImportHint: 'Apple Health (export.zip / export.xml)またはGarmin Connect CSV — OAuth不要、ローカルファイル。',
+        dataExport: '📦 マイデータ', downloadData: '⬇️ 全てダウンロード(ZIP)', deleteAccount: '🗑 アカウント削除',
         aiQuality: '食品AI認識', aiFast: '高速', aiPrecise: '高精度', aiQualityHint: '高速 = Haiku 4.5（約1¢/枚）、高精度 = Sonnet 4.6（約5¢/枚・複雑な料理に対応）',
     }
 };

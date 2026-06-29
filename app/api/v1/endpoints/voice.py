@@ -244,3 +244,80 @@ async def parse_any(
         "transcript": transcript,
         "data": parsed.get("data") or {},
     }
+
+
+# ---- Multi-intent voice: parse all things mentioned in one phrase ----
+@router.post("/parse-multi")
+async def parse_multi(
+    file: UploadFile = File(...),
+    lang: str = Query("ru", pattern="^(ru|en|ja)$"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Detect multiple intents in a single utterance.
+
+    User says: "съел овсянку с яблоком, выпил 300мл воды, настроение 4, спал 7 часов"
+    Returns: {transcript, intents: [{intent, data}, ...]}
+    """
+    dg_key = settings.deepgram_api_key
+    cl_key = settings.anthropic_api_key
+    if not dg_key:
+        raise HTTPException(503, "DEEPGRAM_API_KEY required")
+    if not cl_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY required")
+
+    audio = await file.read()
+    if not audio or len(audio) < 1000:
+        raise HTTPException(400, "Empty or too small audio")
+    if len(audio) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Audio too large")
+
+    dg_lang = {"ru": "ru", "en": "en", "ja": "ja"}.get(lang, "ru")
+    transcript = ""
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(
+            "https://api.deepgram.com/v1/listen",
+            params={"model": "nova-2", "language": dg_lang, "smart_format": "true", "punctuate": "true"},
+            headers={"Authorization": f"Token {dg_key}", "Content-Type": file.content_type or "audio/webm"},
+            content=audio,
+        )
+        if r.status_code >= 400:
+            raise HTTPException(502, f"Deepgram {r.status_code}")
+        try:
+            transcript = r.json()["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
+        except Exception:
+            transcript = ""
+        if not transcript:
+            return {"transcript": "", "intents": []}
+
+        sys_prompt = (
+            "Extract ALL intents (food/water/mood/sleep/weight) from a single utterance. "
+            "Reply ONLY raw JSON. Schema:\n"
+            '{"intents":[{"intent":"food|water|mood|sleep|weight","data":{...}}]}\n'
+            "Same field shape as /voice/parse-any. If only one intent mentioned, return list of length 1. If none, []."
+        )
+        cr = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": cl_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 700,
+                "system": sys_prompt,
+                "messages": [{"role": "user", "content": f"TEXT ({lang}): {transcript}"}],
+            },
+        )
+        if cr.status_code >= 400:
+            raise HTTPException(502, f"Claude {cr.status_code}")
+        text = cr.json()["content"][0]["text"].strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[-1]
+            if text.endswith("```"): text = text.rsplit("```", 1)[0]
+        try:
+            parsed = json.loads(text)
+        except Exception:
+            return {"transcript": transcript, "intents": []}
+
+    intents = parsed.get("intents") or []
+    if not isinstance(intents, list):
+        intents = []
+    return {"transcript": transcript, "intents": intents}

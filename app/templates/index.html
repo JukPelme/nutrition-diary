@@ -99,6 +99,7 @@
                 <span id="date-display" class="date-text" data-i18n="today">Сегодня</span>
                 <button class="btn-icon" aria-label="Следующий день" onclick="changeDate(1)">▶</button>
                 <button class="btn-icon" aria-label="Копировать день" onclick="copyDay()" title="Копировать день" style="margin-left:8px">📋</button>
+                <button class="btn-icon" aria-label="Поделиться днём" onclick="shareDayAsImage()" title="Поделиться днём" style="margin-left:4px">📤</button>
             </div>
             <div class="card summary-card">
                 <div class="summary-ring">
@@ -746,7 +747,23 @@
             </div>
             <button class="btn btn-secondary btn-lg" onclick="addMetric()" style="width:100%">Записать</button>
 
-            <div class="card-title" style="margin-top:24px" data-i18n="nutrientGoals">🎯 Цели по витаминам/минералам</div>
+            <div class="card-title" style="margin-top:24px" data-i18n="dataExport">📦 Мои данные</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+                <button class="btn btn-secondary" style="flex:1" onclick="downloadMyData()" data-i18n="downloadData">⬇️ Скачать всё (ZIP)</button>
+                <button class="btn btn-secondary" style="flex:1;color:#c0392b" onclick="confirmDeleteAccount()" data-i18n="deleteAccount">🗑 Удалить аккаунт</button>
+            </div>
+
+                        <div class="card-title" style="margin-top:24px" data-i18n="wearableImport">⌚ Импорт из носимых устройств</div>
+            <p style="font-size:11px;color:var(--text2);margin-bottom:8px" data-i18n="wearableImportHint">Apple Health (export.zip / export.xml) или Garmin Connect CSV — без OAuth, локальный файл.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('apple-import-input').click()">📱 Apple Health</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('garmin-import-input').click()">⌚ Garmin CSV</button>
+            </div>
+            <input type="file" id="apple-import-input" accept=".xml,.zip" style="display:none" onchange="uploadAppleHealth(event)">
+            <input type="file" id="garmin-import-input" accept=".csv" style="display:none" onchange="uploadGarminCsv(event)">
+            <div id="wearable-import-status" aria-live="polite" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+
+                        <div class="card-title" style="margin-top:24px" data-i18n="nutrientGoals">🎯 Цели по витаминам/минералам</div>
             <p style="font-size:11px;color:var(--text2);margin-bottom:8px" data-i18n="nutrientGoalsHint">Пусто = дневная норма (RDA). Заполни если у тебя выше потребность.</p>
             <div class="form-row" style="flex-wrap:wrap;gap:8px">
                 <div class="form-group" style="flex:1;min-width:130px">
@@ -832,6 +849,7 @@
                 <div class="theme-toggle-row">
                     <button class="theme-toggle-btn" onclick="setTheme('dark')" id="theme-dark-btn">🌙 Тёмная</button>
                     <button class="theme-toggle-btn" onclick="setTheme('light')" id="theme-light-btn">☀️ Светлая</button>
+                    <button class="theme-toggle-btn" onclick="setTheme('amoled')" id="theme-amoled-btn">⬛ AMOLED</button>
                 </div>
                 <div class="card-title" style="margin-bottom:8px">Акцент</div>
                 <div class="accent-row">

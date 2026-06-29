@@ -132,3 +132,73 @@ async def send_test(
         await db.execute(PushSubscription.__table__.delete().where(PushSubscription.id.in_(dead_ids)))
         await db.commit()
     return {"sent": sent, "failed": failed, "removed_dead": len(dead_ids)}
+
+
+@router.post("/reminders/send-due")
+async def send_reminders(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Send a context-aware Claude-crafted reminder.
+    Triggered by client cron (e.g. on app open) or external scheduler.
+    Skips users who already logged 'enough' today (calorie goal >= 70%).
+    """
+    from datetime import date, timedelta
+    from sqlalchemy import func
+    from app.models.diary import DiaryEntry
+    from app.core.config import settings
+    import httpx
+    from pywebpush import webpush, WebPushException
+
+    today = date.today()
+    total_cal = (await db.execute(
+        select(func.coalesce(func.sum(DiaryEntry.calories), 0))
+        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date == today)
+    )).scalar() or 0
+    goal_cal = user.daily_calorie_goal or 2000
+    if total_cal >= 0.7 * goal_cal:
+        return {"skipped": "enough_logged", "today_kcal": int(total_cal), "goal": goal_cal}
+
+    subs = (await db.execute(select(PushSubscription).where(PushSubscription.user_id == user.id))).scalars().all()
+    if not subs:
+        return {"skipped": "no_subscriptions"}
+
+    msg = "Не забудь записать сегодняшние приёмы пищи 🍽"
+    if settings.anthropic_api_key and total_cal < 100:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={"x-api-key": settings.anthropic_api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                    json={
+                        "model": "claude-haiku-4-5-20251001",
+                        "max_tokens": 80,
+                        "system": "You write a single short (max 90 chars) friendly nudge in Russian to encourage user to log food. No emojis except 🍽.",
+                        "messages": [{"role": "user", "content": f"Сегодня пользователь записал {int(total_cal)} ккал из {goal_cal}. Сейчас {today.strftime('%H')}. Напомни кратко записать еду."}],
+                    },
+                )
+                if r.status_code < 400:
+                    msg = r.json()["content"][0]["text"].strip()[:140]
+        except Exception:
+            pass
+
+    keys = await _get_or_create_vapid(db)
+    payload = json.dumps({"title": "Дневник питания", "body": msg, "icon": "/static/icon-192.png"})
+    sent, failed, dead_ids = 0, 0, []
+    for s in subs:
+        try:
+            webpush(
+                subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
+                data=payload,
+                vapid_private_key=keys["vapid_private"],
+                vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
+            )
+            sent += 1
+        except WebPushException as e:
+            failed += 1
+            if hasattr(e, "response") and e.response is not None and e.response.status_code in (404, 410):
+                dead_ids.append(s.id)
+    if dead_ids:
+        await db.execute(PushSubscription.__table__.delete().where(PushSubscription.id.in_(dead_ids)))
+        await db.commit()
+    return {"sent": sent, "failed": failed, "removed_dead": len(dead_ids), "message": msg}

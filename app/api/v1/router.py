@@ -68,3 +68,11 @@ from app.api.v1.endpoints.alternatives import router as alt_router
 api_router.include_router(alt_router)
 from app.api.v1.endpoints.russian_recipes import router as ru_recipe_router
 api_router.include_router(ru_recipe_router)
+from app.api.v1.endpoints.wearable_import import router as wearable_router
+api_router.include_router(wearable_router)
+from app.api.v1.endpoints.account import router as account_router
+api_router.include_router(account_router)
+from app.api.v1.endpoints.weekly_report import router as weekly_router
+api_router.include_router(weekly_router)
+from app.api.v1.endpoints.coach import router as coach_router
+api_router.include_router(coach_router)
