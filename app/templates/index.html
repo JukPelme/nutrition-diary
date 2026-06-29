@@ -711,6 +711,14 @@
                 </div>
             </div>
             <button class="btn btn-secondary btn-lg" onclick="addMetric()" style="width:100%">Записать</button>
+
+            <div class="card-title" style="margin-top:24px">Импорт CSV</div>
+            <p style="font-size:11px;color:var(--text2);margin-bottom:8px">Загрузи дневник из другого приложения. Минимум — колонки <code>date</code> и <code>product_name</code>. <a href="#" onclick="event.preventDefault();downloadCsvTemplate()" style="color:var(--accent)">Скачать шаблон</a></p>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('csv-import-input').click()">📁 Выбрать CSV</button>
+            </div>
+            <input type="file" id="csv-import-input" accept=".csv,.tsv,.txt" style="display:none" onchange="uploadCsv(event)">
+            <div id="csv-import-status" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
         </div>
     </div>
 
