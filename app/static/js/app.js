@@ -3158,3 +3158,84 @@ async function disableTotp() {
         };
     }
 })();
+
+
+// === Web Push subscription ===
+function urlBase64ToUint8Array(base64) {
+    const padding = '='.repeat((4 - base64.length % 4) % 4);
+    const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(b64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+    return out;
+}
+
+async function loadPushStatus() {
+    const el = document.getElementById('push-status');
+    if (!el) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        el.textContent = 'Браузер не поддерживает Web Push';
+        document.getElementById('push-toggle-btn').disabled = true;
+        return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+        el.innerHTML = '<span style="color:#51cf66">✓ Подписка активна</span>';
+        document.getElementById('push-toggle-btn').textContent = 'Отключить';
+    } else if (Notification.permission === 'denied') {
+        el.innerHTML = '<span style="color:#ff6b6b">Разрешение запрещено в браузере</span>';
+    } else {
+        el.textContent = 'Не подключено';
+        document.getElementById('push-toggle-btn').textContent = 'Включить пуши';
+    }
+}
+
+async function togglePush() {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+        const endpoint = existing.endpoint;
+        await existing.unsubscribe();
+        await api('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) });
+        loadPushStatus();
+        return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { alert('Нужно разрешить уведомления'); loadPushStatus(); return; }
+    const keyResp = await api('/push/key');
+    if (!keyResp?.public_key) { alert('Сервер не вернул VAPID ключ'); return; }
+    const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyResp.public_key),
+    });
+    const subJson = sub.toJSON();
+    await api('/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys.p256dh,
+            auth: subJson.keys.auth,
+        })
+    });
+    loadPushStatus();
+    if (typeof showToast === 'function') showToast('Пуши включены');
+}
+
+async function testPush() {
+    const resp = await api('/push/test', { method: 'POST' });
+    if (resp?.detail) { alert(resp.detail); return; }
+    if (typeof showToast === 'function') showToast(`Отправлено: ${resp.sent}, ошибок: ${resp.failed}`);
+}
+
+// Hook into openSettings (chain on top of existing chain)
+(function(){
+    const prev = window.openSettings;
+    if (typeof prev === 'function') {
+        window.openSettings = function() {
+            prev.apply(this, arguments);
+            setTimeout(loadPushStatus, 50);
+        };
+    }
+})();

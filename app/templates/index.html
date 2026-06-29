@@ -761,6 +761,14 @@
                 </div>
             </div>
             <div class="theme-section">
+                <div class="card-title">Web Push</div>
+                <div id="push-status" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+                <div style="display:flex;gap:6px">
+                    <button class="btn btn-secondary" style="flex:1" onclick="togglePush()" id="push-toggle-btn">Включить пуши</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="testPush()" id="push-test-btn">Тест</button>
+                </div>
+            </div>
+            <div class="theme-section">
                 <div class="card-title">Двухфакторная аутентификация</div>
                 <div id="totp-status" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
                 <div id="totp-setup-area" style="display:none">

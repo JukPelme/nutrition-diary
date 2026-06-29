@@ -1,7 +1,7 @@
 // Service Worker v3: network-first API, cache-first static, Background Sync queue, notifications.
 try { importScripts('https://unpkg.com/dexie@3.2.7/dist/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
 
-const CACHE_NAME = 'nutrition-diary-v5';
+const CACHE_NAME = 'nutrition-diary-v6';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
@@ -164,3 +164,19 @@ async function checkBackgroundReminders() {
         }
     }
 }
+
+
+// === Web Push ===
+self.addEventListener('push', event => {
+    let data = { title: 'Nutrition Diary', body: 'Новое уведомление' };
+    try { if (event.data) data = event.data.json(); } catch(e){}
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'Nutrition Diary', {
+            body: data.body || '',
+            icon: data.icon || '/static/icon-192.png',
+            badge: '/static/icon-192.png',
+            tag: data.tag || 'push-' + Date.now(),
+            data: data.url ? { url: data.url } : {},
+        })
+    );
+});

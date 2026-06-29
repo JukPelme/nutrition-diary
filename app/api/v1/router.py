@@ -52,3 +52,6 @@ api_router.include_router(recipes_router)
 
 from app.api.v1.endpoints.import_data import router as import_router
 api_router.include_router(import_router)
+
+from app.api.v1.endpoints.push import router as push_router
+api_router.include_router(push_router)
