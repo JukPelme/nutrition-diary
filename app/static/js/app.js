@@ -1124,6 +1124,7 @@ function openCreateProduct() {
     setTimeout(() => renderSavedRecipes(), 100);
     document.getElementById('create-product-modal').classList.add('active');
     document.getElementById('cp-name').value = '';
+    const _b = document.getElementById('cp-barcode'); if (_b) _b.value = '';
     document.getElementById('cp-category').value = 'Готовые блюда';
     document.getElementById('cp-cal').value = '';
     document.getElementById('cp-protein').value = '';
@@ -1270,6 +1271,7 @@ async function createCustomProduct() {
         body: JSON.stringify({
             name,
             category: document.getElementById('cp-category').value || null,
+            barcode: (document.getElementById('cp-barcode')?.value || '').trim() || null,
             calories: cal,
             protein,
             fat,
@@ -2795,9 +2797,15 @@ async function decodeBarcodeFromImage(event) {
         if (data.barcode) {
             document.getElementById('barcode-input').value = data.barcode;
             if (data.product) { setMsg('✓ ' + data.barcode); searchBarcode(); }
-            else setMsg(`Найден ${data.barcode}, но нет в базе. Нажми «Найти».`);
+            else {
+                setMsg('');
+                if (status) {
+                    status.innerHTML = `Найден <b>${data.barcode}</b>, в базе нет.<br><button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="createProductFromBarcode('${data.barcode}')">＋ Создать продукт с этим штрихкодом</button>`;
+                    status.style.color = 'var(--text)';
+                }
+            }
         } else {
-            setMsg('Штрихкод не распознан. Снимай ближе и ровно, чтобы линии были чёткими.');
+            setMsg('Штрихкод не распознан. Снимай ближе и ровно, чтобы линии были чёткими. ' + (data.raw ? '(Claude вернул: ' + data.raw.slice(0,40) + ')' : ''));
         }
     } catch (e) {
         console.error('[barcode] exception:', e);

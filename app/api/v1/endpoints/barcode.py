@@ -50,14 +50,19 @@ async def decode_barcode_image(
         raise HTTPException(503, "Image decoding requires ANTHROPIC_API_KEY")
 
     b64 = base64.b64encode(img).decode("utf-8")
-    prompt = "На изображении штрихкод. Верни ТОЛЬКО его цифры одной строкой, без пробелов и пояснений. Если штрихкод не найден или не читается — верни одно слово NONE."
+    prompt = (
+        "На изображении упаковка товара с EAN-13 или EAN-8 штрихкодом. "
+        "Прочитай цифры под штрихкодом (обычно 8 или 13 цифр под линиями). "
+        "Верни ТОЛЬКО эти цифры одной строкой, без пробелов и пояснений. "
+        "Если штрихкод полностью нечитаем — верни NONE."
+    )
     async with httpx.AsyncClient(timeout=30) as client:
         try:
             r = await client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
                 json={
-                    "model": "claude-haiku-4-5-20251001",
+                    "model": "claude-sonnet-4-6",
                     "max_tokens": 50,
                     "messages": [{"role": "user", "content": [
                         {"type": "image", "source": {"type": "base64", "media_type": file.content_type, "data": b64}},
