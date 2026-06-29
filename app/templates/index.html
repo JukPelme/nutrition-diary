@@ -761,6 +761,18 @@
                 </div>
             </div>
             <div class="theme-section">
+                <div class="card-title">Двухфакторная аутентификация</div>
+                <div id="totp-status" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+                <div id="totp-setup-area" style="display:none">
+                    <p style="font-size:11px;color:var(--text2)">Отсканируй QR в Google Authenticator / Authy / 1Password:</p>
+                    <div id="totp-qr" style="background:#fff;padding:12px;border-radius:8px;margin:8px 0;text-align:center"></div>
+                    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Или вручную: <code id="totp-secret"></code></div>
+                    <input type="text" id="totp-code-input" class="input" placeholder="123456" maxlength="6" inputmode="numeric" style="margin-bottom:8px">
+                    <button class="btn btn-primary" style="width:100%" onclick="verifyTotp()">Подтвердить и включить</button>
+                </div>
+                <div id="totp-buttons"></div>
+            </div>
+            <div class="theme-section">
                 <div class="card-title" data-i18n="sync">Синхронизация</div>
                 <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Экспортируйте данные с одного устройства и импортируйте на другом</p>
                 <div style="display:flex;gap:8px">
