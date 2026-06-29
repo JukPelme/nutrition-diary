@@ -38,6 +38,8 @@ class User(Base):
     totp_secret: Mapped[str | None] = mapped_column(String(64))
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     height: Mapped[float | None] = mapped_column()  # cm
+    dietary_restrictions: Mapped[str | None] = mapped_column(String(1000))
+    seasonal_hints_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)

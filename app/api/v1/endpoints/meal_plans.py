@@ -148,10 +148,18 @@ async def generate_plan(
     brief = await _user_brief(db, user)
     dates = [(start + timedelta(days=i)).isoformat() for i in range(data.days)]
 
+    # Merge dietary restrictions from profile with request
+    avoid_list = list(data.avoid)
+    if user.dietary_restrictions:
+        for x in user.dietary_restrictions.split(','):
+            x = x.strip()
+            if x and x not in avoid_list:
+                avoid_list.append(x)
+
     user_prompt = (
         f"USER:\n{json.dumps(brief, ensure_ascii=False)}\n\n"
         f"DATES: {dates}\n"
-        f"AVOID: {data.avoid}\n"
+        f"AVOID: {avoid_list}\n"
         f"NOTES: {data.notes or '-'}\n\n"
         f"{_output_schema_prompt()}"
     )

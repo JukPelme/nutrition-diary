@@ -79,6 +79,16 @@
 
         <!-- Diary View -->
         <div id="diary-view">
+            <div id="seasonal-card" class="card" style="display:none;background:linear-gradient(135deg,rgba(76,175,80,0.08),rgba(255,184,0,0.08));border-color:#4caf50">
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                    <span style="font-size:20px">🌱</span>
+                    <div style="flex:1">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:2px" data-i18n="seasonalNow">Сейчас в сезоне</div>
+                        <div id="seasonal-text" style="font-size:12px;color:var(--text)"></div>
+                    </div>
+                    <button class="btn-icon" onclick="dismissSeasonal()">✕</button>
+                </div>
+            </div>
             <div id="streak-badge" class="streak-badge" style="display:none" onclick="setActiveTab('stats')">
                 <span id="streak-flame">🔥</span>
                 <span id="streak-text">0</span>
@@ -190,7 +200,10 @@
             <div class="card" style="margin-top:16px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <div class="card-title" style="margin:0">📒 Мои рецепты</div>
-                    <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick="openCreateRecipe()">+ Создать</button>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:12px" onclick="seedRussianRecipes()" data-i18n="seedRussian">+ Русская кухня</button>
+                        <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick="openCreateRecipe()">+ Создать</button>
+                    </div>
                 </div>
                 <div id="recipes-list" style="display:flex;flex-direction:column;gap:8px"></div>
             </div>
@@ -335,6 +348,8 @@
         </script>
     </main>
 
+    <!-- Universal Voice FAB -->
+    <button id="uvoice-fab" class="chat-fab" style="bottom:152px;background:linear-gradient(135deg,#00b8d4,#0091ea)" onclick="openUniversalVoice()" title="Голосовая запись"><span class="chat-fab-icon">🎙</span></button>
     <!-- Chat FAB -->
     <button id="chat-fab" class="chat-fab" onclick="openChat()" title="AI-нутрициолог"><span class="chat-fab-icon">✨</span><span class="chat-fab-label">AI</span></button>
 
@@ -731,7 +746,20 @@
             </div>
             <button class="btn btn-secondary btn-lg" onclick="addMetric()" style="width:100%">Записать</button>
 
-            <div class="card-title" style="margin-top:24px">Импорт CSV</div>
+            <div class="card-title" style="margin-top:24px" data-i18n="dietRestrictions">Аллергии и ограничения</div>
+            <div class="form-group">
+                <input type="text" id="prof-diet-restrictions" class="input" placeholder="орехи, молочное, грибы (через запятую)">
+                <div style="font-size:11px;color:var(--text2);margin-top:4px" data-i18n="dietRestrictionsHint">Claude учтёт это при подборе меню, рекомендаций и замен</div>
+            </div>
+            <div class="form-group">
+                <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+                    <input type="checkbox" id="prof-seasonal-hints" style="margin:0">
+                    <span data-i18n="seasonalHints">Показывать сезонные подсказки в дневнике</span>
+                </label>
+            </div>
+            <button class="btn btn-secondary btn-lg" onclick="saveDietRestrictions()" style="width:100%" data-i18n="save">Сохранить</button>
+
+                        <div class="card-title" style="margin-top:24px">Импорт CSV</div>
             <p style="font-size:11px;color:var(--text2);margin-bottom:8px">Загрузи дневник из другого приложения. Минимум — колонки <code>date</code> и <code>product_name</code>. <a href="#" onclick="event.preventDefault();downloadCsvTemplate()" style="color:var(--accent)">Скачать шаблон</a></p>
             <div style="display:flex;gap:8px">
                 <button class="btn btn-secondary" style="flex:1" onclick="document.getElementById('csv-import-input').click()">📁 Выбрать CSV</button>
@@ -871,6 +899,68 @@
         </div>
     </div>
 
+    <!-- Universal Voice Modal -->
+    <div id="uvoice-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="voiceAll">🎙 Голосовая запись</h3>
+                <button class="btn-icon" onclick="closeModal('uvoice-modal')">✕</button>
+            </div>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:12px" data-i18n="voiceAllHint">Скажи что угодно: еда, вода, настроение, сон, вес. Claude поймёт.</p>
+            <button id="uvoice-rec-btn" class="btn btn-primary btn-lg" style="width:100%" onclick="toggleUniversalVoice()" data-i18n="voiceStart">● Начать запись</button>
+            <div id="uvoice-status" style="margin-top:10px;font-size:13px;color:var(--text2);text-align:center"></div>
+            <div id="uvoice-result" style="margin-top:12px"></div>
+        </div>
+    </div>
+
+    <!-- Shopping List Modal -->
+    <div id="shopping-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="shoppingList">🛒 Список покупок</h3>
+                <button class="btn-icon" onclick="closeModal('shopping-modal')">✕</button>
+            </div>
+            <div id="shopping-list-content"></div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-secondary" style="flex:1" onclick="shareShoppingList()" data-i18n="share">Поделиться</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="clearShoppingChecks()" data-i18n="clearChecks">Снять галочки</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Products Modal -->
+    <div id="compare-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="compareProducts">⚖️ Сравнение продуктов</h3>
+                <button class="btn-icon" onclick="closeModal('compare-modal')">✕</button>
+            </div>
+            <div id="compare-content"></div>
+        </div>
+    </div>
+
+    <!-- Alternatives Modal -->
+    <div id="alt-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="altTitle">🔄 Замены продукта</h3>
+                <button class="btn-icon" onclick="closeModal('alt-modal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="label" data-i18n="altGoal">Цель</label>
+                <select id="alt-goal" class="input" onchange="loadAlternatives()">
+                    <option value="similar" data-i18n="altSimilar">Похоже по КБЖУ</option>
+                    <option value="protein" data-i18n="altProtein">Больше белка</option>
+                    <option value="less_carbs" data-i18n="altLessCarbs">Меньше углеводов</option>
+                    <option value="less_fat" data-i18n="altLessFat">Меньше жира</option>
+                    <option value="more_fiber" data-i18n="altMoreFiber">Больше клетчатки</option>
+                    <option value="vegan" data-i18n="altVegan">Растительный аналог</option>
+                </select>
+            </div>
+            <div id="alt-content"></div>
+        </div>
+    </div>
+
     <!-- AI Meal Plan Generator Modal -->
     <div id="meal-plan-modal" class="modal">
         <div class="modal-content modal-content-lg">
@@ -914,7 +1004,7 @@
             <div id="chat-messages" class="chat-messages"></div>
             <div class="chat-input-row">
                 <input type="text" id="chat-input" class="input chat-input" placeholder="Спроси что-нибудь про твоё питание…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}">
-                <button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">→</button>
+                <button class="btn btn-secondary chat-send-btn" id="chat-mic-btn" onclick="toggleChatMic()" title="Диктовать" style="margin-right:4px">🎙</button><button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">→</button>
             </div>
         </div>
     </div>

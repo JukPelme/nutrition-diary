@@ -62,3 +62,9 @@ from app.api.v1.endpoints.meal_plans import router as meal_plan_router
 api_router.include_router(meal_plan_router)
 from app.api.v1.endpoints.gamification import router as gam_router
 api_router.include_router(gam_router)
+from app.api.v1.endpoints.deficiency import router as deficiency_router
+api_router.include_router(deficiency_router)
+from app.api.v1.endpoints.alternatives import router as alt_router
+api_router.include_router(alt_router)
+from app.api.v1.endpoints.russian_recipes import router as ru_recipe_router
+api_router.include_router(ru_recipe_router)
