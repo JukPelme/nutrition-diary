@@ -96,8 +96,9 @@ async def usda_seed_if_requested():
     from app.models import Product
     async with async_session() as s:
         n_usda = (await s.execute(select(func.count(Product.id)).where(Product.source == "usda"))).scalar() or 0
-    if n_usda >= 200:
-        print(f"[seed] usda: skipping ({n_usda} USDA products already)")
+    force = os.environ.get("USDA_SEED_FORCE") == "1"
+    if n_usda >= 200 and not force:
+        print(f"[seed] usda: skipping ({n_usda} already, set USDA_SEED_FORCE=1 to add more)")
         return
 
     pages = int(os.environ.get("USDA_SEED_PAGES", "15"))

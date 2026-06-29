@@ -116,10 +116,21 @@ async def parse_voice(
             grams = 0
         if not name or grams <= 0:
             continue
-        # Lookup product by ilike
-        p = (await db.execute(
-            select(Product).where(Product.name.ilike(f"%{name}%")).limit(1)
-        )).scalar_one_or_none()
+        # Lookup via full search service (pg_trgm similarity + ilike) — best fuzzy match
+        from app.services.product_service import search_products
+        results, _ = await search_products(db, q=name, limit=1, offset=0)
+        p = results[0] if results else None
+        if not p:
+            # fallback: split into words, try each
+            for word in name.split():
+                if len(word) < 3:
+                    continue
+                p = (await db.execute(
+                    select(Product).where(Product.name.ilike(f"%{word}%"))
+                    .order_by(Product.is_verified.desc()).limit(1)
+                )).scalar_one_or_none()
+                if p:
+                    break
         item = ParsedItem(name=name, grams=grams)
         if p:
             factor = grams / 100.0
