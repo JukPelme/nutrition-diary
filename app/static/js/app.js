@@ -230,6 +230,12 @@ async function showApp() {
     initNotifications();
     migrateLegacyWater().catch(()=>{});
     checkAppVersion().catch(()=>{});
+    // Apply server-saved language preference (cross-device)
+    api('/auth/me').then(me => {
+        if (me?.preferred_language && me.preferred_language !== currentLang && typeof setLang === 'function') {
+            setLang(me.preferred_language);
+        }
+    }).catch(()=>{});
     setupOfflineIndicator();
     flushSyncQueue().catch(()=>{});
     cacheProductCatalog().catch(()=>{});
