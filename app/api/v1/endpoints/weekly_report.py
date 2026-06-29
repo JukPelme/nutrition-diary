@@ -65,31 +65,42 @@ async def weekly_report(
     prev_w = await _period_stats(db, user.id, prev_week_start, prev_week_end)
 
     # Weight: first vs last in window
-    weights = (await db.execute(
-        select(HealthMetric.value, HealthMetric.measured_at)
-        .where(HealthMetric.user_id == user.id, HealthMetric.metric_type == "weight",
-               HealthMetric.measured_at >= this_week_start)
-        .order_by(HealthMetric.measured_at)
-    )).all()
+    from datetime import datetime as _dt
     weight_delta = None
-    if len(weights) >= 2:
-        weight_delta = round(weights[-1][0] - weights[0][0], 1)
+    try:
+        weights = (await db.execute(
+            select(HealthMetric.value, HealthMetric.measured_at)
+            .where(HealthMetric.user_id == user.id, HealthMetric.metric_type == "weight",
+                   HealthMetric.measured_at >= _dt.combine(this_week_start, _dt.min.time()))
+            .order_by(HealthMetric.measured_at)
+        )).all()
+        if len(weights) >= 2:
+            weight_delta = round(float(weights[-1][0]) - float(weights[0][0]), 1)
+    except Exception:
+        weights = []
 
     # Mood avg
-    mood_rows = (await db.execute(
-        select(func.avg(MoodEntry.mood), func.avg(MoodEntry.energy))
-        .where(MoodEntry.user_id == user.id, MoodEntry.date >= this_week_start)
-    )).one()
-    mood_avg = round(float(mood_rows[0]), 1) if mood_rows[0] else None
-    energy_avg = round(float(mood_rows[1]), 1) if mood_rows[1] else None
+    mood_avg = energy_avg = None
+    try:
+        mood_rows = (await db.execute(
+            select(func.avg(MoodEntry.mood), func.avg(MoodEntry.energy))
+            .where(MoodEntry.user_id == user.id, MoodEntry.date >= this_week_start)
+        )).one()
+        if mood_rows[0] is not None: mood_avg = round(float(mood_rows[0]), 1)
+        if mood_rows[1] is not None: energy_avg = round(float(mood_rows[1]), 1)
+    except Exception:
+        pass
 
     # Top frequent foods
-    top = (await db.execute(
-        select(DiaryEntry.product_name, func.count(DiaryEntry.id).label("n"))
-        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date >= this_week_start)
-        .group_by(DiaryEntry.product_name)
-        .order_by(desc("n")).limit(5)
-    )).all()
+    try:
+        top = (await db.execute(
+            select(DiaryEntry.product_name, func.count(DiaryEntry.id).label("n"))
+            .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date >= this_week_start)
+            .group_by(DiaryEntry.product_name)
+            .order_by(desc("n")).limit(5)
+        )).all()
+    except Exception:
+        top = []
 
     deltas = {
         "kcal": this_w["kcal_avg"] - prev_w["kcal_avg"],
