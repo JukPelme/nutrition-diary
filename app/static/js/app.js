@@ -1936,10 +1936,15 @@ function renderStats(data) {
         </div>
         <div class="card">
             <div class="card-title">Экспорт данных</div>
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(7)">CSV 7д</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(30)">CSV 30д</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">CSV 90д</button>
+            </div>
             <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(7)">7 дней</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(30)">30 дней</button>
-                <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">3 мес</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportPDF(7)">📄 PDF 7д</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportPDF(30)">📄 PDF 30д</button>
+                <button class="btn btn-secondary" style="flex:1" onclick="exportPDF(90)">📄 PDF 90д</button>
             </div>
         </div>
         <div class="card">
@@ -3034,4 +3039,19 @@ async function addRecipeToDiary(id, name, totalWeight) {
     if (resp?.detail) { alert(resp.detail); return; }
     if (typeof showToast === 'function') showToast(`+${resp.added_kcal} ккал в дневник`);
     loadDiary();
+}
+
+
+async function exportPDF(days) {
+    const url = `/api/v1/export/pdf?days=${days}`;
+    try {
+        const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!resp.ok) { alert('Ошибка генерации PDF: HTTP ' + resp.status); return; }
+        const blob = await resp.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `nutrition_${days}d_${new Date().toISOString().slice(0,10)}.pdf`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch (e) { alert('Ошибка: ' + e); }
 }
