@@ -2889,3 +2889,149 @@ async function loadHeatmap(days=90) {
         </div>
     `;
 }
+
+
+// === Recipes ===
+let _newRecipeIngredients = [];
+
+async function loadRecipes() {
+    const list = await api('/recipes');
+    const container = document.getElementById('recipes-list');
+    if (!container) return;
+    if (!list || !list.length) {
+        container.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:12px">Пока нет рецептов. Создай первый — потом добавляй в дневник одним тапом.</div>';
+        return;
+    }
+    container.innerHTML = list.map(r => {
+        const m = r.macros_per_100g;
+        return `<div class="card" style="padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                <div style="flex:1">
+                    <div style="font-weight:600">${escapeHtml(r.name)}</div>
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px">
+                        ${r.total_weight_g}г · ${r.servings} порц · ${m.calories} ккал/100г
+                    </div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:2px">
+                        Б${m.protein} Ж${m.fat} У${m.carbohydrates} на 100г
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px">
+                    <button class="btn-icon" onclick="addRecipeToDiary('${r.id}','${escapeAttr(r.name)}',${r.total_weight_g})" title="В дневник">＋</button>
+                    <button class="btn-icon" onclick="deleteRecipe('${r.id}')" title="Удалить">🗑</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function escapeHtml(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
+function escapeAttr(s) { return String(s).replace(/[\'"]/g, c => '\\'+c); }
+
+function openCreateRecipe() {
+    _newRecipeIngredients = [];
+    document.getElementById('recipe-name').value = '';
+    document.getElementById('recipe-weight').value = '';
+    document.getElementById('recipe-servings').value = '1';
+    document.getElementById('recipe-ing-search').value = '';
+    document.getElementById('recipe-ing-grams').value = '';
+    document.getElementById('recipe-ing-results').innerHTML = '';
+    renderRecipeIngList();
+    document.getElementById('recipe-modal').classList.add('active');
+    document.getElementById('recipe-weight').oninput = updateRecipeMacrosPreview;
+}
+
+function renderRecipeIngList() {
+    const container = document.getElementById('recipe-ingredients-list');
+    if (!_newRecipeIngredients.length) {
+        container.innerHTML = '<div style="font-size:12px;color:var(--text2)">Пока пусто. Найди продукт и добавь.</div>';
+    } else {
+        container.innerHTML = _newRecipeIngredients.map((ing, i) =>
+            `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg3);border-radius:6px;font-size:13px">
+                <span>${escapeHtml(ing.product_name)} · ${ing.amount_g}г</span>
+                <button class="btn-icon" onclick="removeRecipeIng(${i})">✕</button>
+            </div>`).join('');
+    }
+    updateRecipeMacrosPreview();
+}
+
+function removeRecipeIng(idx) { _newRecipeIngredients.splice(idx,1); renderRecipeIngList(); }
+
+let _recipeSearchTimer = null;
+function onRecipeIngSearch(e) {
+    clearTimeout(_recipeSearchTimer);
+    const q = e.target.value.trim();
+    if (!q) { document.getElementById('recipe-ing-results').innerHTML = ''; return; }
+    _recipeSearchTimer = setTimeout(async () => {
+        const results = await api(`/products?q=${encodeURIComponent(q)}&limit=10`);
+        const div = document.getElementById('recipe-ing-results');
+        if (!results || !results.length) { div.innerHTML = '<div style="padding:8px;color:var(--text2);font-size:12px">Не найдено</div>'; return; }
+        div.innerHTML = results.map(p =>
+            `<div style="padding:8px 10px;cursor:pointer;border-radius:6px;font-size:13px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="addRecipeIng('${p.id}','${escapeAttr(p.name)}', ${p.calories||0})">
+                ${escapeHtml(p.name)} · ${Math.round(p.calories||0)} ккал/100г
+            </div>`).join('');
+    }, 300);
+}
+
+function addRecipeIng(productId, name, kcal100) {
+    const g = parseFloat(document.getElementById('recipe-ing-grams').value);
+    if (!g || g <= 0) { alert('Укажи граммы'); return; }
+    _newRecipeIngredients.push({ product_id: productId, product_name: name, amount_g: g, _kcal100: kcal100 });
+    document.getElementById('recipe-ing-search').value = '';
+    document.getElementById('recipe-ing-grams').value = '';
+    document.getElementById('recipe-ing-results').innerHTML = '';
+    renderRecipeIngList();
+}
+
+function updateRecipeMacrosPreview() {
+    const weight = parseFloat(document.getElementById('recipe-weight').value) || 0;
+    let totalCal = 0;
+    _newRecipeIngredients.forEach(i => totalCal += (i._kcal100 || 0) * i.amount_g / 100);
+    const el = document.getElementById('recipe-macros-preview');
+    if (!_newRecipeIngredients.length) { el.textContent = ''; return; }
+    const per100 = weight > 0 ? Math.round(totalCal / weight * 100) : '—';
+    el.innerHTML = `Итого: <b>${Math.round(totalCal)} ккал</b> · на 100г: <b>${per100}</b> · ингредиентов: ${_newRecipeIngredients.length}`;
+}
+
+async function saveRecipe() {
+    const name = document.getElementById('recipe-name').value.trim();
+    const weight = parseFloat(document.getElementById('recipe-weight').value);
+    const servings = parseInt(document.getElementById('recipe-servings').value) || 1;
+    if (!name) { alert('Укажи название'); return; }
+    if (!weight || weight <= 0) { alert('Укажи готовый вес'); return; }
+    if (!_newRecipeIngredients.length) { alert('Добавь хотя бы 1 ингредиент'); return; }
+    const resp = await api('/recipes', {
+        method: 'POST',
+        body: JSON.stringify({
+            name, total_weight_g: weight, servings,
+            ingredients: _newRecipeIngredients.map(i => ({ product_id: i.product_id, product_name: i.product_name, amount_g: i.amount_g }))
+        })
+    });
+    if (resp?.detail) { alert(resp.detail); return; }
+    closeModal('recipe-modal');
+    loadRecipes();
+}
+
+async function deleteRecipe(id) {
+    if (!confirm('Удалить рецепт?')) return;
+    await api(`/recipes/${id}`, { method: 'DELETE' });
+    loadRecipes();
+}
+
+async function addRecipeToDiary(id, name, totalWeight) {
+    const g = prompt(`Сколько грамм "${name}" съел? (всего рецепта ${totalWeight} г)`, '200');
+    if (!g) return;
+    const grams = parseFloat(g);
+    if (!grams || grams <= 0) { alert('Введи число'); return; }
+    const meal = meals?.[0];
+    const resp = await api(`/recipes/${id}/add-to-diary`, {
+        method: 'POST',
+        body: JSON.stringify({
+            entry_date: currentDate,
+            meal_id: meal?.id || null,
+            serving_amount: grams,
+        })
+    });
+    if (resp?.detail) { alert(resp.detail); return; }
+    if (typeof showToast === 'function') showToast(`+${resp.added_kcal} ккал в дневник`);
+    loadDiary();
+}

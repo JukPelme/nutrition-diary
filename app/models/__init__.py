@@ -6,5 +6,6 @@ from app.models.device import DeviceIntegration, HealthMetric
 from app.models.water import WaterEntry
 from app.models.security import LoginEvent
 from app.models.chat import ChatMessage
+from app.models.recipe import Recipe, RecipeIngredient
 
-__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry", "LoginEvent", "ChatMessage"]
+__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry", "LoginEvent", "ChatMessage", "Recipe", "RecipeIngredient"]
