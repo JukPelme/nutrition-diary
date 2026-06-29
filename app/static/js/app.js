@@ -3239,3 +3239,119 @@ async function testPush() {
         };
     }
 })();
+
+
+// === Voice input ===
+let _voiceRecorder = null;
+let _voiceChunks = [];
+let _voiceItems = [];
+
+function openVoiceModal() {
+    document.getElementById('voice-modal').classList.add('active');
+    document.getElementById('voice-transcript').style.display = 'none';
+    document.getElementById('voice-transcript').textContent = '';
+    document.getElementById('voice-items').innerHTML = '';
+    document.getElementById('voice-add-btn').style.display = 'none';
+    document.getElementById('voice-rec-status').textContent = 'Нажми и говори: «съел 200г курицы и риса»';
+    document.getElementById('voice-rec-btn').textContent = '🎤';
+    _voiceItems = [];
+}
+
+function closeVoiceModal() {
+    if (_voiceRecorder && _voiceRecorder.state === 'recording') {
+        try { _voiceRecorder.stop(); } catch(e){}
+    }
+    closeModal('voice-modal');
+}
+
+async function toggleVoiceRec() {
+    const btn = document.getElementById('voice-rec-btn');
+    const status = document.getElementById('voice-rec-status');
+    if (_voiceRecorder && _voiceRecorder.state === 'recording') {
+        _voiceRecorder.stop();
+        btn.textContent = '🎤';
+        status.textContent = 'Расшифровка...';
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+        _voiceRecorder = new MediaRecorder(stream, { mimeType: mime });
+        _voiceChunks = [];
+        _voiceRecorder.ondataavailable = (e) => { if (e.data.size) _voiceChunks.push(e.data); };
+        _voiceRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(_voiceChunks, { type: mime });
+            await sendVoice(blob);
+        };
+        _voiceRecorder.start();
+        btn.textContent = '⏹';
+        status.textContent = 'Говори... (нажми ⏹ когда закончишь)';
+    } catch (e) {
+        status.textContent = 'Микрофон недоступен: ' + (e?.message || e);
+    }
+}
+
+async function sendVoice(blob) {
+    const status = document.getElementById('voice-rec-status');
+    const tr = document.getElementById('voice-transcript');
+    const list = document.getElementById('voice-items');
+    try {
+        const fd = new FormData();
+        fd.append('file', blob, 'voice.webm');
+        const resp = await fetch(`/api/v1/voice/parse?lang=${currentLang || 'ru'}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd,
+        });
+        const data = await resp.json();
+        if (data.detail) { status.textContent = '⚠️ ' + data.detail; return; }
+        tr.style.display = 'block';
+        tr.textContent = '«' + (data.transcript || '—') + '»';
+        if (!data.items?.length) {
+            status.textContent = 'Продукты не распознаны';
+            list.innerHTML = '';
+            return;
+        }
+        _voiceItems = data.items;
+        list.innerHTML = data.items.map((it, i) => {
+            const matched = it.matched_product_name ? `→ ${escapeHtml(it.matched_product_name)} · ${it.calories}ккал` : '<span style="color:#ffa940">не найден в базе</span>';
+            return `<div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg3);border-radius:6px;font-size:13px">
+                <span><b>${escapeHtml(it.name)}</b> · ${it.grams}г ${matched}</span>
+                <button class="btn-icon" onclick="_voiceItems.splice(${i},1); document.getElementById('voice-items').children[${i}]?.remove();">✕</button>
+            </div>`;
+        }).join('');
+        document.getElementById('voice-add-btn').style.display = 'block';
+        status.textContent = `Распознано ${data.items.length} ${data.items.length===1?'продукт':'продуктов'} — проверь и подтверди`;
+    } catch (e) {
+        status.textContent = 'Ошибка: ' + (e?.message || e);
+    }
+}
+
+async function addVoiceItems() {
+    const meal = meals?.[0];
+    let added = 0;
+    for (const it of _voiceItems) {
+        if (!it.matched_product_id) continue;
+        try {
+            await apiQueued('/diary', {
+                method: 'POST',
+                body: JSON.stringify({
+                    meal_id: meal?.id || null,
+                    product_id: it.matched_product_id,
+                    entry_date: currentDate,
+                    product_name: it.matched_product_name || it.name,
+                    serving_amount: it.grams,
+                    calories: it.calories || 0,
+                    protein: it.protein || 0,
+                    fat: it.fat || 0,
+                    carbohydrates: it.carbohydrates || 0,
+                })
+            });
+            added += 1;
+        } catch(e) {}
+    }
+    if (typeof showToast === 'function') showToast(`Добавлено ${added}`);
+    closeVoiceModal();
+    loadDiary();
+}

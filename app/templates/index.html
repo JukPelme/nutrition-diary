@@ -389,6 +389,7 @@
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openBarcode(selectedMealId)">📷 Штрихкод</button>
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openCreateProduct()">✚ Создать свой</button>
                 <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openFoodScan()">📸 Фото</button>
+                <button class="btn btn-secondary" onclick="closeModal('add-food-modal'); openVoiceModal()">🎤 Голос</button>
             </div>
             <div id="search-results" class="search-results"></div>
         </div>
@@ -832,6 +833,23 @@
             <div id="recipe-ing-results" class="search-results" style="max-height:140px;overflow-y:auto"></div>
             <div id="recipe-macros-preview" style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2)"></div>
             <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="saveRecipe()">Сохранить рецепт</button>
+        </div>
+    </div>
+
+    <!-- Voice modal -->
+    <div id="voice-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg">🎤 Голосом</h3>
+                <button class="btn-icon" onclick="closeVoiceModal()">✕</button>
+            </div>
+            <div style="text-align:center;padding:8px 0 16px">
+                <button id="voice-rec-btn" class="btn btn-primary" style="width:80px;height:80px;border-radius:50%;font-size:36px;padding:0" onclick="toggleVoiceRec()">🎤</button>
+                <div id="voice-rec-status" style="margin-top:10px;font-size:13px;color:var(--text2)">Нажми и говори: «съел 200г курицы и риса»</div>
+            </div>
+            <div id="voice-transcript" style="font-size:13px;color:var(--text2);padding:8px;background:var(--bg3);border-radius:8px;min-height:40px;margin-bottom:12px;display:none"></div>
+            <div id="voice-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+            <button id="voice-add-btn" class="btn btn-primary" style="width:100%;display:none" onclick="addVoiceItems()">Добавить всё в дневник</button>
         </div>
     </div>
 

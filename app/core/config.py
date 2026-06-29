@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Food recognition
     anthropic_api_key: str | None = None
     logmeal_api_key: str | None = None
+    deepgram_api_key: str | None = None
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
