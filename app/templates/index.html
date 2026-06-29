@@ -79,6 +79,11 @@
 
         <!-- Diary View -->
         <div id="diary-view">
+            <div id="streak-badge" class="streak-badge" style="display:none" onclick="setActiveTab('stats')">
+                <span id="streak-flame">🔥</span>
+                <span id="streak-text">0</span>
+                <span id="streak-today-dot" class="streak-dot" title=""></span>
+            </div>
             <div class="date-nav">
                 <button class="btn-icon" onclick="changeDate(-1)">◀</button>
                 <span id="date-display" class="date-text" data-i18n="today">Сегодня</span>
@@ -194,6 +199,11 @@
         <!-- Stats View -->
         <div id="stats-view" class="hidden">
             <div id="stats-content"></div>
+            <div class="card" style="margin-top:16px">
+                <div class="card-title" data-i18n="achievements">🏆 Достижения</div>
+                <div id="achievements-progress" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+                <div id="achievements-grid" class="ach-grid"></div>
+            </div>
         </div>
 
         <!-- Nutrients View -->

@@ -9,5 +9,6 @@ from app.models.chat import ChatMessage
 from app.models.recipe import Recipe, RecipeIngredient
 from app.models.push import PushSubscription, AppConfig
 from app.models.meal_plan import MealPlan
+from app.models.achievement import Achievement, UserAchievement
 
-__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry", "LoginEvent", "ChatMessage", "Recipe", "RecipeIngredient", "PushSubscription", "AppConfig", "MealPlan"]
+__all__ = ["User", "Product", "Meal", "DiaryEntry", "ICD11Condition", "UserCondition", "DeviceIntegration", "HealthMetric", "WaterEntry", "LoginEvent", "ChatMessage", "Recipe", "RecipeIngredient", "PushSubscription", "AppConfig", "MealPlan", "Achievement", "UserAchievement"]

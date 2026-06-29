@@ -56,6 +56,8 @@ const TRANSLATIONS = {
         weekOverview: 'План на неделю',
         aiMealPlanGen: '✨ Сгенерировать меню', mealPlanDays: 'На сколько дней', mealPlanAvoid: 'Исключить (через запятую): аллергии, нелюбимое', mealPlanNotes: 'Пожелания (опц.)', mealPlanCost: 'Генерация занимает 30-60 сек, Claude Sonnet 4.6. Ориентировочно ~5 центов за план.', generate: 'Сгенерировать',
         applyDay: 'Применить в дневник', mealPlanNone: 'Активного плана нет — нажми «Сгенерировать»', tips: 'Подсказки', confirmApplyDay: 'Применить день ', toDiary: ' в дневник?', appliedEntries: 'Добавлено записей: ', confirmDeletePlan: 'Удалить план?', mealPlanGenerating: 'Генерируем меню… 30-60 сек', mealPlanReady: 'Готово!',
+        achievements: '🏆 Достижения', streakDays: 'дн.', streakTodayDone: 'Сегодня уже отмечено', streakTodayMissing: 'Сегодня ещё нет записей',
+        achEarnedOf: 'Получено: ', achUnlocked: 'Получено: ',
         aiQuality: 'Распознавание еды (AI)', aiFast: 'Быстро', aiPrecise: 'Точно', aiQualityHint: 'Быстро = Haiku 4.5 (~1¢/фото), Точно = Sonnet 4.6 (~5¢/фото, лучше для сложных блюд)',
     },
     en: {
@@ -113,6 +115,8 @@ const TRANSLATIONS = {
         weekOverview: 'Week overview',
         aiMealPlanGen: '✨ Generate meal plan', mealPlanDays: 'How many days', mealPlanAvoid: 'Avoid (comma-separated): allergies, dislikes', mealPlanNotes: 'Notes (optional)', mealPlanCost: 'Generation takes 30-60 sec, Claude Sonnet 4.6. Roughly ~5 cents per plan.', generate: 'Generate',
         applyDay: 'Apply to diary', mealPlanNone: 'No active plan — tap Generate', tips: 'Tips', confirmApplyDay: 'Apply day ', toDiary: ' to diary?', appliedEntries: 'Entries added: ', confirmDeletePlan: 'Delete this plan?', mealPlanGenerating: 'Generating menu… 30-60s', mealPlanReady: 'Done!',
+        achievements: '🏆 Achievements', streakDays: 'd', streakTodayDone: 'Today already logged', streakTodayMissing: 'No entries yet today',
+        achEarnedOf: 'Earned: ', achUnlocked: 'Unlocked: ',
         aiQuality: 'Food recognition (AI)', aiFast: 'Fast', aiPrecise: 'Precise', aiQualityHint: 'Fast = Haiku 4.5 (~1¢/photo), Precise = Sonnet 4.6 (~5¢/photo, better for complex dishes)',
     },
     ja: {
@@ -170,6 +174,8 @@ const TRANSLATIONS = {
         weekOverview: '週間プラン',
         aiMealPlanGen: '✨ 献立を作成', mealPlanDays: '日数', mealPlanAvoid: '避ける食材(カンマ区切り): アレルギーや嫌いなもの', mealPlanNotes: 'メモ(任意)', mealPlanCost: '生成に30〜60秒、Claude Sonnet 4.6 を使用。1献立あたり約5セント。', generate: '生成',
         applyDay: '日記に反映', mealPlanNone: 'アクティブな献立はありません — 「生成」をタップ', tips: 'ヒント', confirmApplyDay: '日付 ', toDiary: ' を日記に反映しますか?', appliedEntries: '追加した記録数: ', confirmDeletePlan: 'この献立を削除しますか?', mealPlanGenerating: '献立を生成中… 30〜60秒', mealPlanReady: '完了!',
+        achievements: '🏆 実績', streakDays: '日', streakTodayDone: '今日は記録済み', streakTodayMissing: '今日はまだ記録なし',
+        achEarnedOf: '達成: ', achUnlocked: '達成: ',
         aiQuality: '食品AI認識', aiFast: '高速', aiPrecise: '高精度', aiQualityHint: '高速 = Haiku 4.5（約1¢/枚）、高精度 = Sonnet 4.6（約5¢/枚・複雑な料理に対応）',
     }
 };

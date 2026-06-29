@@ -131,8 +131,24 @@ async def russian_variants_if_requested():
     await seed_ru(db_url)
 
 
+
+
+
+async def achievements_seed():
+    """Auto-seed achievements catalog (idempotent)."""
+    from app.db.session import async_session
+    from app.services.gamification import seed_achievements
+    async with async_session() as s:
+        inserted = await seed_achievements(s)
+    if inserted:
+        print(f"[seed] achievements: added {inserted} catalog entries")
+    else:
+        print("[seed] achievements: up to date")
+
+
 async def main():
     await base_seed_if_needed()
+    await achievements_seed()
     await russian_variants_if_requested()
     await extended_seed_if_requested()
     await usda_seed_if_requested()

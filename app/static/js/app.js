@@ -608,6 +608,7 @@ async function migrateLegacyWater() {
 
 // ---- Diary ----
 async function loadDiary() {
+    refreshStreakBadge();
     meals = await api('/meals') || [];
     const summary = await api(`/diary/summary?entry_date=${currentDate}`);
     entries = summary?.entries || [];
@@ -1287,6 +1288,7 @@ async function onFoodPhotoSelected(event) {
 
         if (resp.status === 401) { logout(); return; }
         const data = await resp.json();
+        if (typeof awardFeature === "function") awardFeature("photo");
 
         if (data.error && !data.foods?.length) {
             document.getElementById('scan-status').textContent = data.error === 'No food recognition provider available'
@@ -1563,6 +1565,7 @@ async function addToDiary() {
     closeModal('portion-modal');
     if (typeof showToast === 'function') showToast(typeof t === 'function' ? (navigator.onLine ? t('addedSynced') : t('addedOffline')) : 'Добавлено');
     loadDiary();
+    if (typeof checkAchievementsAfterAction === 'function') setTimeout(checkAchievementsAfterAction, 400);
 }
 
 // ---- Nutrients ----
@@ -1831,6 +1834,8 @@ async function exportCSV(days) {
 let statsPeriod = 'week';
 
 async function loadStats() {
+    refreshStreakBadge();
+    loadAchievements();
     let data;
     if (statsPeriod === 'week') {
         data = await api('/stats/week');
@@ -2773,6 +2778,7 @@ async function checkAppVersion() {
         });
         if (!resp.ok) return;
         const data = await resp.json();
+        if (typeof awardFeature === "function") awardFeature("barcode");
         const current = data.version;
         const saved = localStorage.getItem('app_version');
         if (!saved) { localStorage.setItem('app_version', current); }
@@ -3308,6 +3314,7 @@ async function sendVoice(blob) {
         });
         const data = await resp.json();
         if (data.detail) { status.textContent = '⚠️ ' + data.detail; return; }
+        if (typeof awardFeature === "function") awardFeature("voice");
         tr.style.display = 'block';
         tr.textContent = '«' + (data.transcript || '—') + '»';
         if (!data.items?.length) {
@@ -3499,4 +3506,112 @@ async function confirmDeletePlan(planId) {
     if (r && !r._error) {
         await loadAiMealPlanCard();
     }
+}
+
+// ---- Streak + Achievements ----
+async function refreshStreakBadge() {
+    try {
+        const r = await api('/gamification/streak');
+        if (!r || r._error) return;
+        const badge = document.getElementById('streak-badge');
+        const text = document.getElementById('streak-text');
+        const dot = document.getElementById('streak-today-dot');
+        if (!badge || !text) return;
+        const c = r.current || 0;
+        if (c < 1) {
+            badge.style.display = 'none';
+            return;
+        }
+        badge.style.display = 'inline-flex';
+        text.textContent = c + ' ' + (t('streakDays') || 'дн.');
+        badge.classList.toggle('has-today', !!r.today_logged);
+        dot.title = r.today_logged ? (t('streakTodayDone') || 'Сегодня уже отмечено') : (t('streakTodayMissing') || 'Сегодня ещё нет записей');
+    } catch (e) {
+        console.warn('streak failed', e);
+    }
+}
+
+async function loadAchievements() {
+    const grid = document.getElementById('achievements-grid');
+    const prog = document.getElementById('achievements-progress');
+    if (!grid) return;
+    try {
+        const r = await api('/gamification/achievements');
+        if (!r || r._error) { grid.innerHTML = ''; return; }
+        const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+        const items = r.achievements || [];
+        if (prog) {
+            prog.textContent = (t('achEarnedOf') || 'Получено: ') + r.earned_count + ' / ' + r.total;
+        }
+        // Auto-check for new awards before rendering
+        try { await api('/gamification/check', { method: 'POST' }); } catch(e){}
+        const r2 = await api('/gamification/achievements');
+        const items2 = (r2 && r2.achievements) ? r2.achievements : items;
+        if (prog && r2) {
+            prog.textContent = (t('achEarnedOf') || 'Получено: ') + r2.earned_count + ' / ' + r2.total;
+        }
+        grid.innerHTML = items2.map(a => {
+            const name = a['name_' + lang] || a.name_ru;
+            const desc = a['desc_' + lang] || a.desc_ru;
+            return '<div class="ach-card' + (a.earned ? ' earned' : '') + '" title="' + escapeHtml(desc) + '">'
+                + '<div class="ach-icon">' + a.icon + '</div>'
+                + '<div class="ach-name">' + escapeHtml(name) + '</div>'
+                + '<div class="ach-desc">' + escapeHtml(desc) + '</div>'
+                + '</div>';
+        }).join('');
+    } catch (e) {
+        console.warn('achievements failed', e);
+    }
+}
+
+let _achToastTimer = null;
+function showAchievementToast(text) {
+    const t = document.createElement('div');
+    t.className = 'ach-toast';
+    t.textContent = text;
+    document.body.appendChild(t);
+    if (_achToastTimer) clearTimeout(_achToastTimer);
+    _achToastTimer = setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.4s';
+        setTimeout(() => t.remove(), 400);
+    }, 3500);
+}
+
+async function checkAchievementsAfterAction() {
+    try {
+        const r = await api('/gamification/check', { method: 'POST' });
+        if (!r || r._error || !Array.isArray(r.new) || r.new.length === 0) return;
+        // Resolve codes → names for current lang
+        const list = await api('/gamification/achievements');
+        if (!list || list._error) return;
+        const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+        for (const code of r.new) {
+            const a = (list.achievements || []).find(x => x.code === code);
+            if (!a) continue;
+            const name = a['name_' + lang] || a.name_ru;
+            showAchievementToast(a.icon + ' ' + (window.t ? (t('achUnlocked') || 'Получено: ') : 'Получено: ') + name);
+        }
+        refreshStreakBadge();
+    } catch (e) {
+        console.warn('checkAchievementsAfterAction', e);
+    }
+}
+
+async function awardFeature(feature) {
+    try {
+        const r = await api('/gamification/award', {
+            method: 'POST',
+            body: JSON.stringify({ feature })
+        });
+        if (r && Array.isArray(r.new) && r.new.length) {
+            const list = await api('/gamification/achievements');
+            const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+            for (const code of r.new) {
+                const a = (list?.achievements || []).find(x => x.code === code);
+                if (!a) continue;
+                showAchievementToast(a.icon + ' ' + (t('achUnlocked') || 'Получено: ') + (a['name_' + lang] || a.name_ru));
+            }
+        }
+    } catch (e) { console.warn('awardFeature', e); }
 }
