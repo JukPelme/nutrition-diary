@@ -3055,3 +3055,42 @@ async function exportPDF(days) {
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     } catch (e) { alert('Ошибка: ' + e); }
 }
+
+
+async function uploadCsv(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const status = document.getElementById('csv-import-status');
+    status.textContent = `Загружаю ${Math.round(file.size/1024)} КБ...`;
+    try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const resp = await fetch('/api/v1/import/csv', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd,
+        });
+        const text = await resp.text();
+        let data; try { data = JSON.parse(text); } catch(e) { status.textContent = 'HTTP ' + resp.status + ': ' + text.slice(0,150); return; }
+        if (data.detail) { status.textContent = '⚠️ ' + (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail).slice(0,200)); return; }
+        status.style.color = '#51cf66';
+        status.textContent = `✓ Импортировано: ${data.imported} из ${data.total_rows} (пропущено ${data.skipped})`;
+        loadDiary();
+    } catch (e) {
+        status.textContent = 'Ошибка: ' + (e?.message || e);
+    }
+}
+
+function downloadCsvTemplate() {
+    const url = '/api/v1/import/template.csv';
+    fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.blob())
+        .then(b => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(b);
+            a.download = 'nutrition_diary_template.csv';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+}

@@ -49,3 +49,6 @@ api_router.include_router(chat_router)
 
 from app.api.v1.endpoints.recipes import router as recipes_router
 api_router.include_router(recipes_router)
+
+from app.api.v1.endpoints.import_data import router as import_router
+api_router.include_router(import_router)
