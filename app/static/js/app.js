@@ -2794,18 +2794,35 @@ async function decodeBarcodeFromImage(event) {
         console.log('[barcode] response:', data);
 
         if (data.error) { setMsg('⚠️ ' + data.error.slice(0, 200)); return; }
+        // Stash extracted nutrition (if any) for prefill
+        window._lastBarcodeExtract = {
+            barcode: data.barcode, name: data.name, brand: data.brand,
+            calories: data.calories, protein: data.protein, fat: data.fat,
+            carbohydrates: data.carbohydrates, fiber: data.fiber, sugar: data.sugar,
+        };
+        const hasNutrition = data.calories != null || data.protein != null;
         if (data.barcode) {
             document.getElementById('barcode-input').value = data.barcode;
             if (data.product) { setMsg('✓ ' + data.barcode); searchBarcode(); }
             else {
                 setMsg('');
                 if (status) {
-                    status.innerHTML = `Найден <b>${data.barcode}</b>, в базе нет.<br><button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="createProductFromBarcode('${data.barcode}')">＋ Создать продукт с этим штрихкодом</button>`;
+                    const hint = hasNutrition
+                        ? `<div style="font-size:11px;color:#4caf50;margin-top:4px">✨ Сразу подхватим название и КБЖУ с фото</div>`
+                        : '';
+                    status.innerHTML = `Найден <b>${data.barcode}</b>, в базе нет.${hint}<br><button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="createProductFromBarcode('${data.barcode}', true)">＋ Создать продукт${hasNutrition ? ' (с авто-КБЖУ)' : ''}</button>`;
                     status.style.color = 'var(--text)';
                 }
             }
+        } else if (hasNutrition) {
+            // No barcode but Claude extracted nutrition — still useful
+            setMsg('');
+            if (status) {
+                status.innerHTML = `Штрихкод не распознан, но видно КБЖУ.<br><button class="btn btn-primary" style="margin-top:8px;width:100%" onclick="createProductFromBarcode('', true)">＋ Создать продукт с КБЖУ из фото</button>`;
+                status.style.color = 'var(--text)';
+            }
         } else {
-            setMsg('Штрихкод не распознан. Снимай ближе и ровно, чтобы линии были чёткими. ' + (data.raw ? '(Claude вернул: ' + data.raw.slice(0,40) + ')' : ''));
+            setMsg('Штрихкод не распознан. Снимай ближе и ровно, чтобы линии были чёткими. ' + (data.raw ? '(Claude: ' + data.raw.slice(0,40) + ')' : ''));
         }
     } catch (e) {
         console.error('[barcode] exception:', e);
