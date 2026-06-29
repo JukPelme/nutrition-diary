@@ -204,6 +204,8 @@ async def update_me(
         current_user.dietary_restrictions = (data.dietary_restrictions or '').strip() or None
     if data.seasonal_hints_enabled is not None:
         current_user.seasonal_hints_enabled = bool(data.seasonal_hints_enabled)
+    if data.nutrient_goals is not None:
+        current_user.nutrient_goals = data.nutrient_goals or None
     if data.preferred_language is not None:
         lang = data.preferred_language.strip() or None
         if lang and lang not in {"ru", "en", "ja"}:

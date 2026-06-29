@@ -357,6 +357,15 @@ async function openProfile() {
         if (me.goal_type) document.getElementById('prof-goal').value = me.goal_type;
         const _dr = document.getElementById('prof-diet-restrictions');
         if (_dr) _dr.value = me.dietary_restrictions || '';
+        { const el = document.getElementById('ng-vitamin_d'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['vitamin_d']) || ''; }
+        { const el = document.getElementById('ng-vitamin_b12'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['vitamin_b12']) || ''; }
+        { const el = document.getElementById('ng-vitamin_c'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['vitamin_c']) || ''; }
+        { const el = document.getElementById('ng-iron'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['iron']) || ''; }
+        { const el = document.getElementById('ng-calcium'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['calcium']) || ''; }
+        { const el = document.getElementById('ng-magnesium'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['magnesium']) || ''; }
+        { const el = document.getElementById('ng-zinc'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['zinc']) || ''; }
+        { const el = document.getElementById('ng-potassium'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['potassium']) || ''; }
+        { const el = document.getElementById('ng-fiber'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['fiber']) || ''; }
         const _sh = document.getElementById('prof-seasonal-hints');
         if (_sh) _sh.checked = me.seasonal_hints_enabled !== false;
         renderBMI(me.current_weight, me.height);
@@ -4015,4 +4024,29 @@ function dismissSeasonal() {
     const card = document.getElementById('seasonal-card');
     if (card) card.style.display = 'none';
     localStorage.setItem('seasonal_dismissed_' + currentDate, '1');
+}
+
+async function saveNutrientGoals() {
+    const raw = {
+            'vitamin_d': parseFloat(document.getElementById('ng-vitamin_d').value) || null,
+            'vitamin_b12': parseFloat(document.getElementById('ng-vitamin_b12').value) || null,
+            'vitamin_c': parseFloat(document.getElementById('ng-vitamin_c').value) || null,
+            'iron': parseFloat(document.getElementById('ng-iron').value) || null,
+            'calcium': parseFloat(document.getElementById('ng-calcium').value) || null,
+            'magnesium': parseFloat(document.getElementById('ng-magnesium').value) || null,
+            'zinc': parseFloat(document.getElementById('ng-zinc').value) || null,
+            'potassium': parseFloat(document.getElementById('ng-potassium').value) || null,
+            'fiber': parseFloat(document.getElementById('ng-fiber').value) || null
+    };
+    const goals = {};
+    for (const k in raw) { if (raw[k] != null && raw[k] > 0) goals[k] = raw[k]; }
+    const r = await api('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ nutrient_goals: Object.keys(goals).length ? goals : null })
+    });
+    if (r && !r._error) {
+        if (typeof showToast === 'function') showToast(t('saved') || 'Сохранено');
+    } else {
+        alert(r?.detail || 'Ошибка');
+    }
 }

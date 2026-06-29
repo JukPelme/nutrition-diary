@@ -48,6 +48,7 @@ class UserResponse(BaseModel):
     totp_enabled: bool = False
     dietary_restrictions: str | None = None
     seasonal_hints_enabled: bool = True
+    nutrient_goals: dict | None = None
 
     model_config = {"from_attributes": True}
 
@@ -69,6 +70,7 @@ class UserUpdate(BaseModel):
     height: float | None = None
     dietary_restrictions: str | None = None
     seasonal_hints_enabled: bool | None = None
+    nutrient_goals: dict | None = None
 
 
 class RecoverUsernameIn(BaseModel):

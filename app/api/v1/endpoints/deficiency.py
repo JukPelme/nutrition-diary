@@ -105,10 +105,12 @@ async def deficiencies(
                 totals[k] += v * factor
 
     avg = {k: round(v / days, 2) for k, v in totals.items()}
-    # Compute % of RDA
+    # Compute % of personal goal (fallback RDA)
+    user_goals = (user.nutrient_goals or {}) if isinstance(user.nutrient_goals, dict) else {}
+    effective = {**RDA, **{k: float(v) for k, v in user_goals.items() if isinstance(v, (int, float)) and v > 0}}
     rda_filled = {
         k: round((avg.get(k, 0) / v) * 100) if v else None
-        for k, v in RDA.items() if k in avg or k == "fiber"
+        for k, v in effective.items() if k in avg or k == "fiber"
     }
 
     sys_prompt = _system_prompt(lang)
