@@ -787,3 +787,17 @@ a { color:var(--accent); text-decoration:none; }
     from { opacity: 0; transform: translate(-50%, 20px); }
     to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+
+/* WCAG focus indicators */
+.btn-icon:focus-visible,
+.product-row:focus-visible,
+.chat-fab:focus-visible,
+.nav-tab:focus-visible,
+.mode-btn:focus-visible,
+button:focus-visible,
+.btn:focus-visible {
+    outline: 2px solid var(--accent, #4a9eff);
+    outline-offset: 2px;
+}
+.btn-icon:focus:not(:focus-visible) { outline: none; }

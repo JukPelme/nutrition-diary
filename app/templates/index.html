@@ -86,7 +86,7 @@
                         <div style="font-weight:600;font-size:13px;margin-bottom:2px" data-i18n="seasonalNow">Сейчас в сезоне</div>
                         <div id="seasonal-text" style="font-size:12px;color:var(--text)"></div>
                     </div>
-                    <button class="btn-icon" onclick="dismissSeasonal()">✕</button>
+                    <button class="btn-icon" aria-label="Закрыть" onclick="dismissSeasonal()">✕</button>
                 </div>
             </div>
             <div id="streak-badge" class="streak-badge" style="display:none" onclick="setActiveTab('stats')">
@@ -95,10 +95,10 @@
                 <span id="streak-today-dot" class="streak-dot" title=""></span>
             </div>
             <div class="date-nav">
-                <button class="btn-icon" onclick="changeDate(-1)">◀</button>
+                <button class="btn-icon" aria-label="Предыдущий день" onclick="changeDate(-1)">◀</button>
                 <span id="date-display" class="date-text" data-i18n="today">Сегодня</span>
-                <button class="btn-icon" onclick="changeDate(1)">▶</button>
-                <button class="btn-icon" onclick="copyDay()" title="Копировать день" style="margin-left:8px">📋</button>
+                <button class="btn-icon" aria-label="Следующий день" onclick="changeDate(1)">▶</button>
+                <button class="btn-icon" aria-label="Копировать день" onclick="copyDay()" title="Копировать день" style="margin-left:8px">📋</button>
             </div>
             <div class="card summary-card">
                 <div class="summary-ring">
@@ -349,9 +349,9 @@
     </main>
 
     <!-- Universal Voice FAB -->
-    <button id="uvoice-fab" class="chat-fab" style="bottom:152px;background:linear-gradient(135deg,#00b8d4,#0091ea)" onclick="openUniversalVoice()" title="Голосовая запись"><span class="chat-fab-icon">🎙</span></button>
+    <button id="uvoice-fab" class="chat-fab" aria-label="Голосовая запись" style="bottom:152px;background:linear-gradient(135deg,#00b8d4,#0091ea)" onclick="openUniversalVoice()" title="Голосовая запись"><span class="chat-fab-icon">🎙</span></button>
     <!-- Chat FAB -->
-    <button id="chat-fab" class="chat-fab" onclick="openChat()" title="AI-нутрициолог"><span class="chat-fab-icon">✨</span><span class="chat-fab-label">AI</span></button>
+    <button id="chat-fab" class="chat-fab" aria-label="AI-нутрициолог" onclick="openChat()" title="AI-нутрициолог"><span class="chat-fab-icon">✨</span><span class="chat-fab-label">AI</span></button>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
@@ -386,7 +386,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="addProduct">Добавить продукт</h3>
-                <button class="btn-icon" onclick="closeModal('add-food-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('add-food-modal')">✕</button>
             </div>
             <div class="form-group">
                 <input type="text" id="food-search" class="input" placeholder="Поиск продукта..." oninput="onFoodSearch(event)" autocomplete="off">
@@ -433,7 +433,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Штрихкод</h3>
-                <button class="btn-icon" onclick="closeBarcodeModal()">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeBarcodeModal()">✕</button>
             </div>
             <div id="barcode-scanner-area" class="hidden" style="margin-bottom:12px">
                 <div id="barcode-camera-info"></div>
@@ -451,7 +451,7 @@
             <input type="file" id="barcode-camera-input" accept="image/*" capture="environment" style="display:none" onchange="decodeBarcodeFromImage(event)">
             <input type="file" id="barcode-gallery-input" accept="image/*" style="display:none" onchange="decodeBarcodeFromImage(event)">
             <button class="btn btn-primary" style="width:100%" onclick="searchBarcode()">Найти</button>
-            <div id="barcode-status" style="text-align:center;padding:12px;color:var(--text2)"></div>
+            <div id="barcode-status" style="text-align:center;padding:12px;color:var(--text2)" aria-live="polite"></div>
         </div>
     </div>
 
@@ -460,7 +460,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="portion-product-name">Продукт</h3>
-                <button class="btn-icon" onclick="closeModal('portion-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('portion-modal')">✕</button>
             </div>
             <div class="form-group">
                 <label class="label">Порция, г</label>
@@ -484,7 +484,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Создать продукт</h3>
-                <button class="btn-icon" onclick="closeModal('create-product-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('create-product-modal')">✕</button>
             </div>
 
             <div class="form-group">
@@ -574,7 +574,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Распознать еду</h3>
-                <button class="btn-icon" onclick="closeModal('food-scan-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('food-scan-modal')">✕</button>
             </div>
             <div id="scan-upload-area">
                 <input type="file" id="food-photo-input" accept="image/*" capture="environment" style="display:none" onchange="onFoodPhotoSelected(event)">
@@ -604,7 +604,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg">👤 Профиль</h3>
-                <button class="btn-icon" onclick="closeModal('profile-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('profile-modal')">✕</button>
             </div>
 
             <div class="card-title" data-i18n="account">Аккаунт</div>
@@ -774,7 +774,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="settings">⚙ Настройки</h3>
-                <button class="btn-icon" onclick="closeModal('settings-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('settings-modal')">✕</button>
             </div>
 
             <div class="theme-section">
@@ -844,7 +844,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Шаблоны приёмов</h3>
-                <button class="btn-icon" onclick="closeModal('template-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('template-modal')">✕</button>
             </div>
             <div id="template-list" class="search-results"></div>
         </div>
@@ -854,7 +854,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg">📒 Новый рецепт</h3>
-                <button class="btn-icon" onclick="closeModal('recipe-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('recipe-modal')">✕</button>
             </div>
             <div class="form-group">
                 <label class="label">Название</label>
@@ -887,7 +887,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg">🎤 Голосом</h3>
-                <button class="btn-icon" onclick="closeVoiceModal()">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeVoiceModal()">✕</button>
             </div>
             <div style="text-align:center;padding:8px 0 16px">
                 <button id="voice-rec-btn" class="btn btn-primary" style="width:80px;height:80px;border-radius:50%;font-size:36px;padding:0" onclick="toggleVoiceRec()">🎤</button>
@@ -904,11 +904,11 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="voiceAll">🎙 Голосовая запись</h3>
-                <button class="btn-icon" onclick="closeModal('uvoice-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('uvoice-modal')">✕</button>
             </div>
             <p style="font-size:12px;color:var(--text2);margin-bottom:12px" data-i18n="voiceAllHint">Скажи что угодно: еда, вода, настроение, сон, вес. Claude поймёт.</p>
             <button id="uvoice-rec-btn" class="btn btn-primary btn-lg" style="width:100%" onclick="toggleUniversalVoice()" data-i18n="voiceStart">● Начать запись</button>
-            <div id="uvoice-status" style="margin-top:10px;font-size:13px;color:var(--text2);text-align:center"></div>
+            <div id="uvoice-status" style="margin-top:10px;font-size:13px;color:var(--text2);text-align:center" aria-live="polite"></div>
             <div id="uvoice-result" style="margin-top:12px"></div>
         </div>
     </div>
@@ -918,7 +918,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="shoppingList">🛒 Список покупок</h3>
-                <button class="btn-icon" onclick="closeModal('shopping-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('shopping-modal')">✕</button>
             </div>
             <div id="shopping-list-content"></div>
             <div style="display:flex;gap:8px;margin-top:12px">
@@ -933,7 +933,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="compareProducts">⚖️ Сравнение продуктов</h3>
-                <button class="btn-icon" onclick="closeModal('compare-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('compare-modal')">✕</button>
             </div>
             <div id="compare-content"></div>
         </div>
@@ -944,7 +944,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="altTitle">🔄 Замены продукта</h3>
-                <button class="btn-icon" onclick="closeModal('alt-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('alt-modal')">✕</button>
             </div>
             <div class="form-group">
                 <label class="label" data-i18n="altGoal">Цель</label>
@@ -966,7 +966,7 @@
         <div class="modal-content modal-content-lg">
             <div class="modal-header">
                 <h3 class="modal-title-lg" data-i18n="aiMealPlanGen">✨ Сгенерировать меню</h3>
-                <button class="btn-icon" onclick="closeModal('meal-plan-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('meal-plan-modal')">✕</button>
             </div>
             <div class="form-group">
                 <label class="label" data-i18n="mealPlanDays">На сколько дней</label>
@@ -987,7 +987,7 @@
             </div>
             <p style="font-size:11px;color:var(--text2);margin-bottom:8px" data-i18n="mealPlanCost">Генерация занимает 30-60 сек, Claude Sonnet 4.6. Ориентировочно ~5 центов за план.</p>
             <button class="btn btn-primary btn-lg" id="mp-gen-btn" onclick="generateMealPlan()" style="width:100%" data-i18n="generate">Сгенерировать</button>
-            <div id="mp-status" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
+            <div id="mp-status" style="margin-top:8px;font-size:12px;color:var(--text2)" aria-live="polite"></div>
         </div>
     </div>
 
@@ -997,14 +997,14 @@
             <div class="modal-header">
                 <h3 class="modal-title-lg">✨ AI-нутрициолог</h3>
                 <div style="display:flex;gap:8px">
-                    <button class="btn-icon" onclick="clearChat()" title="Очистить">🗑</button>
-                    <button class="btn-icon" onclick="closeModal('chat-modal')">✕</button>
+                    <button class="btn-icon" aria-label="Очистить чат" onclick="clearChat()" title="Очистить">🗑</button>
+                    <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('chat-modal')">✕</button>
                 </div>
             </div>
             <div id="chat-messages" class="chat-messages"></div>
             <div class="chat-input-row">
                 <input type="text" id="chat-input" class="input chat-input" placeholder="Спроси что-нибудь про твоё питание…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}">
-                <button class="btn btn-secondary chat-send-btn" id="chat-mic-btn" onclick="toggleChatMic()" title="Диктовать" style="margin-right:4px">🎙</button><button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">→</button>
+                <button class="btn btn-secondary chat-send-btn" id="chat-mic-btn" aria-label="Диктовать голосом" onclick="toggleChatMic()" title="Диктовать" style="margin-right:4px">🎙</button><button class="btn btn-primary chat-send-btn" aria-label="Отправить" onclick="sendChatMessage()">→</button>
             </div>
         </div>
     </div>
@@ -1014,7 +1014,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="addCondition">Добавить состояние</h3>
-                <button class="btn-icon" onclick="closeModal('condition-modal')">✕</button>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('condition-modal')">✕</button>
             </div>
             <div class="form-group">
                 <input type="text" id="condition-search" class="input" placeholder="Поиск диагноза..." oninput="onConditionSearch(event)" autocomplete="off">

@@ -201,7 +201,18 @@ const TRANSLATIONS = {
     }
 };
 
-let currentLang = localStorage.getItem('lang') || 'ru';
+function _detectInitialLang() {
+    const stored = localStorage.getItem('lang');
+    if (stored) return stored;
+    const supported = ['ru', 'en', 'ja'];
+    const langs = (navigator.languages || [navigator.language || 'ru']).filter(Boolean);
+    for (const l of langs) {
+        const base = (l || '').toLowerCase().split('-')[0];
+        if (supported.includes(base)) return base;
+    }
+    return 'ru';
+}
+let currentLang = _detectInitialLang();
 
 function t(key) {
     return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS.ru[key] || key;

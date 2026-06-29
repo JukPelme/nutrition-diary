@@ -753,7 +753,7 @@ function openAddFood(mealId) {
     if (recent.length) {
         html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">🕐 Недавние</div>';
         html += recent.map(p => `
-            <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
                 <div>
                     <div class="p-name">${p.name}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
@@ -768,7 +768,7 @@ function openAddFood(mealId) {
     if (favs.length) {
         html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">⭐ Избранное</div>';
         html += favs.map(p => `
-            <div class="product-row" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
                 <div>
                     <div class="p-name">⭐ ${p.name}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
@@ -839,13 +839,13 @@ async function searchProducts(q, category, sort) {
     }
     container.innerHTML = products.map(p => `
         <div class="product-row" style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1;cursor:pointer" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div role="button" tabindex="0" style="flex:1;cursor:pointer" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")});}'>
                 <div class="p-name">${p.name}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                 <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
             </div>
             <div class="p-cal" style="min-width:60px;text-align:right">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
-            <button class="btn-icon" onclick='addToCompare(${JSON.stringify(p).replace(/'/g, "&#39;")})' title="Сравнить">⚖️</button>
-            <button class="btn-icon" onclick='openAlternatives("${p.id}", ${JSON.stringify(p.name)})' title="Замены">🔄</button>
+            <button class="btn-icon" aria-label="Добавить к сравнению" onclick='addToCompare(${JSON.stringify(p).replace(/'/g, "&#39;")})' title="Сравнить">⚖️</button>
+            <button class="btn-icon" aria-label="Найти замены" onclick='openAlternatives("${p.id}", ${JSON.stringify(p.name)})' title="Замены">🔄</button>
         </div>
     `).join('');
     // Floating Compare button (visible when >=2 in list)
@@ -1147,7 +1147,7 @@ async function searchRecipeIngredients(q) {
         return;
     }
     container.innerHTML = products.map(p => `
-        <div class="product-row" onclick='addRecipeIngredient(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+        <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='addRecipeIngredient(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
             <div>
                 <div class="p-name" style="font-size:13px">${p.name}</div>
                 <div class="p-brand" style="font-size:11px">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalPer100g') : 'ккал/100г') : ''}</div>
@@ -1822,7 +1822,7 @@ async function searchConditions(q) {
         return;
     }
     container.innerHTML = results.map(c => `
-        <div class="product-row" onclick="addCondition('${c.id}')">
+        <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick="addCondition('${c.id}')">
             <div>
                 <div class="p-name">${c.name_ru || c.name_en}</div>
                 <div class="p-brand">${c.code} · ${typeof trCategory === "function" ? trCategory(c.category) : c.category}</div>
@@ -2981,9 +2981,9 @@ async function loadRecipes() {
                     </div>
                 </div>
                 <div style="display:flex;gap:4px">
-                    <button class="btn-icon" onclick="openShoppingList('${r.id}','${escapeAttr(r.name)}')" title="Список покупок">🛒</button>
-                    <button class="btn-icon" onclick="addRecipeToDiary('${r.id}','${escapeAttr(r.name)}',${r.total_weight_g})" title="В дневник">＋</button>
-                    <button class="btn-icon" onclick="deleteRecipe('${r.id}')" title="Удалить">🗑</button>
+                    <button class="btn-icon" aria-label="Список покупок" onclick="openShoppingList('${r.id}','${escapeAttr(r.name)}')" title="Список покупок">🛒</button>
+                    <button class="btn-icon" aria-label="Добавить рецепт в дневник" onclick="addRecipeToDiary('${r.id}','${escapeAttr(r.name)}',${r.total_weight_g})" title="В дневник">＋</button>
+                    <button class="btn-icon" aria-label="Удалить рецепт" onclick="deleteRecipe('${r.id}')" title="Удалить">🗑</button>
                 </div>
             </div>
         </div>`;
