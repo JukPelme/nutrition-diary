@@ -169,8 +169,16 @@
 
         <!-- Plan View -->
         <div id="plan-view" class="hidden">
+            <div class="card" id="ai-meal-plan-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <div class="card-title" style="margin:0" data-i18n="aiMealPlan">✨ AI-меню на неделю</div>
+                    <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick="openMealPlanGenerator()" data-i18n="generate">Сгенерировать</button>
+                </div>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:8px" data-i18n="aiMealPlanHint">Claude составит сбалансированный план под твои цели и диагнозы. Каждый день можно применить в дневник одним тапом.</p>
+                <div id="ai-meal-plan-content"></div>
+            </div>
             <div class="card">
-                <div class="card-title">План на неделю</div>
+                <div class="card-title" data-i18n="weekOverview">План на неделю</div>
                 <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Добавляйте еду на будущие дни через Дневник (стрелки ◀▶). Здесь — обзор.</p>
             </div>
             <div id="plan-content"></div>
@@ -850,6 +858,36 @@
             <div id="voice-transcript" style="font-size:13px;color:var(--text2);padding:8px;background:var(--bg3);border-radius:8px;min-height:40px;margin-bottom:12px;display:none"></div>
             <div id="voice-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
             <button id="voice-add-btn" class="btn btn-primary" style="width:100%;display:none" onclick="addVoiceItems()">Добавить всё в дневник</button>
+        </div>
+    </div>
+
+    <!-- AI Meal Plan Generator Modal -->
+    <div id="meal-plan-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="aiMealPlanGen">✨ Сгенерировать меню</h3>
+                <button class="btn-icon" onclick="closeModal('meal-plan-modal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="label" data-i18n="mealPlanDays">На сколько дней</label>
+                <select id="mp-days" class="input">
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="7" selected>7</option>
+                    <option value="14">14</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="label" data-i18n="mealPlanAvoid">Исключить (через запятую): аллергии, нелюбимое</label>
+                <input type="text" id="mp-avoid" class="input" placeholder="орехи, грибы">
+            </div>
+            <div class="form-group">
+                <label class="label" data-i18n="mealPlanNotes">Пожелания (опц.)</label>
+                <input type="text" id="mp-notes" class="input" placeholder="больше рыбы и зелени">
+            </div>
+            <p style="font-size:11px;color:var(--text2);margin-bottom:8px" data-i18n="mealPlanCost">Генерация занимает 30-60 сек, Claude Sonnet 4.6. Ориентировочно ~5 центов за план.</p>
+            <button class="btn btn-primary btn-lg" id="mp-gen-btn" onclick="generateMealPlan()" style="width:100%" data-i18n="generate">Сгенерировать</button>
+            <div id="mp-status" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
         </div>
     </div>
 

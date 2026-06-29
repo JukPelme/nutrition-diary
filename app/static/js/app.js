@@ -2021,6 +2021,8 @@ async function shareDay() {
 
 // ---- Week Plan ----
 async function loadWeekPlan() {
+    loadAiMealPlanCard();
+    loadRecipesIfAny();
     const container = document.getElementById('plan-content');
     const today = new Date();
     const monday = new Date(today);
@@ -3354,4 +3356,147 @@ async function addVoiceItems() {
     if (typeof showToast === 'function') showToast(`Добавлено ${added}`);
     closeVoiceModal();
     loadDiary();
+}
+
+// ---- AI Meal Plan ----
+function openMealPlanGenerator() {
+    const m = document.getElementById('meal-plan-modal');
+    if (!m) return;
+    document.getElementById('mp-status').textContent = '';
+    document.getElementById('mp-gen-btn').disabled = false;
+    m.classList.add('active');
+}
+
+function loadRecipesIfAny() {
+    if (typeof loadRecipes === 'function') {
+        try { loadRecipes(); } catch(e) { console.warn('loadRecipes failed', e); }
+    }
+}
+
+async function generateMealPlan() {
+    const days = parseInt(document.getElementById('mp-days').value || '7');
+    const avoid = (document.getElementById('mp-avoid').value || '')
+        .split(',').map(x => x.trim()).filter(Boolean);
+    const notes = (document.getElementById('mp-notes').value || '').trim();
+    const lang = (typeof currentLang === 'string' && currentLang) || (localStorage.getItem('lang') || 'ru');
+    const btn = document.getElementById('mp-gen-btn');
+    const status = document.getElementById('mp-status');
+    btn.disabled = true;
+    status.textContent = (t('mealPlanGenerating') || 'Генерируем меню… 30-60 сек');
+    const start = Date.now();
+    const tick = setInterval(() => {
+        const sec = Math.floor((Date.now() - start)/1000);
+        status.textContent = (t('mealPlanGenerating') || 'Генерируем меню…') + ' (' + sec + ' сек)';
+    }, 1000);
+    try {
+        const res = await api('/nutrition/meal-plan/generate', {
+            method: 'POST',
+            body: JSON.stringify({ lang, days, avoid, notes: notes || null })
+        });
+        clearInterval(tick);
+        if (!res || res._error) {
+            const msg = res?.detail || 'Ошибка генерации';
+            status.style.color = '#c0392b';
+            status.textContent = msg;
+            btn.disabled = false;
+            return;
+        }
+        status.style.color = 'var(--text2)';
+        status.textContent = t('mealPlanReady') || 'Готово!';
+        closeModal('meal-plan-modal');
+        await loadAiMealPlanCard();
+    } catch (e) {
+        clearInterval(tick);
+        status.style.color = '#c0392b';
+        status.textContent = e?.message || String(e);
+        btn.disabled = false;
+    }
+}
+
+async function loadAiMealPlanCard() {
+    const wrap = document.getElementById('ai-meal-plan-content');
+    if (!wrap) return;
+    const cur = await api('/nutrition/meal-plan/current');
+    if (!cur || cur._error) {
+        wrap.innerHTML = '';
+        return;
+    }
+    const plan = cur.plan;
+    if (!plan) {
+        wrap.innerHTML = '<div style="font-size:12px;color:var(--text2)">' + (t('mealPlanNone') || 'Активного плана нет — нажми «Сгенерировать»') + '</div>';
+        return;
+    }
+    const days = (plan.days || []);
+    const tipsHtml = (plan.tips && plan.tips.length)
+        ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--text2)">' + (t('tips') || 'Подсказки') + '</summary><ul style="margin:6px 0 0 18px;font-size:12px">' + plan.tips.map(x => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul></details>'
+        : '';
+    const summary = plan.summary ? '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">' + escapeHtml(plan.summary) + '</div>' : '';
+
+    let html = '';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<div style="font-size:12px;color:var(--text2)">' + (cur.start_date || '') + ' — ' + (cur.end_date || '') + '</div>';
+    html += '<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="confirmDeletePlan(\''+ cur.id +'\')">🗑</button>';
+    html += '</div>';
+    html += summary;
+
+    const todayIso = new Date().toISOString().slice(0,10);
+    for (const d of days) {
+        const isToday = d.date === todayIso;
+        const totals = d.totals || {};
+        const meals = (d.meals || []);
+        const mealsHtml = meals.map(m => {
+            const items = (m.items || []).map(it => '<li>' + escapeHtml(it.name) + ' — ' + (it.grams || 0) + ' г <span style="color:var(--text2)">(' + Math.round(it.kcal||0) + ' ккал)</span></li>').join('');
+            const mealName = mealTypeLabel(m.meal_type) + (m.title ? ': ' + escapeHtml(m.title) : '');
+            return '<div style="margin-top:6px"><div style="font-size:12px;font-weight:600">' + escapeHtml(mealName) + '</div><ul style="margin:2px 0 0 18px;font-size:12px">' + items + '</ul></div>';
+        }).join('');
+        html += '<div class="card" style="border-color:' + (isToday ? 'var(--accent)' : 'var(--border)') + ';margin-top:8px">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+        html += '<div><b>' + (d.date || '') + '</b>' + (isToday ? ' <span style="color:var(--accent);font-size:11px">' + (t('today') || 'сегодня') + '</span>' : '') + '</div>';
+        html += '<div style="font-size:12px"><b>' + Math.round(totals.kcal || 0) + '</b> ккал · Б' + Math.round(totals.protein||0) + ' Ж' + Math.round(totals.fat||0) + ' У' + Math.round(totals.carbohydrates||0) + '</div>';
+        html += '</div>';
+        html += mealsHtml;
+        html += '<button class="btn btn-primary" style="margin-top:8px;width:100%;padding:6px;font-size:13px" onclick="applyMealPlanDay(\''+ cur.id +'\', \''+ d.date +'\')" data-i18n="applyDay">→ ' + (t('applyDay') || 'Применить в дневник') + '</button>';
+        html += '</div>';
+    }
+    html += tipsHtml;
+    wrap.innerHTML = html;
+}
+
+function mealTypeLabel(type) {
+    const map = {
+        breakfast: t('breakfast') || 'Завтрак',
+        lunch: t('lunch') || 'Обед',
+        dinner: t('dinner') || 'Ужин',
+        snack: t('snack') || 'Перекус',
+    };
+    return map[(type || '').toLowerCase()] || (type || 'Приём пищи');
+}
+
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function applyMealPlanDay(planId, dateStr) {
+    if (!confirm((t('confirmApplyDay') || 'Применить день ') + dateStr + (t('toDiary') || ' в дневник?'))) return;
+    const r = await api('/nutrition/meal-plan/' + planId + '/apply-day', {
+        method: 'POST',
+        body: JSON.stringify({ target_date: dateStr })
+    });
+    if (!r || r._error) {
+        alert(r?.detail || 'Ошибка');
+        return;
+    }
+    alert((t('appliedEntries') || 'Добавлено записей: ') + (r.applied || 0));
+    if (typeof loadDiary === 'function') {
+        try { loadDiary(); } catch(e){}
+    }
+}
+
+async function confirmDeletePlan(planId) {
+    if (!confirm(t('confirmDeletePlan') || 'Удалить план?')) return;
+    const r = await api('/nutrition/meal-plan/' + planId, { method: 'DELETE' });
+    if (r && !r._error) {
+        await loadAiMealPlanCard();
+    }
 }

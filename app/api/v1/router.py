@@ -58,3 +58,5 @@ api_router.include_router(push_router)
 
 from app.api.v1.endpoints.voice import router as voice_router
 api_router.include_router(voice_router)
+from app.api.v1.endpoints.meal_plans import router as meal_plan_router
+api_router.include_router(meal_plan_router)

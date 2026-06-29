@@ -1,7 +1,7 @@
 // Service Worker v3: network-first API, cache-first static, Background Sync queue, notifications.
 try { importScripts('https://unpkg.com/dexie@3.2.7/dist/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
 
-const CACHE_NAME = 'nutrition-diary-v6';
+const CACHE_NAME = 'nutrition-diary-v7';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
