@@ -4408,3 +4408,48 @@ function injectCoachTipOnDiary() {
     view.insertBefore(card, seasonal || view.firstChild);
     setTimeout(loadCoachTip, 500);
 }
+
+// ---- Create product from barcode (idempotent helper) ----
+function createProductFromBarcode(barcode, usePrefill) {
+    console.log('[barcode] createProductFromBarcode', { barcode, usePrefill, extract: window._lastBarcodeExtract });
+    try {
+        if (typeof closeBarcodeModal === 'function') closeBarcodeModal();
+        else if (typeof closeModal === 'function') closeModal('barcode-modal');
+    } catch(e) { console.warn('closeBarcodeModal failed', e); }
+    if (typeof openCreateProduct !== 'function') {
+        alert('Открой «Добавить» → «Создать свой» и впиши штрихкод ' + barcode);
+        return;
+    }
+    try { openCreateProduct(); } catch(e) {
+        console.error('openCreateProduct failed', e);
+        alert('Ошибка открытия формы: ' + (e?.message || e));
+        return;
+    }
+    requestAnimationFrame(() => {
+        const set = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+        try {
+            if (barcode) set('cp-barcode', barcode);
+            const e = window._lastBarcodeExtract;
+            if (usePrefill && e) {
+                const composed = [e.brand, e.name].filter(Boolean).join(' · ');
+                if (composed) set('cp-name', composed);
+                set('cp-cal', e.calories);
+                set('cp-protein', e.protein);
+                set('cp-fat', e.fat);
+                set('cp-carbs', e.carbohydrates);
+                const modal = document.querySelector('#create-product-modal .modal-content');
+                if (modal) {
+                    const existing = modal.querySelector('.cp-prefill-note');
+                    if (existing) existing.remove();
+                    const note = document.createElement('div');
+                    note.className = 'cp-prefill-note';
+                    note.style.cssText = 'font-size:11px;color:#4caf50;margin:0 0 8px;padding:6px;background:rgba(76,175,80,0.08);border-radius:6px';
+                    note.textContent = '✨ Поля подсмотрены с фото. Проверь и поправь если нужно.';
+                    modal.insertBefore(note, modal.children[1] || null);
+                }
+            }
+        } catch (err) {
+            console.error('prefill failed', err);
+        }
+    });
+}
