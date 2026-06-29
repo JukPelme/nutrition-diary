@@ -1942,7 +1942,12 @@ function renderStats(data) {
                 <button class="btn btn-secondary" style="flex:1" onclick="exportCSV(90)">3 мес</button>
             </div>
         </div>
+        <div class="card">
+            <div class="card-title">Регулярность</div>
+            <div id="heatmap-area" style="margin-top:8px"></div>
+        </div>
     `;
+    loadHeatmap(90);
 }
 
 
@@ -2857,4 +2862,30 @@ async function clearChat() {
     await api('/chat/clear', { method: 'DELETE' });
     _chatLoaded = false;
     await loadChatHistory();
+}
+
+
+async function loadHeatmap(days=90) {
+    const data = await api(`/stats/heatmap?days=${days}`);
+    const area = document.getElementById('heatmap-area');
+    if (!area || !data?.days) return;
+    const max = Math.max(1, ...data.days.map(d => d.count));
+    const monthLabels = ['Я','Ф','М','А','М','И','И','А','С','О','Н','Д'];
+    const cells = data.days.map(d => {
+        const intensity = d.count === 0 ? 0 : Math.min(1, 0.25 + 0.75 * d.count / max);
+        const color = d.count === 0 ? 'var(--bg3)' : `rgba(81, 207, 102, ${intensity})`;
+        const ds = new Date(d.date);
+        const ts = ds.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        return `<div class="hm-cell" style="background:${color}" title="${ts}: ${d.count} ${d.count===1?'запись':'записей'}"></div>`;
+    }).join('');
+    const first = new Date(data.start);
+    const last = new Date(data.end);
+    area.innerHTML = `
+        <div class="hm-grid">${cells}</div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:8px">
+            <span>${first.toLocaleDateString('ru-RU', { day:'numeric', month:'short' })}</span>
+            <span>Записей в день: 0 → ${max}</span>
+            <span>${last.toLocaleDateString('ru-RU', { day:'numeric', month:'short' })}</span>
+        </div>
+    `;
 }

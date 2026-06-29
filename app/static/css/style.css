@@ -683,3 +683,20 @@ a { color:var(--accent); text-decoration:none; }
     font-size: 20px;
     font-weight: 700;
 }
+
+/* === Heatmap (GitHub-style) === */
+.hm-grid {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 3px;
+}
+@media (min-width: 480px) {
+    .hm-grid { grid-template-columns: repeat(30, 1fr); }
+}
+.hm-cell {
+    aspect-ratio: 1 / 1;
+    border-radius: 3px;
+    background: var(--bg3);
+    transition: transform 0.1s;
+}
+.hm-cell:hover { transform: scale(1.4); }
