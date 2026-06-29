@@ -91,7 +91,7 @@ async def _build_context(db: AsyncSession, user: User) -> dict:
 
     # User conditions
     conds = (await db.execute(
-        select(ICD11Condition.name, ICD11Condition.code).join(UserCondition)
+        select(ICD11Condition.name_ru, ICD11Condition.name_en, ICD11Condition.code).join(UserCondition)
         .where(UserCondition.user_id == user.id).limit(10)
     )).all()
 
@@ -138,7 +138,7 @@ async def _build_context(db: AsyncSession, user: User) -> dict:
              "started_at": fasting.started_at.isoformat(),
              "target_end": fasting.target_end.isoformat()} if fasting else None
         ),
-        "conditions": [{"name": c.name, "code": c.code} for c in conds],
+        "conditions": [{"name": c.name_ru or c.name_en, "code": c.code} for c in conds],
     }
 
 
