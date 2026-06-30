@@ -23,8 +23,9 @@ router = APIRouter(prefix="/leveling", tags=["leveling"])
 
 
 def xp_for_level(level: int) -> int:
-    """Total XP needed to REACH level n (cumulative). Curve: level^2 * 100."""
-    return level * level * 100
+    """Total XP needed to REACH level n (cumulative). Curve: (n-1)^2 * 100.
+    level 1 = 0 XP, level 2 = 100 XP, level 3 = 400 XP, level 4 = 900 XP."""
+    return (level - 1) * (level - 1) * 100
 
 
 def level_from_xp(xp: int) -> tuple[int, int, int]:
