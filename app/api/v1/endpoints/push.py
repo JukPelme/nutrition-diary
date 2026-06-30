@@ -202,3 +202,142 @@ async def send_reminders(
         await db.execute(PushSubscription.__table__.delete().where(PushSubscription.id.in_(dead_ids)))
         await db.commit()
     return {"sent": sent, "failed": failed, "removed_dead": len(dead_ids), "message": msg}
+
+
+@router.post("/reminders/streak-warning")
+async def streak_warning(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """If user has a streak >= 3 and hasn't logged today and < 6h remain, send a warning push.
+    Client triggers this once a day in evening hours.
+    """
+    from datetime import datetime as _dt, date as _d, time as _t, timedelta as _td
+    from sqlalchemy import func
+    from app.models.diary import DiaryEntry
+    from app.services.gamification import _all_entry_dates, _streak_lengths
+
+    today = _d.today()
+    dates = await _all_entry_dates(db, user.id)
+    cur, _ = _streak_lengths(dates, today)
+
+    today_count = (await db.execute(
+        select(func.count(DiaryEntry.id))
+        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date == today)
+    )).scalar() or 0
+
+    if today_count > 0 or cur < 3:
+        return {"skipped": "no_warning_needed", "current_streak": cur, "today_count": today_count}
+
+    now = _dt.now()
+    hours_left = 24 - now.hour
+    if hours_left > 6:
+        return {"skipped": "too_early", "hours_left": hours_left}
+
+    subs = (await db.execute(select(PushSubscription).where(PushSubscription.user_id == user.id))).scalars().all()
+    if not subs:
+        return {"skipped": "no_subscriptions"}
+
+    from pywebpush import webpush, WebPushException
+    keys = await _get_or_create_vapid(db)
+    msg = f"🔥 Твой стрик {cur} дн. сломается через {hours_left} ч. Запиши хоть один приём пищи!"
+    payload = json.dumps({"title": "Не теряй стрик", "body": msg, "icon": "/static/icon-192.png"})
+    sent, failed, dead = 0, 0, []
+    for s in subs:
+        try:
+            webpush(
+                subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
+                data=payload,
+                vapid_private_key=keys["vapid_private"],
+                vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
+            )
+            sent += 1
+        except WebPushException as e:
+            failed += 1
+            if hasattr(e, "response") and e.response is not None and e.response.status_code in (404, 410):
+                dead.append(s.id)
+    if dead:
+        await db.execute(PushSubscription.__table__.delete().where(PushSubscription.id.in_(dead)))
+        await db.commit()
+    return {"sent": sent, "failed": failed, "current_streak": cur, "hours_left": hours_left}
+
+
+@router.post("/reminders/meal-time")
+async def meal_time_reminder(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Detect user's typical meal-time pattern (from last 14 days), and if a usual
+    meal slot has passed for >30 min without a log today — send a nudge.
+    Client triggers this every 30-60 min in foreground or via push scheduler.
+    """
+    from datetime import datetime as _dt, date as _d, timedelta as _td
+    from sqlalchemy import func, distinct, extract
+    from app.models.diary import DiaryEntry
+
+    today = _d.today()
+    since = today - _td(days=14)
+
+    # Average meal hour per meal_id over last 14 days
+    rows = (await db.execute(
+        select(
+            DiaryEntry.meal_id,
+            func.avg(extract('hour', DiaryEntry.created_at)),
+        )
+        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date >= since)
+        .group_by(DiaryEntry.meal_id)
+    )).all()
+    if not rows:
+        return {"skipped": "no_history"}
+
+    # Meals logged today
+    today_meals = {r[0] for r in (await db.execute(
+        select(distinct(DiaryEntry.meal_id))
+        .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date == today)
+    )).all()}
+
+    now_h = _dt.now().hour
+    overdue = []
+    for meal_id, avg_h in rows:
+        if not avg_h or meal_id in today_meals:
+            continue
+        avg_h = float(avg_h)
+        # 30 min past typical slot
+        if now_h >= avg_h + 0.5:
+            overdue.append((meal_id, avg_h))
+
+    if not overdue:
+        return {"skipped": "no_overdue_meals"}
+
+    overdue.sort(key=lambda x: x[1])
+    next_overdue = overdue[0]
+
+    subs = (await db.execute(select(PushSubscription).where(PushSubscription.user_id == user.id))).scalars().all()
+    if not subs:
+        return {"skipped": "no_subscriptions", "overdue_count": len(overdue)}
+
+    from app.models.diary import Meal
+    meal = (await db.execute(select(Meal).where(Meal.id == next_overdue[0]))).scalar_one_or_none()
+    meal_name = meal.name if meal else "приём пищи"
+    msg = f"Обычно у тебя {meal_name} около {int(next_overdue[1])}:00. Не забыл записать?"
+
+    from pywebpush import webpush, WebPushException
+    keys = await _get_or_create_vapid(db)
+    payload = json.dumps({"title": "Напоминание", "body": msg, "icon": "/static/icon-192.png"})
+    sent, dead = 0, []
+    for s in subs:
+        try:
+            webpush(
+                subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
+                data=payload,
+                vapid_private_key=keys["vapid_private"],
+                vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
+            )
+            sent += 1
+        except WebPushException as e:
+            if hasattr(e, "response") and e.response is not None and e.response.status_code in (404, 410):
+                dead.append(s.id)
+    if dead:
+        await db.execute(PushSubscription.__table__.delete().where(PushSubscription.id.in_(dead)))
+        await db.commit()
+    return {"sent": sent, "meal": meal_name, "typical_hour": int(next_overdue[1])}

@@ -41,6 +41,8 @@ class User(Base):
     dietary_restrictions: Mapped[str | None] = mapped_column(String(1000))
     seasonal_hints_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
     nutrient_goals: Mapped[dict | None] = mapped_column(JSONType)
+    xp: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    level: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)

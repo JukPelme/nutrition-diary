@@ -626,6 +626,9 @@ async function loadDiary() {
     if (typeof loadSeasonalHint === 'function') loadSeasonalHint();
     if (typeof maybeTriggerPushReminder === 'function') setTimeout(maybeTriggerPushReminder, 3000);
     if (typeof injectCoachTipOnDiary === 'function') setTimeout(injectCoachTipOnDiary, 200);
+    if (typeof injectXpAndQuests === 'function') setTimeout(injectXpAndQuests, 250);
+    if (typeof maybeTriggerStreakWarning === 'function') setTimeout(maybeTriggerStreakWarning, 4000);
+    if (typeof maybeTriggerMealReminder === 'function') setTimeout(maybeTriggerMealReminder, 5000);
     meals = await api('/meals') || [];
     const summary = await api(`/diary/summary?entry_date=${currentDate}`);
     entries = summary?.entries || [];
@@ -4453,3 +4456,100 @@ function createProductFromBarcode(barcode, usePrefill) {
         }
     });
 }
+
+// ---- Cuisine seeds ----
+async function seedCuisine(cuisine) {
+    const names = { japanese: 'японскую', mediterranean: 'средиземноморскую', vegan: 'веганскую', sports: 'спортивную' };
+    if (!confirm(`Добавить ${names[cuisine] || cuisine} кухню (~30 рецептов)?`)) return;
+    const r = await api('/recipes/seed-cuisine?cuisine=' + cuisine, { method: 'POST' });
+    if (r && !r._error) {
+        if (typeof showToast === 'function') showToast('Добавлено: ' + r.inserted);
+        if (typeof loadRecipes === 'function') loadRecipes();
+    } else alert(r?.detail || 'Ошибка');
+}
+
+// ---- Import recipe from URL ----
+async function importRecipeFromUrl() {
+    const url = prompt('URL страницы с рецептом:');
+    if (!url || url.length < 10) return;
+    if (typeof showToast === 'function') showToast('Парсю рецепт через Claude... 20-40 сек');
+    const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+    const r = await api('/recipes/import-url', { method: 'POST', body: JSON.stringify({ url, lang }) });
+    if (r && !r._error) {
+        if (typeof showToast === 'function') showToast(`Импортирован: ${r.name} (${r.ingredient_count} ингр.)`);
+        if (typeof loadRecipes === 'function') loadRecipes();
+    } else alert(r?.detail || 'Ошибка импорта');
+}
+
+// ---- From-fridge suggestions ----
+async function suggestFromFridge() {
+    const raw = prompt('Что есть в холодильнике (через запятую):');
+    if (!raw) return;
+    const ingredients = raw.split(',').map(x => x.trim()).filter(Boolean);
+    if (!ingredients.length) return;
+    if (typeof showToast === 'function') showToast('Думаю над рецептами...');
+    const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+    const r = await api('/recipes/from-fridge', { method: 'POST', body: JSON.stringify({ ingredients, lang }) });
+    if (!r || r._error) { alert(r?.detail || 'Ошибка'); return; }
+    const list = (r.recipes || []).map(rec => `• ${rec.name} (${rec.kcal_per_100g || '?'} ккал/100г)\n  ${rec.why || ''}`).join('\n\n');
+    alert(list || 'Ничего не нашлось');
+}
+
+// ---- XP + Level widget ----
+async function loadXpLevel() {
+    const r = await api('/leveling/me');
+    if (!r || r._error) return;
+    const wrap = document.getElementById('xp-widget');
+    if (!wrap) return;
+    const pct = r.xp_to_next_level > 0 ? Math.round((r.xp_into_level / r.xp_to_next_level) * 100) : 0;
+    wrap.innerHTML = `<div class="card" style="padding:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><b>Уровень ${r.level}</b><span style="color:var(--text2)">${r.xp_into_level}/${r.xp_to_next_level} XP</span></div><div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#4a9eff,#ffb800);border-radius:3px"></div></div></div>`;
+}
+
+async function loadDailyQuests() {
+    const wrap = document.getElementById('quests-widget');
+    if (!wrap) return;
+    const list = await api('/leveling/quests/today', { method: 'POST' });
+    if (!list || list._error) return;
+    const lang = (typeof currentLang === 'string' && currentLang) || 'ru';
+    const items = list.map(q => {
+        const title = q['title_' + lang] || q.title_ru;
+        const done = !!q.completed_at;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px${done ? ';color:var(--text2);text-decoration:line-through' : ''}"><span>${escapeHtml(title)}</span>${done ? '<span style="color:#4caf50">✓ +' + q.xp_reward + 'XP</span>' : `<button class="btn-icon" aria-label="Проверить" onclick="checkQuest('${q.id}')" title="Проверить">↻</button>`}</div>`;
+    }).join('');
+    wrap.innerHTML = `<div class="card"><div class="card-title">🎯 Задания на сегодня</div>${items}</div>`;
+}
+
+async function checkQuest(id) {
+    const r = await api('/leveling/quests/' + id + '/check', { method: 'POST' });
+    if (!r || r._error) { alert(r?.detail || 'Ошибка'); return; }
+    if (r.completed) {
+        if (typeof showToast === 'function') showToast(`+${r.xp_awarded} XP${r.level_up ? ' · LEVEL UP!' : ''}`);
+        if (r.level_up && typeof showAchievementToast === 'function') showAchievementToast(`🎉 Уровень ${r.level}!`);
+        loadXpLevel();
+        loadDailyQuests();
+    } else if (r.already_completed) {
+        if (typeof showToast === 'function') showToast('Уже выполнено');
+    } else {
+        if (typeof showToast === 'function') showToast('Ещё не выполнено');
+    }
+}
+
+function injectXpAndQuests() {
+    const view = document.getElementById('diary-view');
+    if (!view) return;
+    if (!document.getElementById('xp-widget')) {
+        const xp = document.createElement('div'); xp.id = 'xp-widget';
+        const seasonal = document.getElementById('seasonal-card');
+        view.insertBefore(xp, seasonal || view.firstChild);
+        loadXpLevel();
+    }
+    if (!document.getElementById('quests-widget')) {
+        const q = document.createElement('div'); q.id = 'quests-widget';
+        const streak = document.getElementById('streak-badge');
+        if (streak && streak.parentNode) streak.parentNode.insertBefore(q, streak.nextSibling);
+        else view.appendChild(q);
+        loadDailyQuests();
+    }
+}
+
+// ---- Hook XP/quests into loadDiary ----

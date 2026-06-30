@@ -201,8 +201,14 @@
             <div class="card" style="margin-top:16px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                     <div class="card-title" style="margin:0">📒 Мои рецепты</div>
-                    <div style="display:flex;gap:6px">
-                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:12px" onclick="seedRussianRecipes()" data-i18n="seedRussian">+ Русская кухня</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="importRecipeFromUrl()" title="Импорт по URL">🌐 URL</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="suggestFromFridge()" title="Из холодильника">🥒 Из чего готовить</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="seedRussianRecipes()" data-i18n="seedRussian">+ Русская</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="seedCuisine('japanese')">+ 🍱 Японская</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="seedCuisine('mediterranean')">+ 🥗 Средиземная</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="seedCuisine('vegan')">+ 🌱 Веган</button>
+                        <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px" onclick="seedCuisine('sports')">+ 💪 Спорт</button>
                         <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick="openCreateRecipe()">+ Создать</button>
                     </div>
                 </div>

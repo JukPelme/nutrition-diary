@@ -76,3 +76,9 @@ from app.api.v1.endpoints.weekly_report import router as weekly_router
 api_router.include_router(weekly_router)
 from app.api.v1.endpoints.coach import router as coach_router
 api_router.include_router(coach_router)
+from app.api.v1.endpoints.cuisine_seed import router as cuisine_router
+api_router.include_router(cuisine_router)
+from app.api.v1.endpoints.leveling import router as lvl_router
+api_router.include_router(lvl_router)
+from app.api.v1.endpoints.admin import router as admin_router
+api_router.include_router(admin_router)
