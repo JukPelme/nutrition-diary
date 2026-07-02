@@ -3819,7 +3819,10 @@ async function loadAchievements() {
         // Auto-check for new awards before rendering
         try { await api('/gamification/check', { method: 'POST' }); } catch(e){}
         const r2 = await api('/gamification/achievements');
-        const items2 = (r2 && r2.achievements) ? r2.achievements : items;
+        let items2 = (r2 && r2.achievements) ? r2.achievements : items;
+        // Secret achievements: hidden until earned (shown as a mystery card otherwise)
+        const SECRET = ['streak_100'];
+        items2 = items2.filter(a => !(SECRET.includes(a.code) && !a.earned));
         if (prog && r2) {
             prog.textContent = (t('achEarnedOf') || 'Получено: ') + r2.earned_count + ' / ' + r2.total;
         }

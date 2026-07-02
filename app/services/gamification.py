@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.diary import DiaryEntry
+from app.models.product import Product
 from app.models.water import WaterEntry
 from app.models.health import MoodEntry, FastingSession
 from app.models.recipe import Recipe
@@ -62,21 +63,21 @@ ACHIEVEMENT_CATALOG = [
      "ja": ("100日", "100日連続 — 驚異的!")},
     # Counts
     {"code": "products_50",  "kind": "count", "icon": "🍎", "threshold": 50,  "sort_order": 30,
-     "ru": ("Гурман", "50 разных продуктов"),
-     "en": ("Gourmet", "50 different products"),
-     "ja": ("グルメ", "50種類の食品")},
-    {"code": "products_200", "kind": "count", "icon": "🌈", "threshold": 200, "sort_order": 31,
-     "ru": ("Радуга", "200 разных продуктов"),
-     "en": ("Rainbow", "200 different products"),
-     "ja": ("レインボー", "200種類の食品")},
+     "ru": ("Исследователь", "Попробуй 50 разных продуктов"),
+     "en": ("Explorer", "Try 50 different products"),
+     "ja": ("探検家", "50種類の食品を試す")},
+    {"code": "products_200", "kind": "special", "icon": "🌈", "threshold": 8, "sort_order": 31,
+     "ru": ("Радуга", "Поешь из 8 групп еды за неделю"),
+     "en": ("Rainbow", "Eat from 8 food groups in a week"),
+     "ja": ("レインボー", "1週間で8つの食品グループを食べる")},
     {"code": "entries_100",  "kind": "count", "icon": "📝", "threshold": 100, "sort_order": 32,
      "ru": ("Сотня записей", "100 записей в дневнике"),
      "en": ("Hundred logs", "100 diary entries"),
      "ja": ("100記録", "日記に100件の記録")},
-    {"code": "entries_500",  "kind": "count", "icon": "📚", "threshold": 500, "sort_order": 33,
-     "ru": ("Архивариус", "500 записей в дневнике"),
-     "en": ("Archivist", "500 diary entries"),
-     "ja": ("アーカイブ", "日記に500件の記録")},
+    {"code": "entries_500",  "kind": "count", "icon": "📚", "threshold": 300, "sort_order": 33,
+     "ru": ("Архивариус", "300 записей в дневнике"),
+     "en": ("Archivist", "300 diary entries"),
+     "ja": ("アーカイブ", "日記に300件の記録")},
     # Fasting
     {"code": "fasting_first", "kind": "feature", "icon": "⏳", "threshold": None, "sort_order": 40,
      "ru": ("Голодающий", "Заверши первое голодание"),
@@ -103,28 +104,43 @@ ACHIEVEMENT_CATALOG = [
 
 
 async def seed_achievements(db: AsyncSession) -> int:
-    """Insert any catalog items missing from achievements table. Returns inserted count."""
-    existing_codes = {
-        r[0] for r in (await db.execute(select(Achievement.code))).all()
-    }
+    """Insert missing catalog items and keep existing ones in sync with the catalog
+    (name/desc/threshold/icon/sort/kind). Returns number of inserted rows."""
+    existing = {a.code: a for a in (await db.execute(select(Achievement))).scalars().all()}
     inserted = 0
+    changed = False
     for spec in ACHIEVEMENT_CATALOG:
-        if spec["code"] in existing_codes:
-            continue
-        a = Achievement(
-            id=uuid4(),
-            code=spec["code"],
-            kind=spec["kind"],
-            name_ru=spec["ru"][0], desc_ru=spec["ru"][1],
-            name_en=spec["en"][0], desc_en=spec["en"][1],
-            name_ja=spec["ja"][0], desc_ja=spec["ja"][1],
-            icon=spec["icon"],
-            threshold=spec["threshold"],
-            sort_order=spec["sort_order"],
-        )
-        db.add(a)
-        inserted += 1
-    if inserted:
+        cur = existing.get(spec["code"])
+        if cur is None:
+            db.add(Achievement(
+                id=uuid4(),
+                code=spec["code"],
+                kind=spec["kind"],
+                name_ru=spec["ru"][0], desc_ru=spec["ru"][1],
+                name_en=spec["en"][0], desc_en=spec["en"][1],
+                name_ja=spec["ja"][0], desc_ja=spec["ja"][1],
+                icon=spec["icon"],
+                threshold=spec["threshold"],
+                sort_order=spec["sort_order"],
+            ))
+            inserted += 1
+            changed = True
+        else:
+            # Keep metadata in sync so catalog edits (renames, threshold tweaks) take effect
+            fields = {
+                "kind": spec["kind"],
+                "name_ru": spec["ru"][0], "desc_ru": spec["ru"][1],
+                "name_en": spec["en"][0], "desc_en": spec["en"][1],
+                "name_ja": spec["ja"][0], "desc_ja": spec["ja"][1],
+                "icon": spec["icon"],
+                "threshold": spec["threshold"],
+                "sort_order": spec["sort_order"],
+            }
+            for k, v in fields.items():
+                if getattr(cur, k) != v:
+                    setattr(cur, k, v)
+                    changed = True
+    if changed:
         await db.commit()
     return inserted
 
@@ -192,6 +208,40 @@ async def _consecutive_count_ending_today(dates: set, today: date) -> int:
     return n
 
 
+# Food-group normalization for the "Rainbow" achievement.
+# Product categories in the DB are messy (65 distinct, mixed RU/EN/OFF codes),
+# so we map them onto 9 macro food groups by keyword matching.
+FOOD_GROUPS = ("vegetables", "fruits", "meat", "fish", "dairy",
+               "grains", "legumes_nuts", "eggs", "sweets_snacks")
+
+def _food_group(category: str | None) -> str | None:
+    if not category:
+        return None
+    c = category.lower()
+    def has(*kw): return any(k in c for k in kw)
+    # order matters: check more specific groups first
+    if has("яйц", "egg"):
+        return "eggs"
+    if has("рыб", "морепрод", "fish", "seafood", "морск"):
+        return "fish"
+    if has("мяс", "колбас", "meat", "птиц", "poultry", "beef", "pork", "chicken"):
+        return "meat"
+    if has("молоч", "сыр", "творог", "dairy", "dairies", "cheese", "yogurt", "йогурт", "кефир"):
+        return "dairy"
+    if has("бобов", "орех", "семен", "legume", "nut", "seed", "beans", "фасол", "чечевиц", "горох"):
+        return "legumes_nuts"
+    if has("круп", "каш", "хлеб", "макарон", "злак", "grain", "cereal", "bread", "pasta", "rice", "рис", "breakfast", "овсян", "гречк"):
+        return "grains"
+    if has("фрукт", "ягод", "сухофрукт", "fruit", "berry", "berries"):
+        return "fruits"
+    if has("овощ", "vegetable", "зелен", "greens", "salad", "салат"):
+        return "vegetables"
+    if has("сладк", "снек", "snack", "candy", "chocolate", "шоколад", "конфет", "печен", "dessert", "десерт", "sweet"):
+        return "sweets_snacks"
+    # OFF umbrella "plant-based-foods-and-beverages" — too broad, skip (could be veg or fruit)
+    return None
+
+
 async def check_and_award(db: AsyncSession, user: User) -> list[str]:
     """Return list of newly-earned achievement codes."""
     catalog = (await db.execute(select(Achievement))).scalars().all()
@@ -252,6 +302,21 @@ async def check_and_award(db: AsyncSession, user: User) -> list[str]:
     early_dates = {r[0] for r in early_rows if r[0] is not None}
     early_streak = await _consecutive_count_ending_today(early_dates, today)
 
+    # ---- Rainbow: distinct food groups eaten in the last 7 days ----
+    week_ago = today - timedelta(days=7)
+    cat_rows = (await db.execute(
+        select(distinct(Product.category))
+        .select_from(DiaryEntry)
+        .join(Product, Product.id == DiaryEntry.product_id)
+        .where(
+            DiaryEntry.user_id == user.id,
+            DiaryEntry.entry_date >= week_ago,
+            Product.category.is_not(None),
+        )
+    )).all()
+    food_groups = {g for g in (_food_group(r[0]) for r in cat_rows) if g}
+    distinct_food_groups = len(food_groups)
+
     new_codes: list[str] = []
 
     def _award(code: str):
@@ -264,9 +329,9 @@ async def check_and_award(db: AsyncSession, user: User) -> list[str]:
 
     if entry_count >= 1: _award("first_entry")
     if entry_count >= 100: _award("entries_100")
-    if entry_count >= 500: _award("entries_500")
+    if entry_count >= 300: _award("entries_500")
     if distinct_products >= 50: _award("products_50")
-    if distinct_products >= 200: _award("products_200")
+    if distinct_food_groups >= 8: _award("products_200")
     if longest_streak >= 3:   _award("streak_3")
     if longest_streak >= 7:   _award("streak_7")
     if longest_streak >= 30:  _award("streak_30")

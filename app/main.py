@@ -27,6 +27,16 @@ async def lifespan(app: FastAPI):
     else:
         print("Postgres mode — schema managed by alembic")
 
+    # Sync achievement catalog (idempotent: inserts missing, updates metadata)
+    try:
+        from app.db.session import async_session
+        from app.services.gamification import seed_achievements
+        async with async_session() as _s:
+            n = await seed_achievements(_s)
+            print(f"Achievements synced (inserted {n})")
+    except Exception as _e:
+        print(f"Achievement seed skipped: {_e}")
+
     yield
 
 
