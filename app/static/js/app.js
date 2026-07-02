@@ -257,6 +257,7 @@ async function handleLogin(e) {
     }
     if (data?.access_token) {
         setToken(data.access_token);
+        if (data.refresh_token && typeof setRefreshToken === 'function') setRefreshToken(data.refresh_token);
         showApp();
     } else {
         showError(data?.detail || 'Неверный email/логин или пароль');
@@ -274,6 +275,7 @@ async function handleRegister(e) {
     const data = await api('/auth/register', { method: 'POST', body: JSON.stringify(body) });
     if (data?.access_token) {
         setToken(data.access_token);
+        if (data.refresh_token && typeof setRefreshToken === 'function') setRefreshToken(data.refresh_token);
         showApp();
     } else {
         showError(data?.detail || 'Ошибка регистрации');
