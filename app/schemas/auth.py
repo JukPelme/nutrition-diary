@@ -51,6 +51,7 @@ class UserResponse(BaseModel):
     nutrient_goals: dict | None = None
     waist_cm: float | None = None
     body_fat_pct: float | None = None
+    is_superuser: bool = False
 
     model_config = {"from_attributes": True}
 

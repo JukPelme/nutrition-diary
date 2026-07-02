@@ -3403,6 +3403,91 @@ async function testPush() {
 })();
 
 
+// === Admin panel ===
+async function checkAdmin() {
+    try {
+        const me = await api('/auth/me');
+        const sec = document.getElementById('admin-section');
+        if (sec) sec.style.display = (me && me.is_superuser) ? 'block' : 'none';
+        return !!(me && me.is_superuser);
+    } catch(e) { return false; }
+}
+
+function openAdmin() {
+    document.getElementById('admin-modal').classList.add('active');
+    loadAdminData();
+}
+
+async function loadAdminData() {
+    const box = document.getElementById('admin-content');
+    box.innerHTML = '<div style="text-align:center;color:var(--text2);padding:30px">' + (t('loading') || 'Загрузка…') + '</div>';
+    try {
+        const [ov, usage, feat] = await Promise.all([
+            api('/admin/overview').catch(() => null),
+            api('/admin/ai-usage?days=7').catch(() => null),
+            api('/admin/feature-usage').catch(() => null),
+        ]);
+        if (!ov || !ov.users) { box.innerHTML = '<p style="color:var(--text2);padding:20px;text-align:center">Нет доступа или данных</p>'; return; }
+        let html = '';
+        // Overview cards
+        html += '<div class="card-title">' + (t('adminOverview') || 'Обзор') + '</div>';
+        html += '<div class="bc-grid" style="margin-bottom:14px">';
+        const u = ov.users || {};
+        const cards = [
+            [t('adminUsers') || 'Юзеров', u.total],
+            [t('adminActive24h') || 'Актив 24ч', u.active_24h],
+            [t('adminActive7d') || 'Актив 7д', u.active_7d],
+            [t('adminActive30d') || 'Актив 30д', u.active_30d],
+            [t('adminEntries') || 'Записей', (ov.diary || {}).total_entries],
+        ];
+        cards.forEach(([label, val]) => {
+            html += '<div class="bc-metric"><div class="bc-metric-title">' + label + '</div><div class="bc-metric-value">' + (val ?? 0) + '</div></div>';
+        });
+        html += '</div>';
+        // AI cost
+        const cost = ov.ai_cost_usd || {};
+        html += '<div class="card-title">' + (t('adminAiCost') || 'AI-косты, $') + '</div>';
+        html += '<div class="bc-grid" style="margin-bottom:14px">';
+        html += '<div class="bc-metric"><div class="bc-metric-title">24ч</div><div class="bc-metric-value" style="font-size:16px">$' + Number(cost.d1 || 0).toFixed(3) + '</div></div>';
+        html += '<div class="bc-metric"><div class="bc-metric-title">7д</div><div class="bc-metric-value" style="font-size:16px">$' + Number(cost.d7 || 0).toFixed(3) + '</div></div>';
+        html += '<div class="bc-metric"><div class="bc-metric-title">30д</div><div class="bc-metric-value" style="font-size:16px">$' + Number(cost.d30 || 0).toFixed(2) + '</div></div>';
+        html += '</div>';
+        // AI usage breakdown (by endpoint+model, 7d)
+        const br = usage && usage.breakdown;
+        if (Array.isArray(br) && br.length) {
+            html += '<div class="card-title">' + (t('adminAiDaily') || 'AI за 7д') + '</div>';
+            html += '<div style="font-size:12px;color:var(--text2);margin-bottom:14px">';
+            br.forEach(d => {
+                html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);gap:8px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (d.endpoint || '') + ' <span style="opacity:.5">' + (d.model || '') + '</span></span><span style="white-space:nowrap">$' + Number(d.cost_usd || 0).toFixed(3) + ' · ' + (d.calls || 0) + '×</span></div>';
+            });
+            html += '</div>';
+        }
+        // Feature usage
+        const eps = feat && feat.endpoints;
+        if (Array.isArray(eps) && eps.length) {
+            html += '<div class="card-title">' + (t('adminFeatures') || 'Топ фич') + '</div>';
+            html += '<div style="font-size:12px;color:var(--text2)">';
+            eps.slice(0, 15).forEach(f => {
+                html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>' + (f.endpoint || '') + '</span><span>' + (f.calls || 0) + '</span></div>';
+            });
+            html += '</div>';
+        }
+        box.innerHTML = html;
+    } catch(e) {
+        box.innerHTML = '<p style="color:#e74c3c;padding:20px;text-align:center">Ошибка: ' + (e.message || e) + '</p>';
+    }
+}
+// Show admin section for superusers when settings opens
+(function(){
+    const prev = window.openSettings;
+    if (typeof prev === 'function') {
+        window.openSettings = function() {
+            prev.apply(this, arguments);
+            setTimeout(checkAdmin, 60);
+        };
+    }
+})();
+
 // === Voice input ===
 let _voiceRecorder = null;
 let _voiceChunks = [];

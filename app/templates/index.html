@@ -916,6 +916,23 @@
                     <input type="file" id="sync-import-file" accept=".json" style="display:none" onchange="syncImport(event)">
                 </div>
             </div>
+            <div class="theme-section" id="admin-section" style="display:none">
+                <div class="card-title" data-i18n="adminPanel">🛠 Админка</div>
+                <button class="btn btn-primary" style="width:100%" onclick="openAdmin()" data-i18n="openAdmin">Открыть панель</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="adminPanel">🛠 Админка</h3>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('admin-modal')">✕</button>
+            </div>
+            <div id="admin-content" style="min-height:120px">
+                <div style="text-align:center;color:var(--text2);padding:30px" data-i18n="loading">Загрузка…</div>
+            </div>
         </div>
     </div>
 
