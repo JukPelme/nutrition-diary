@@ -3357,35 +3357,66 @@ async function loadPushStatus() {
 }
 
 async function togglePush() {
-    if (!('serviceWorker' in navigator)) return;
-    const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    if (existing) {
-        const endpoint = existing.endpoint;
-        await existing.unsubscribe();
-        await api('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) });
-        loadPushStatus();
+    const btn = document.getElementById('push-toggle-btn');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('Этот браузер не поддерживает Web Push. На iPhone добавь приложение на экран «Домой» и открой оттуда.');
         return;
     }
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { alert('Нужно разрешить уведомления'); loadPushStatus(); return; }
-    const keyResp = await api('/push/key');
-    if (!keyResp?.public_key) { alert('Сервер не вернул VAPID ключ'); return; }
-    const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(keyResp.public_key),
-    });
-    const subJson = sub.toJSON();
-    await api('/push/subscribe', {
-        method: 'POST',
-        body: JSON.stringify({
-            endpoint: subJson.endpoint,
-            p256dh: subJson.keys.p256dh,
-            auth: subJson.keys.auth,
-        })
-    });
-    loadPushStatus();
-    if (typeof showToast === 'function') showToast('Пуши включены');
+    if (btn) btn.disabled = true;
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+            const endpoint = existing.endpoint;
+            await existing.unsubscribe();
+            await api('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) });
+            loadPushStatus();
+            return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+            alert(perm === 'denied'
+                ? 'Уведомления запрещены. Разреши их для сайта в настройках браузера и попробуй снова.'
+                : 'Нужно разрешить уведомления.');
+            loadPushStatus();
+            return;
+        }
+        const keyResp = await api('/push/key');
+        if (!keyResp?.public_key) { alert('Сервер не вернул VAPID-ключ. Попробуй позже.'); return; }
+        let sub;
+        try {
+            sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(keyResp.public_key),
+            });
+        } catch (subErr) {
+            console.error('[push] subscribe failed:', subErr);
+            alert('Не удалось подписаться на пуши: ' + (subErr && subErr.message ? subErr.message : subErr) +
+                  '\nЧасто помогает: закрыть приложение и открыть заново (обновится Service Worker).');
+            loadPushStatus();
+            return;
+        }
+        const subJson = sub.toJSON();
+        const saved = await api('/push/subscribe', {
+            method: 'POST',
+            body: JSON.stringify({
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys.p256dh,
+                auth: subJson.keys.auth,
+            })
+        });
+        if (saved?._error) {
+            alert('Подписка создана, но сервер её не сохранил: ' + (saved.detail || saved.status));
+        } else if (typeof showToast === 'function') {
+            showToast('Пуши включены');
+        }
+        loadPushStatus();
+    } catch (e) {
+        console.error('[push] togglePush error:', e);
+        alert('Ошибка при включении пушей: ' + (e && e.message ? e.message : e));
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }
 
 async function testPush() {
