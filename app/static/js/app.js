@@ -352,6 +352,8 @@ async function openProfile() {
         document.getElementById('prof-height').value = me.height || '';
         document.getElementById('prof-weight').value = me.current_weight || '';
         document.getElementById('prof-target-weight').value = me.target_weight || '';
+        { const el = document.getElementById('prof-waist'); if (el) el.value = me.waist_cm || ''; }
+        { const el = document.getElementById('prof-body-fat'); if (el) el.value = me.body_fat_pct || ''; }
         document.getElementById('prof-birth-year').value = me.birth_year || '';
         if (me.sex) document.getElementById('prof-sex').value = me.sex;
         if (me.activity_level) document.getElementById('prof-activity').value = me.activity_level;
@@ -369,14 +371,11 @@ async function openProfile() {
         { const el = document.getElementById('ng-fiber'); if (el) el.value = (me.nutrient_goals && me.nutrient_goals['fiber']) || ''; }
         const _sh = document.getElementById('prof-seasonal-hints');
         if (_sh) _sh.checked = me.seasonal_hints_enabled !== false;
-        renderBMI(me.current_weight, me.height);
+        renderBodyComposition();
     }
-    ['prof-height', 'prof-weight'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-            const w = parseFloat(document.getElementById('prof-weight').value);
-            const h = parseFloat(document.getElementById('prof-height').value);
-            renderBMI(w, h);
-        });
+    ['prof-height', 'prof-weight', 'prof-waist', 'prof-body-fat'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => renderBodyComposition());
     });
 
     const goal = await api('/water/goal').catch(() => null);
@@ -393,30 +392,95 @@ async function openProfile() {
     }
 }
 
-function renderBMI(weight, heightCm) {
+async function renderBodyComposition() {
     const block = document.getElementById('bmi-block');
     if (!block) return;
-    if (!weight || !heightCm) {
+    const w = parseFloat(document.getElementById('prof-weight')?.value);
+    const h = parseFloat(document.getElementById('prof-height')?.value);
+    if (!w || !h) {
         block.className = 'bmi-block empty';
-        block.innerHTML = 'Укажи рост и вес — посчитаю ИМТ';
+        block.innerHTML = t('enterHeightWeight') || 'Укажи рост и вес';
         return;
     }
-    const h = heightCm / 100;
-    const bmi = weight / (h * h);
-    let band, cls;
-    if (bmi < 18.5) { band = 'Недовес'; cls = 'bmi-band-low'; }
-    else if (bmi < 25) { band = 'Норма'; cls = 'bmi-band-norm'; }
-    else if (bmi < 30) { band = 'Избыток'; cls = 'bmi-band-over'; }
-    else { band = 'Ожирение'; cls = 'bmi-band-obese'; }
-    block.className = 'bmi-block';
-    block.innerHTML = `
-        <div>
-            <div class="bmi-label">ИМТ</div>
-            <div class="bmi-value">${bmi.toFixed(1)}</div>
-        </div>
-        <div class="bmi-band ${cls}">${band}</div>
-    `;
+    // Quick local BMI while waiting for server
+    const hm = h / 100, bmiQ = w / (hm * hm);
+    block.className = 'bmi-block loading';
+    block.innerHTML = `<span style="opacity:.5">ИМТ ${bmiQ.toFixed(1)}…</span>`;
+    try {
+        const bc = await api('/health/body-composition');
+        if (!bc || !bc.available) {
+            block.className = 'bmi-block empty';
+            block.innerHTML = t('enterHeightWeight') || 'Укажи рост и вес';
+            return;
+        }
+        block.className = 'bmi-block body-comp-card';
+        block.innerHTML = _renderBodyCompCard(bc);
+    } catch(e) {
+        // fallback to local BMI
+        const bmi = bmiQ;
+        const bmiCat = bmi < 18.5 ? {l:t('bmiLow')||'Недовес',c:'bmi-band-low'}
+            : bmi < 25 ? {l:t('bmiNormal')||'Норма',c:'bmi-band-norm'}
+            : bmi < 30 ? {l:t('bmiOver')||'Избыток',c:'bmi-band-over'}
+            : {l:t('bmiObese')||'Ожирение',c:'bmi-band-obese'};
+        block.className = 'bmi-block';
+        block.innerHTML = `<div><div class="bmi-label">ИМТ</div><div class="bmi-value">${bmi.toFixed(1)}</div></div><div class="bmi-band ${bmiCat.c}">${bmiCat.l}</div>`;
+    }
 }
+
+function _renderBodyCompCard(bc) {
+    const L = {
+        bmi_cats: {severe_thin:t('bmiSevereThin')||'Резкий недовес', moderate_thin:t('bmiModerateThin')||'Умеренный недовес', mild_thin:t('bmiMildThin')||'Лёгкий недовес', normal:t('bmiNormal')||'Норма', overweight:t('bmiOver')||'Избыток', obese1:t('bmiObese1')||'Ожирение I', obese2:t('bmiObese2')||'Ожирение II', obese3:t('bmiObese3')||'Ожирение III'},
+        whtr_cats: {underweight:t('whtrUnderweight')||'Недовес', healthy:t('whtrHealthy')||'Норма', increased_risk:t('whtrRisk')||'Повышенный риск', high_risk:t('whtrHighRisk')||'Высокий риск'},
+        ffmi_cats: {below_avg:t('ffmiBelow')||'Ниже среднего', average:t('ffmiAvg')||'Среднее', above_avg:t('ffmiAbove')||'Выше среднего', excellent:t('ffmiExcellent')||'Отлично', elite:t('ffmiElite')||'Элита', exceptional:t('ffmiExceptional')||'Исключительно'},
+        fat_cats: {essential:t('fatEssential')||'Эссенциальный', athlete:t('fatAthlete')||'Атлет', fitness:t('fatFitness')||'Фитнес', average:t('fatAverage')||'Среднее', obese:t('fatObese')||'Ожирение'},
+    };
+    let html = '<div class="bc-grid">';
+    // Primary: WHtR if available, else BMI
+    const primary = bc.primary_metric;
+    // BMI block
+    const bmiInfo = bc.bmi;
+    const bmiLabel = L.bmi_cats[bmiInfo.category] || bmiInfo.category;
+    const bmiNote = bmiInfo.athlete_note ? `<div class="bc-note">${t('bmiAthleteNote')||'ИМТ не учитывает мышечную массу'}</div>` : '';
+    html += `<div class="bc-metric${primary==='bmi'?' bc-primary':''}">
+        <div class="bc-metric-title">ИМТ</div>
+        <div class="bc-metric-value" style="color:${bmiInfo.color}">${bmiInfo.value}</div>
+        <div class="bc-metric-cat" style="color:${bmiInfo.color}">${bmiLabel}</div>
+        ${bmiNote}
+    </div>`;
+    // WHtR block
+    if (bc.whtr) {
+        const wi = bc.whtr;
+        const wLabel = L.whtr_cats[wi.category] || wi.category;
+        html += `<div class="bc-metric${primary==='whtr'?' bc-primary':''}">
+            <div class="bc-metric-title">${t('whtrTitle')||'ОТ/Рост'} <span class="bc-badge">${t('preferred')||'точнее'}</span></div>
+            <div class="bc-metric-value" style="color:${wi.color}">${wi.value}</div>
+            <div class="bc-metric-cat" style="color:${wi.color}">${wLabel}</div>
+        </div>`;
+    }
+    // FFMI block
+    if (bc.ffmi) {
+        const fi = bc.ffmi;
+        const fLabel = L.ffmi_cats[fi.category] || fi.category;
+        html += `<div class="bc-metric">
+            <div class="bc-metric-title">FFMI</div>
+            <div class="bc-metric-value" style="color:${fi.color}">${fi.ffmi}</div>
+            <div class="bc-metric-cat" style="color:${fi.color}">${fLabel}</div>
+        </div>`;
+    }
+    // Body fat %
+    if (bc.body_fat) {
+        const bfCat = L.fat_cats[bc.body_fat.category] || bc.body_fat.category;
+        html += `<div class="bc-metric">
+            <div class="bc-metric-title">${t('bodyFatPct')||'% жира'}</div>
+            <div class="bc-metric-value" style="color:${bc.body_fat.color}">${bc.body_fat.pct}%</div>
+            <div class="bc-metric-cat" style="color:${bc.body_fat.color}">${bfCat}</div>
+        </div>`;
+    }
+    html += '</div>';
+    return html;
+}
+
+function renderBMI(weight, heightCm) { renderBodyComposition(); }
 
 function openSettings() {
     document.getElementById('settings-modal').classList.add('active');
@@ -461,6 +525,8 @@ async function saveSettings() {
             sex,
             activity_level: activityLevel,
             goal_type: goalType,
+            waist_cm: isNaN(parseFloat(document.getElementById('prof-waist')?.value)) ? null : parseFloat(document.getElementById('prof-waist').value),
+            body_fat_pct: isNaN(parseFloat(document.getElementById('prof-body-fat')?.value)) ? null : parseFloat(document.getElementById('prof-body-fat').value),
         })
     });
     if (meResp?.detail) { showError(meResp.detail); return; }

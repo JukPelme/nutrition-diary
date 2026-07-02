@@ -42,6 +42,8 @@ class User(Base):
     seasonal_hints_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
     nutrient_goals: Mapped[dict | None] = mapped_column(JSONType)
     xp: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    waist_cm: Mapped[float | None] = mapped_column()
+    body_fat_pct: Mapped[float | None] = mapped_column()
     level: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())

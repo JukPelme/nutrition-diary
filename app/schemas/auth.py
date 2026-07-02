@@ -49,6 +49,8 @@ class UserResponse(BaseModel):
     dietary_restrictions: str | None = None
     seasonal_hints_enabled: bool = True
     nutrient_goals: dict | None = None
+    waist_cm: float | None = None
+    body_fat_pct: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -71,6 +73,8 @@ class UserUpdate(BaseModel):
     dietary_restrictions: str | None = None
     seasonal_hints_enabled: bool | None = None
     nutrient_goals: dict | None = None
+    waist_cm: float | None = None
+    body_fat_pct: float | None = None
 
 
 class RecoverUsernameIn(BaseModel):

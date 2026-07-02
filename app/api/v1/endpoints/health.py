@@ -264,3 +264,171 @@ async def get_weight_history(
         "target_weight": user.target_weight,
         "forecast": forecast,
     }
+
+
+# ---- Body Composition Endpoint ----
+
+def _bmi_category(bmi: float, activity_level: str | None) -> dict:
+    """Return BMI category with activity-aware context."""
+    if bmi < 16.0:
+        cat, color, note_key = "severe_thin", "#e74c3c", None
+    elif bmi < 17.0:
+        cat, color, note_key = "moderate_thin", "#e67e22", None
+    elif bmi < 18.5:
+        cat, color, note_key = "mild_thin", "#f1c40f", None
+    elif bmi < 25.0:
+        cat, color, note_key = "normal", "#27ae60", None
+    elif bmi < 30.0:
+        cat, color, note_key = "overweight", "#f39c12", "muscle_mass"
+    elif bmi < 35.0:
+        cat, color, note_key = "obese1", "#e67e22", "muscle_mass"
+    elif bmi < 40.0:
+        cat, color, note_key = "obese2", "#e74c3c", None
+    else:
+        cat, color, note_key = "obese3", "#c0392b", None
+
+    athlete = activity_level in ("high", "very_high", "extreme")
+    show_muscle_note = athlete and note_key == "muscle_mass"
+    return {"category": cat, "color": color, "athlete_note": show_muscle_note}
+
+
+def _whtr_category(whtr: float) -> dict:
+    """WHtR thresholds (Ashwell & Hsieh, 2005)."""
+    if whtr < 0.40:
+        return {"category": "underweight", "color": "#3498db", "risk": "low"}
+    elif whtr < 0.50:
+        return {"category": "healthy", "color": "#27ae60", "risk": "low"}
+    elif whtr < 0.60:
+        return {"category": "increased_risk", "color": "#f39c12", "risk": "moderate"}
+    else:
+        return {"category": "high_risk", "color": "#e74c3c", "risk": "high"}
+
+
+def _ffmi_category(ffmi: float, sex: str | None) -> dict:
+    """FFMI benchmarks differ by sex (Kouri et al., 1995)."""
+    if sex == "female":
+        if ffmi < 14:
+            cat, color = "below_avg", "#e74c3c"
+        elif ffmi < 17:
+            cat, color = "average", "#f39c12"
+        elif ffmi < 19:
+            cat, color = "above_avg", "#27ae60"
+        elif ffmi < 21:
+            cat, color = "excellent", "#2ecc71"
+        else:
+            cat, color = "exceptional", "#9b59b6"
+    else:  # male / unknown default to male thresholds
+        if ffmi < 16:
+            cat, color = "below_avg", "#e74c3c"
+        elif ffmi < 18:
+            cat, color = "average", "#f39c12"
+        elif ffmi < 20:
+            cat, color = "above_avg", "#27ae60"
+        elif ffmi < 22:
+            cat, color = "excellent", "#2ecc71"
+        elif ffmi < 25:
+            cat, color = "elite", "#3498db"
+        else:
+            cat, color = "exceptional", "#9b59b6"
+    return {"category": cat, "color": color, "natural_ceiling": 25 if sex != "female" else 22}
+
+
+def _body_fat_category(fat_pct: float, sex: str | None) -> dict:
+    if sex == "female":
+        if fat_pct < 14:
+            cat, color = "essential", "#e74c3c"
+        elif fat_pct < 21:
+            cat, color = "athlete", "#3498db"
+        elif fat_pct < 25:
+            cat, color = "fitness", "#27ae60"
+        elif fat_pct < 32:
+            cat, color = "average", "#f39c12"
+        else:
+            cat, color = "obese", "#e74c3c"
+    else:
+        if fat_pct < 6:
+            cat, color = "essential", "#e74c3c"
+        elif fat_pct < 14:
+            cat, color = "athlete", "#3498db"
+        elif fat_pct < 18:
+            cat, color = "fitness", "#27ae60"
+        elif fat_pct < 25:
+            cat, color = "average", "#f39c12"
+        else:
+            cat, color = "obese", "#e74c3c"
+    return {"category": cat, "color": color}
+
+
+@router.get("/body-composition")
+async def get_body_composition(user: User = Depends(get_current_user)):
+    """
+    Full body composition: BMI (classic) + WHtR (preferred) + FFMI (if body_fat_pct provided).
+    Activity-level-aware notes for high/extreme athletes.
+    """
+    w = user.current_weight
+    h = user.height
+    waist = user.waist_cm
+    fat = user.body_fat_pct
+    sex = getattr(user, "sex", None)
+    activity = getattr(user, "activity_level", None)
+
+    if not w or not h or h <= 0:
+        return {"available": False, "reason": "no_weight_height"}
+
+    h_m = h / 100.0
+
+    # --- BMI ---
+    bmi = round(w / (h_m ** 2), 1)
+    bmi_info = _bmi_category(bmi, activity)
+
+    # --- WHtR ---
+    whtr_info = None
+    whtr = None
+    if waist and waist > 0:
+        whtr = round(waist / h, 3)
+        whtr_info = _whtr_category(whtr)
+
+    # --- FFMI ---
+    ffmi_info = None
+    ffmi = None
+    if fat is not None and 0 < fat < 70:
+        ffm = w * (1.0 - fat / 100.0)  # fat-free mass, kg
+        ffmi = round(ffm / (h_m ** 2), 1)
+        # Normalized FFMI (optional, for height < 1.8m correction)
+        ffmi_norm = round(ffmi + 6.1 * (1.8 - h_m), 1)
+        ffmi_info = _ffmi_category(ffmi, sex)
+        ffmi_info["ffmi"] = ffmi
+        ffmi_info["ffmi_normalized"] = ffmi_norm
+
+    # --- Body fat category ---
+    fat_cat = None
+    if fat is not None and 0 < fat < 70:
+        fat_cat = _body_fat_category(fat, sex)
+        fat_cat["pct"] = fat
+
+    # --- Primary metric selection ---
+    # WHtR is more accurate if available, otherwise fall back to BMI
+    primary = "whtr" if whtr_info else "bmi"
+
+    return {
+        "available": True,
+        "primary_metric": primary,
+        "bmi": {
+            "value": bmi,
+            **bmi_info,
+        },
+        "whtr": {
+            "value": whtr,
+            **(whtr_info or {}),
+        } if whtr_info else None,
+        "ffmi": ffmi_info if ffmi_info else None,
+        "body_fat": fat_cat,
+        "inputs": {
+            "weight_kg": w,
+            "height_cm": h,
+            "waist_cm": waist,
+            "body_fat_pct": fat,
+            "sex": sex,
+            "activity_level": activity,
+        },
+    }

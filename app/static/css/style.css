@@ -480,6 +480,18 @@ a { color:var(--accent); text-decoration:none; }
 .bmi-band-over { background: rgba(255, 169, 64, 0.18); color: #ffa940; }
 .bmi-band-obese { background: rgba(255, 107, 107, 0.18); color: #ff6b6b; }
 
+/* Body Composition Card */
+.bmi-block.body-comp-card { display: block; padding: 10px 12px; }
+.bmi-block.loading { justify-content: center; color: var(--text2); font-size: 13px; }
+.bc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.bc-metric { text-align: center; padding: 8px 6px; background: var(--bg2); border-radius: 8px; position: relative; }
+.bc-metric.bc-primary { border: 1.5px solid var(--accent); }
+.bc-metric-title { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+.bc-metric-value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+.bc-metric-cat { font-size: 11px; margin-top: 2px; }
+.bc-note { font-size: 10px; color: var(--text2); margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+.bc-badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(var(--accent-rgb,99,179,237),.18); color: var(--accent); margin-left: 3px; vertical-align: middle; }
+
 /* AI summary card */
 .ai-summary-card {
     background: linear-gradient(135deg, rgba(124, 92, 255, 0.08), rgba(77, 171, 247, 0.08));
