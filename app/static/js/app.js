@@ -957,6 +957,7 @@ async function searchBarcode() {
     if (!code) return;
     document.getElementById('barcode-status').textContent = 'Ищу...';
     const product = await api(`/barcode/${code}`);
+    if (typeof awardFeature === "function") awardFeature("barcode");
     if (product?.id) {
         document.getElementById('barcode-status').textContent = '';
         closeBarcodeModal();
@@ -2871,6 +2872,7 @@ async function decodeBarcodeFromImage(event) {
         };
         const hasNutrition = data.calories != null || data.protein != null;
         if (data.barcode) {
+            if (typeof awardFeature === "function") awardFeature("barcode");
             document.getElementById('barcode-input').value = data.barcode;
             if (data.product) { setMsg('✓ ' + data.barcode); searchBarcode(); }
             else {
@@ -2931,7 +2933,6 @@ async function checkAppVersion() {
         });
         if (!resp.ok) return;
         const data = await resp.json();
-        if (typeof awardFeature === "function") awardFeature("barcode");
         const current = data.version;
         const saved = localStorage.getItem('app_version');
         if (!saved) { localStorage.setItem('app_version', current); }
