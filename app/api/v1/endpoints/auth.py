@@ -55,10 +55,10 @@ async def register(data: UserRegister, request: Request, db: AsyncSession = Depe
             db.add(Meal(user_id=user.id, is_default=True, **meal_data))
 
         await db.flush()
-    except Exception as e:
+    except Exception:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Registration failed")
 
     return TokenResponse(
         access_token=create_access_token(str(user.id)),

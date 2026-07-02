@@ -46,3 +46,11 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Fail-fast: never let production boot with the default secret key.
+# Guards against a deploy that forgot to set SECRET_KEY env var.
+if not settings.debug and settings.secret_key == "change-me-in-production":
+    raise RuntimeError(
+        "SECRET_KEY is still the insecure default while DEBUG=false. "
+        "Set a strong SECRET_KEY env var before running in production."
+    )
