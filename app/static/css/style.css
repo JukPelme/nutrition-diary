@@ -101,7 +101,10 @@ a { color:var(--accent); text-decoration:none; }
 .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:100; justify-content:center; align-items:flex-end; }
 .modal.active { display:flex; }
 .modal-content { background:var(--bg2); width:100%; max-width:480px; border-radius:16px 16px 0 0; padding:20px; max-height:85vh; overflow-y:auto; }
-.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+/* Sticky header so the ✕ close button is always reachable when the modal scrolls */
+.modal-header { display:flex; justify-content:space-between; align-items:center; position:sticky; top:-20px; z-index:5; background:var(--bg2); margin:-20px -20px 16px; padding:16px 20px; border-radius:16px 16px 0 0; }
+/* modal-content-lg uses 28px padding — match the negative offsets */
+.modal-content-lg .modal-header { top:-28px; margin:-28px -28px 16px; padding:20px 28px; }
 .modal-header h3 { font-size:18px; font-weight:600; }
 
 /* Search results */
