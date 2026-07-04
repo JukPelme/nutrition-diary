@@ -3356,15 +3356,28 @@ async function loadPushStatus() {
     }
 }
 
+// Resolve the active Service Worker, but never hang forever: register on demand
+// and time out with an actionable message if it won't activate.
+async function _swReady(timeoutMs = 4000) {
+    try { await navigator.serviceWorker.register('/static/sw.js'); } catch (e) { /* ignore */ }
+    return Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(
+            () => reject(new Error('Service Worker не активировался. Нажми ↻ в футере, дождись перезагрузки и попробуй снова.')),
+            timeoutMs
+        )),
+    ]);
+}
+
 async function togglePush() {
     const btn = document.getElementById('push-toggle-btn');
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         alert('Этот браузер не поддерживает Web Push. На iPhone добавь приложение на экран «Домой» и открой оттуда.');
         return;
     }
-    if (btn) btn.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Подключаю…'; }
     try {
-        const reg = await navigator.serviceWorker.ready;
+        const reg = await _swReady();
         const existing = await reg.pushManager.getSubscription();
         if (existing) {
             const endpoint = existing.endpoint;
@@ -3416,6 +3429,7 @@ async function togglePush() {
         alert('Ошибка при включении пушей: ' + (e && e.message ? e.message : e));
     } finally {
         if (btn) btn.disabled = false;
+        loadPushStatus();  // always restore button label
     }
 }
 
