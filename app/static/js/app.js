@@ -133,14 +133,19 @@ async function checkAndNotify() {
         }
     }
 
-    // Water reminder: every 2 hours from 9 to 21 if water < goal
+    // Water reminder: every 2 hours from 9 to 21 if below the daily ml goal
     if (hour >= 9 && hour <= 21 && hour % 2 === 0 && !sent['water_' + hour]) {
-        const water = parseInt(localStorage.getItem('water_' + todayStr) || '0');
-        if (water < waterGoal) {
-            sendNotification('💧 Выпей воды', water + ' из ' + waterGoal + ' стаканов', 'water_' + hour);
-            sent['water_' + hour] = true;
-            localStorage.setItem(todayKey, JSON.stringify(sent));
-        }
+        try {
+            const w = await api('/water/today');
+            if (w && !w._error && w.goal_ml && w.total_ml < w.goal_ml) {
+                const leftMl = Math.max(0, w.goal_ml - w.total_ml);
+                sendNotification('💧 Не забудь про воду',
+                    `Выпито ${w.total_ml} из ${w.goal_ml} мл — осталось ${leftMl} мл`,
+                    'water_' + hour);
+            }
+        } catch (e) { /* offline — skip */ }
+        sent['water_' + hour] = true;
+        localStorage.setItem(todayKey, JSON.stringify(sent));
     }
 
     // Fasting reminder: if active fasting session is ending soon
