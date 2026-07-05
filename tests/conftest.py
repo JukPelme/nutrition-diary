@@ -51,11 +51,23 @@ async def _create_schema():
         pass
 
 
+_ip_counter = {"n": 0}
+
+
 @pytest_asyncio.fixture
 async def client():
-    """Async HTTP client bound to the ASGI app (no network)."""
+    """Async HTTP client bound to the ASGI app (no network).
+
+    Sends a unique X-Forwarded-For per test so the in-memory per-IP rate
+    limiter (5 registrations/hour) does not carry over between tests.
+    """
+    _ip_counter["n"] += 1
+    ip = f"10.9.{_ip_counter['n'] // 256}.{_ip_counter['n'] % 256}"
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test",
+        headers={"X-Forwarded-For": ip},
+    ) as ac:
         yield ac
 
 
