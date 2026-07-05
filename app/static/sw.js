@@ -1,7 +1,7 @@
 // Service Worker v3: network-first API, cache-first static, Background Sync queue, notifications.
-try { importScripts('https://unpkg.com/dexie@3.2.7/dist/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
+try { importScripts('/static/js/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
 
-const CACHE_NAME = 'nutrition-diary-v24';
+const CACHE_NAME = 'nutrition-diary-v25';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
@@ -10,15 +10,29 @@ const STATIC_ASSETS = [
     '/static/js/i18n.js',
     '/static/js/db.js',
     '/static/js/sync.js',
+    '/static/js/dexie.min.js',
 ];
 
 // Same schema as in main thread db.js (must match!)
-const dexieSW = new Dexie('NutritionDiary');
-dexieSW.version(1).stores({
-    products:  'id,name,category,source',
-    syncQueue: '++id,timestamp,method,path,status',
-    meta:      'key',
-});
+// Dexie is loaded from a CDN which may be blocked/slow (e.g. in RU). If it's
+// unavailable, keep the SW alive without the offline queue instead of crashing
+// the entire worker (which would also break Web Push).
+let dexieSW = null;
+try {
+    if (typeof Dexie !== 'undefined') {
+        dexieSW = new Dexie('NutritionDiary');
+        dexieSW.version(1).stores({
+            products:  'id,name,category,source',
+            syncQueue: '++id,timestamp,method,path,status',
+            meta:      'key',
+        });
+    } else {
+        console.warn('[sw] Dexie unavailable — offline queue disabled, SW continues');
+    }
+} catch (e) {
+    console.warn('[sw] Dexie init failed — offline queue disabled:', e);
+    dexieSW = null;
+}
 
 self.addEventListener('install', event => {
     event.waitUntil(
@@ -87,11 +101,13 @@ self.addEventListener('sync', event => {
 });
 
 async function getAuthHeader() {
+    if (!dexieSW) return {};
     const row = await dexieSW.meta.get('auth_token');
     return row?.value ? { 'Authorization': `Bearer ${row.value}` } : {};
 }
 
 async function flushQueueFromSW() {
+    if (!dexieSW) return;
     const items = await dexieSW.syncQueue.where('status').equals('pending').sortBy('timestamp');
     const auth = await getAuthHeader();
     for (const item of items) {
