@@ -27,3 +27,20 @@ jobs:
           SECRET_KEY: "ci-secret-key-000000000000000000000000000000000000000000000000"
           DEBUG: "false"
         run: pytest -q
+
+  frontend-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install jsdom
+        working-directory: tests/frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Frontend load smoke
+        working-directory: tests/frontend
+        run: node smoke.mjs

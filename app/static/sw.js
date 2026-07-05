@@ -1,12 +1,22 @@
 // Service Worker v3: network-first API, cache-first static, Background Sync queue, notifications.
 try { importScripts('/static/js/dexie.min.js'); } catch (e) { console.warn('[sw] dexie load failed:', e); }
 
-const CACHE_NAME = 'nutrition-diary-v27';
+const CACHE_NAME = 'nutrition-diary-v28';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
     '/static/js/api.js',
-    '/static/js/app.js',
+    '/static/js/app-01-core.js',
+    '/static/js/app-02-settings.js',
+    '/static/js/app-03-diary.js',
+    '/static/js/app-04-food.js',
+    '/static/js/app-05-products.js',
+    '/static/js/app-06-health.js',
+    '/static/js/app-07-stats.js',
+    '/static/js/app-08-tracking.js',
+    '/static/js/app-09-ai.js',
+    '/static/js/app-10-voice-plan.js',
+    '/static/js/app-11-extras.js',
     '/static/js/i18n.js',
     '/static/js/db.js',
     '/static/js/sync.js',
