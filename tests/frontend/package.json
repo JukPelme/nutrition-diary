@@ -1,0 +1,13 @@
+{
+  "name": "nutrition-diary-frontend-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browserless frontend load smoke (jsdom)",
+  "type": "module",
+  "scripts": {
+    "smoke": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}
