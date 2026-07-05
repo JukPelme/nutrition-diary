@@ -41,3 +41,13 @@ test("register flow reveals the app (split onclick handlers work interactively)"
   await expect(page.locator("#app-page")).toBeVisible({ timeout: 15_000 });
   await expect(page.locator("#auth-page")).toBeHidden();
 });
+
+test("auth toggle works in a non-RU locale (regression: toggleAuthMode)", async ({ page }) => {
+  // Before the fix, toggleAuthMode keyed on the RU button text 'Войти', so in
+  // EN/JA the register link did nothing. Now it reads DOM state instead.
+  await page.addInitScript(() => localStorage.setItem("lang", "en"));
+  await page.goto("/");
+  await page.locator("#auth-toggle-text a").click();
+  await expect(page.locator("#auth-name")).toBeVisible();
+  await expect(page.locator("#auth-email")).toBeVisible();
+});

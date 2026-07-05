@@ -296,7 +296,8 @@ function toggleAuthMode() {
     const usernameField = document.getElementById('auth-username-group');
     const emailField = document.getElementById('auth-email-group');
     const loginInput = document.getElementById('auth-login');
-    if (btn.textContent === 'Войти') {
+    // Decide direction from actual DOM state, not the (localized) button text.
+    if (nameField.classList.contains('hidden')) {
         btn.textContent = 'Зарегистрироваться';
         toggle.innerHTML = 'Уже есть аккаунт? <a href="#" onclick="toggleAuthMode()">Войти</a>';
         nameField.classList.remove('hidden');
