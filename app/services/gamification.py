@@ -7,6 +7,7 @@ Public API:
 
 Achievement codes follow the catalog in ACHIEVEMENT_CATALOG below.
 """
+import re
 from uuid import uuid4
 from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select, func, distinct
@@ -230,13 +231,13 @@ def _food_group(category: str | None) -> str | None:
         return "dairy"
     if has("бобов", "орех", "семен", "legume", "nut", "seed", "beans", "фасол", "чечевиц", "горох"):
         return "legumes_nuts"
-    if has("круп", "каш", "хлеб", "макарон", "злак", "grain", "cereal", "bread", "pasta", "rice", "рис", "breakfast", "овсян", "гречк"):
+    if has("круп", "каш", "хлеб", "макарон", "злак", "grain", "cereal", "bread", "pasta", "rice", "breakfast", "овсян", "гречк") or re.search(r"\bрис", c):
         return "grains"
     if has("фрукт", "ягод", "сухофрукт", "fruit", "berry", "berries"):
         return "fruits"
     if has("овощ", "vegetable", "зелен", "greens", "salad", "салат"):
         return "vegetables"
-    if has("сладк", "снек", "snack", "candy", "chocolate", "шоколад", "конфет", "печен", "dessert", "десерт", "sweet"):
+    if has("сладк", "снек", "snack", "ирис", "candy", "chocolate", "шоколад", "конфет", "печен", "dessert", "десерт", "sweet"):
         return "sweets_snacks"
     # OFF umbrella "plant-based-foods-and-beverages" — too broad, skip (could be veg or fruit)
     return None

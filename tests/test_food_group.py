@@ -54,3 +54,20 @@ def test_food_group_returns_valid_group_or_none():
     for s in samples:
         g = _food_group(s)
         assert g is None or g in FOOD_GROUPS
+
+
+def test_food_group_iris_toffee_not_grains():
+    # regression: "рис"(rice) substring inside "ирис"(toffee) used to
+    # misclassify candy as grains. Word-boundary fix + "ирис" in sweets.
+    assert _food_group("ирис") == "sweets_snacks"
+    assert _food_group("ириски шоколадные") == "sweets_snacks"
+
+
+@pytest.mark.parametrize("category, expected", [
+    ("рис", "grains"),
+    ("бурый рис", "grains"),
+    ("рисовая каша", "grains"),
+    ("рисотто", "grains"),
+])
+def test_food_group_rice_still_grains(category, expected):
+    assert _food_group(category) == expected
