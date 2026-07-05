@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///./test_nutrition.db"
+          SECRET_KEY: "ci-secret-key-000000000000000000000000000000000000000000000000"
+          DEBUG: "false"
+        run: pytest -q
