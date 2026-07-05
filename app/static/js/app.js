@@ -3359,7 +3359,7 @@ async function loadPushStatus() {
 // Resolve the active Service Worker, but never hang forever: register on demand
 // and time out with an actionable message if it won't activate.
 async function _swReady(timeoutMs = 4000) {
-    try { await navigator.serviceWorker.register('/static/sw.js'); } catch (e) { /* ignore */ }
+    try { await navigator.serviceWorker.register('/sw.js', { scope: '/' }); } catch (e) { /* ignore */ }
     return Promise.race([
         navigator.serviceWorker.ready,
         new Promise((_, reject) => setTimeout(

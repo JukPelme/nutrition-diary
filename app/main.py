@@ -57,6 +57,21 @@ async def index():
     return FileResponse(str(BASE_DIR / "templates" / "index.html"))
 
 
+@app.get("/sw.js")
+async def service_worker():
+    # Serve the SW from the root so its scope covers the whole app ("/"),
+    # not just /static/. Without this the SW never controls the page and
+    # navigator.serviceWorker.ready hangs (breaks Web Push + offline).
+    return FileResponse(
+        str(BASE_DIR / "static" / "sw.js"),
+        media_type="text/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
 @app.get("/shared/{share_id}")
 async def shared_page(share_id: str):
     return FileResponse(str(BASE_DIR / "templates" / "shared.html"))

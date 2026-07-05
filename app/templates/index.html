@@ -1131,7 +1131,7 @@
 <script src="/static/js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js').then(async (reg) => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(async (reg) => {
         // Register periodic background sync for reminders
         if ('periodicSync' in reg) {
             try {
