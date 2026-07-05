@@ -1,0 +1,8 @@
+{
+  "name": "nutrition-diary-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Playwright end-to-end flows against a live SQLite-backed server",
+  "scripts": { "test": "playwright test" },
+  "devDependencies": { "@playwright/test": "^1.48.0" }
+}
