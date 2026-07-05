@@ -17,10 +17,24 @@ from app.models.push import PushSubscription, AppConfig
 router = APIRouter(prefix="/push", tags=["push"])
 
 
+def _pem_to_der_b64(pem: str) -> str:
+    """pywebpush/py_vapid 2.x expect the VAPID private key as base64url(DER).
+    Our key is stored as PKCS8 PEM, so convert it on the fly."""
+    from cryptography.hazmat.primitives import serialization
+    key = serialization.load_pem_private_key(pem.encode("utf-8"), password=None)
+    der = key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    return base64.urlsafe_b64encode(der).rstrip(b"=").decode("utf-8")
+
+
 async def _get_or_create_vapid(db: AsyncSession) -> dict:
     rows = (await db.execute(select(AppConfig).where(AppConfig.key.in_(("vapid_private", "vapid_public_b64"))))).scalars().all()
     by_key = {r.key: r.value for r in rows}
     if "vapid_private" in by_key and "vapid_public_b64" in by_key:
+        by_key["vapid_private_der"] = _pem_to_der_b64(by_key["vapid_private"])
         return by_key
 
     # Generate via cryptography (already in deps via python-jose)
@@ -43,7 +57,7 @@ async def _get_or_create_vapid(db: AsyncSession) -> dict:
     db.add(AppConfig(key="vapid_private", value=priv_pem))
     db.add(AppConfig(key="vapid_public_b64", value=pub_b64))
     await db.commit()
-    return {"vapid_private": priv_pem, "vapid_public_b64": pub_b64}
+    return {"vapid_private": priv_pem, "vapid_public_b64": pub_b64, "vapid_private_der": _pem_to_der_b64(priv_pem)}
 
 
 @router.get("/key")
@@ -119,7 +133,7 @@ async def send_test(
             webpush(
                 subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
                 data=payload,
-                vapid_private_key=keys["vapid_private"],
+                vapid_private_key=keys["vapid_private_der"],
                 vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
             )
             sent += 1
@@ -190,7 +204,7 @@ async def send_reminders(
             webpush(
                 subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
                 data=payload,
-                vapid_private_key=keys["vapid_private"],
+                vapid_private_key=keys["vapid_private_der"],
                 vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
             )
             sent += 1
@@ -248,7 +262,7 @@ async def streak_warning(
             webpush(
                 subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
                 data=payload,
-                vapid_private_key=keys["vapid_private"],
+                vapid_private_key=keys["vapid_private_der"],
                 vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
             )
             sent += 1
@@ -330,7 +344,7 @@ async def meal_time_reminder(
             webpush(
                 subscription_info={"endpoint": s.endpoint, "keys": {"p256dh": s.p256dh, "auth": s.auth}},
                 data=payload,
-                vapid_private_key=keys["vapid_private"],
+                vapid_private_key=keys["vapid_private_der"],
                 vapid_claims={"sub": "mailto:admin@nutrition-diary.app"},
             )
             sent += 1
