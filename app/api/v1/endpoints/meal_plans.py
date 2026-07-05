@@ -267,6 +267,29 @@ async def list_plans(
     ]
 
 
+@router.get("/{plan_id}")
+async def get_plan(
+    plan_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    mp = (await db.execute(
+        select(MealPlan).where(MealPlan.id == plan_id, MealPlan.user_id == user.id)
+    )).scalar_one_or_none()
+    if not mp:
+        raise HTTPException(404, "Plan not found")
+    return {
+        "id": str(mp.id),
+        "start_date": mp.start_date.isoformat(),
+        "end_date": mp.end_date.isoformat(),
+        "lang": mp.lang,
+        "model_used": mp.model_used,
+        "plan": mp.plan_json,
+        "notes": mp.notes,
+        "created_at": mp.created_at.isoformat() if mp.created_at else None,
+    }
+
+
 @router.delete("/{plan_id}")
 async def delete_plan(
     plan_id: UUID,

@@ -44,3 +44,41 @@ async def test_generate_invalid_days_rejected(auth_client):
 async def test_meal_plans_requires_auth(client):
     r = await client.get("/api/v1/nutrition/meal-plan/current")
     assert r.status_code in (401, 403)
+
+
+async def test_get_plan_by_id_returns_full_plan(auth_client):
+    # Seed a plan straight into the DB (generation needs Claude), then fetch it.
+    from uuid import UUID, uuid4
+    from datetime import date
+    from app.db.session import async_session
+    from app.models.meal_plan import MealPlan
+
+    client, _, _ = auth_client
+    me = (await client.get("/api/v1/auth/me")).json()
+    pid = uuid4()
+    async with async_session() as s:
+        s.add(MealPlan(
+            id=pid, user_id=UUID(me["id"]),
+            start_date=date(2020, 1, 1), end_date=date(2020, 1, 3),
+            lang="ru", model_used="claude-sonnet-4-6",
+            plan_json={"days": [{"date": "2020-01-01", "meals": []}]}, notes=None,
+        ))
+        await s.commit()
+
+    r = await client.get(f"/api/v1/nutrition/meal-plan/{pid}")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["id"] == str(pid)
+    assert body["plan"]["days"][0]["date"] == "2020-01-01"
+
+
+async def test_get_plan_by_id_404(auth_client):
+    client, _, _ = auth_client
+    miss = "00000000-0000-0000-0000-000000000000"
+    assert (await client.get(f"/api/v1/nutrition/meal-plan/{miss}")).status_code == 404
+
+
+async def test_get_plan_requires_auth(client):
+    miss = "00000000-0000-0000-0000-000000000000"
+    r = await client.get(f"/api/v1/nutrition/meal-plan/{miss}")
+    assert r.status_code in (401, 403)

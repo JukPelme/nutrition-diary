@@ -173,16 +173,31 @@ async function generateMealPlan() {
 async function loadAiMealPlanCard() {
     const wrap = document.getElementById('ai-meal-plan-content');
     if (!wrap) return;
-    const cur = await api('/nutrition/meal-plan/current');
+    let cur = await api('/nutrition/meal-plan/current');
     if (!cur || cur._error) {
         wrap.innerHTML = '';
         return;
     }
-    const plan = cur.plan;
-    if (!plan) {
+    let expired = false;
+    if (!cur.plan) {
+        // No plan covers today — fall back to the most recent past plan so it
+        // does not silently vanish once its date range ends.
+        const list = await api('/nutrition/meal-plan/list');
+        if (Array.isArray(list) && list.length) {
+            cur = await api('/nutrition/meal-plan/' + list[0].id);
+            expired = true;
+        }
+    }
+    if (!cur || !cur.plan) {
         wrap.innerHTML = '<div style="font-size:12px;color:var(--text2)">' + (t('mealPlanNone') || 'Активного плана нет — нажми «Сгенерировать»') + '</div>';
         return;
     }
+    wrap.innerHTML = _renderMealPlanHtml(cur, expired) + await _mealPlanHistoryHtml(cur.id);
+}
+
+// Render a plan (from /current or /{id}) into an HTML string.
+function _renderMealPlanHtml(cur, expired) {
+    const plan = cur.plan || {};
     const days = (plan.days || []);
     const tipsHtml = (plan.tips && plan.tips.length)
         ? '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--text2)">' + (t('tips') || 'Подсказки') + '</summary><ul style="margin:6px 0 0 18px;font-size:12px">' + plan.tips.map(x => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul></details>'
@@ -190,6 +205,9 @@ async function loadAiMealPlanCard() {
     const summary = plan.summary ? '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">' + escapeHtml(plan.summary) + '</div>' : '';
 
     let html = '';
+    if (expired) {
+        html += '<div style="font-size:12px;color:var(--orange,#f39c12);margin-bottom:8px">' + (t('mealPlanExpired') || 'Активного плана на сегодня нет — показан последний') + '</div>';
+    }
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
     html += '<div style="font-size:12px;color:var(--text2)">' + (cur.start_date || '') + ' — ' + (cur.end_date || '') + '</div>';
     html += '<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="confirmDeletePlan(\''+ cur.id +'\')">🗑</button>';
@@ -216,7 +234,35 @@ async function loadAiMealPlanCard() {
         html += '</div>';
     }
     html += tipsHtml;
-    wrap.innerHTML = html;
+    return html;
+}
+
+// Collapsible list of all saved plans; each opens via viewMealPlan().
+async function _mealPlanHistoryHtml(activeId) {
+    const list = await api('/nutrition/meal-plan/list');
+    if (!Array.isArray(list) || list.length <= 1) return '';
+    const rows = list.map(p => {
+        const active = p.id === activeId;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px">'
+            + '<span style="color:var(--text2)">' + (p.start_date || '') + ' — ' + (p.end_date || '') + '</span>'
+            + (active
+                ? '<span style="color:var(--accent);font-size:11px">' + (t('shown') || 'показан') + '</span>'
+                : '<a href="#" onclick="viewMealPlan(\'' + p.id + '\');return false">' + (t('open') || 'Открыть') + '</a>')
+            + '</div>';
+    }).join('');
+    return '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--text2)">'
+        + (t('mealPlanHistory') || 'История планов') + ' (' + list.length + ')</summary>'
+        + '<div style="margin-top:4px">' + rows + '</div></details>';
+}
+
+async function viewMealPlan(id) {
+    const wrap = document.getElementById('ai-meal-plan-content');
+    if (!wrap) return;
+    const cur = await api('/nutrition/meal-plan/' + id);
+    if (!cur || !cur.plan) return;
+    const todayIso = new Date().toISOString().slice(0,10);
+    const expired = (cur.end_date || '') < todayIso;
+    wrap.innerHTML = _renderMealPlanHtml(cur, expired) + await _mealPlanHistoryHtml(cur.id);
 }
 
 function mealTypeLabel(type) {
