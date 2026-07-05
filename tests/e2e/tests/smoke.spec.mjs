@@ -25,7 +25,8 @@ test("register flow reveals the app (split onclick handlers work interactively)"
   await page.goto("/");
 
   // toggleAuthMode() — an inline onclick wired through the split
-  await page.getByText("Регистрация", { exact: false }).click();
+  await page.locator("#auth-toggle-text a").click();
+  await expect(page.locator("#auth-name")).toBeVisible();
 
   const email = `e2e_${Date.now()}@example.com`;
   await page.fill("#auth-name", "E2E User");
