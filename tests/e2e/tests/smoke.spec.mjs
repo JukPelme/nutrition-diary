@@ -22,6 +22,9 @@ test("app boots with no uncaught errors and shows the auth screen", async ({ pag
 });
 
 test("register flow reveals the app (split onclick handlers work interactively)", async ({ page }) => {
+  // Force RU so the (RU-only) auth toggle text check passes deterministically,
+  // independent of the CI browser locale. See KNOWN_ISSUES: toggleAuthMode.
+  await page.addInitScript(() => localStorage.setItem("lang", "ru"));
   await page.goto("/");
 
   // toggleAuthMode() — an inline onclick wired through the split
