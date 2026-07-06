@@ -29,6 +29,7 @@ import app.models.push          # noqa: F401
 import app.models.quest         # noqa: F401
 import app.models.recipe        # noqa: F401
 import app.models.security      # noqa: F401
+import app.models.share         # noqa: F401
 import app.models.water         # noqa: F401
 
 from app.db.base import Base
