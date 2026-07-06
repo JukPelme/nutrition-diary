@@ -24,3 +24,15 @@ async def test_search_products(auth_client):
     await client.post("/api/v1/products", json={"name": "Уникальный Огурец", "calories": 15})
     r = await client.get("/api/v1/products", params={"q": "Огурец"})
     assert r.status_code == 200, r.text
+
+
+async def test_create_product_strips_html_in_name(auth_client):
+    # stored-XSS guard: product names are shown to other users
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/products", json={
+        "name": "<img src=x onerror=alert(1)>Плов", "calories": 100,
+    })
+    assert r.status_code in (200, 201), r.text
+    name = r.json()["name"]
+    assert "<" not in name and ">" not in name, f"HTML not stripped: {name}"
+    assert "Плов" in name

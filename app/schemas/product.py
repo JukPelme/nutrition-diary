@@ -1,5 +1,11 @@
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+def _strip_html(v: str | None):
+    """Neutralise stored-XSS: product name/brand/category are shown to other
+    users, so drop HTML tag delimiters (e.g. '<img onerror=...>')."""
+    return v.replace("<", "").replace(">", "").strip() if isinstance(v, str) else v
 
 
 class ProductCreate(BaseModel):
@@ -20,6 +26,11 @@ class ProductCreate(BaseModel):
     description: str | None = None
     image_url: str | None = None
 
+    @field_validator("name", "brand", "category")
+    @classmethod
+    def _san(cls, v):
+        return _strip_html(v)
+
 
 class ProductUpdate(BaseModel):
     name: str | None = None
@@ -35,6 +46,11 @@ class ProductUpdate(BaseModel):
     sugar: float | None = None
     vitamins: dict | None = None
     minerals: dict | None = None
+
+    @field_validator("name", "brand", "category")
+    @classmethod
+    def _san(cls, v):
+        return _strip_html(v)
 
 
 class ProductResponse(BaseModel):

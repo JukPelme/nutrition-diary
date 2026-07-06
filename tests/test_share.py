@@ -46,3 +46,17 @@ async def test_shared_link_visible_to_unauthenticated(client, auth_client):
     # `client` fixture has no Authorization header
     v = await client.get(f"/api/v1/share/view/{sid}")
     assert v.status_code == 200, v.text
+
+
+async def test_share_id_is_unguessable(auth_client):
+    client, _, _ = auth_client
+    await client.post("/api/v1/diary", json={
+        "entry_date": DAY, "product_name": "Овсянка", "serving_amount": 100,
+        "calories": 200, "protein": 5, "fat": 3, "carbohydrates": 30,
+    })
+    ids = set()
+    for _ in range(3):
+        sid = (await client.post("/api/v1/share/day", params={"entry_date": DAY})).json()["share_id"]
+        ids.add(sid)
+        assert len(sid) >= 16, f"share_id too short ({len(sid)}): {sid}"
+    assert len(ids) == 3  # all distinct

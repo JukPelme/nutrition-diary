@@ -1,4 +1,5 @@
 from datetime import date
+import secrets
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -45,7 +46,7 @@ async def share_day(
             "carbs": round(e.carbohydrates, 1),
         })
 
-    share_id = uuid4().hex[:8]
+    share_id = secrets.token_urlsafe(12)  # 16 chars, 96 bits — unguessable
     db.add(SharedDay(share_id=share_id, user_id=user.id, payload=payload))
     await db.commit()
     return {"share_id": share_id}

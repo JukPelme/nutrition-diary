@@ -123,7 +123,7 @@ function toggleFavFromPortion() {
     if (!p?.id) return;
     toggleFavorite(p);
     const favStar = isFavorite(p.id) ? '★' : '☆';
-    document.getElementById('portion-product-name').innerHTML = p.name +
+    document.getElementById('portion-product-name').innerHTML = escapeHtml(p.name) +
         ` <span class="fav-btn" onclick="toggleFavFromPortion()" style="cursor:pointer;color:var(--orange)">${favStar}</span>`;
 }
 
@@ -275,7 +275,7 @@ function selectProduct(product) {
     closeModal('barcode-modal');
     document.getElementById('portion-modal').classList.add('active');
     const favStar = product.id && isFavorite(product.id) ? '★' : '☆';
-    document.getElementById('portion-product-name').innerHTML = product.name +
+    document.getElementById('portion-product-name').innerHTML = escapeHtml(product.name) +
         (product.id ? ` <span class="fav-btn" onclick="toggleFavFromPortion()" style="cursor:pointer;color:var(--orange)">${favStar}</span>` : '');
     document.getElementById('portion-amount').value = 100;
     window._selectedProduct = product;
