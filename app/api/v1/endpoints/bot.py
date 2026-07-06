@@ -2,6 +2,7 @@
 Telegram bot webhook endpoint.
 Bot sends food entries via this API.
 """
+import hmac
 from datetime import date
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
@@ -22,7 +23,8 @@ def _verify_bot_token(x_bot_token: str):
     # auth bypass: default token let anyone read/write any user by email).
     if settings.bot_token == _DEFAULT_BOT_TOKEN:
         raise HTTPException(503, "Bot integration is not configured")
-    _verify_bot_token(x_bot_token)
+    if not hmac.compare_digest(x_bot_token or "", settings.bot_token):
+        raise HTTPException(403, "Invalid bot token")
 
 
 class BotFoodEntry(BaseModel):
