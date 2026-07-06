@@ -42,3 +42,28 @@ async def test_bot_add_food_rejects_default_token(client):
     )
     assert r.status_code == 503, r.text
 
+
+
+async def test_bot_rejects_wrong_token_when_configured(client, monkeypatch):
+    # Regression for the recursion bug: with a real BOT_TOKEN set, a wrong
+    # token must return 403 — not recurse into RecursionError.
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "bot_token", "real-secret-token-xyz")
+    r = await client.get(
+        "/api/v1/bot/summary",
+        params={"email": "nobody@example.com"},
+        headers={"X-Bot-Token": "wrong-token"},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_bot_accepts_correct_token_reaches_handler(client, monkeypatch):
+    # Correct token passes auth (no recursion); unknown user then yields 404.
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "bot_token", "real-secret-token-xyz")
+    r = await client.get(
+        "/api/v1/bot/summary",
+        params={"email": "nobody@example.com"},
+        headers={"X-Bot-Token": "real-secret-token-xyz"},
+    )
+    assert r.status_code == 404, r.text
