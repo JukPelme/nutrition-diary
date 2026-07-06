@@ -122,7 +122,7 @@ async function loadRecipes() {
     }).join('');
 }
 
-function escapeHtml(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]); }
+function escapeHtml(s) { return String(s == null ? '' : s).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'})[c]); }
 function escapeAttr(s) { return String(s).replace(/[\'"]/g, c => '\\'+c); }
 
 function openCreateRecipe() {
