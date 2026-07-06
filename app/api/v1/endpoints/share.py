@@ -7,12 +7,9 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry, Meal
+from app.models.share import SharedDay
 
 router = APIRouter(prefix="/share", tags=["share"])
-
-# In-memory store for shared links (simple approach, resets on restart)
-# For production, store in DB
-_shared_data = {}
 
 
 @router.post("/day")
@@ -21,35 +18,25 @@ async def share_day(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """Create a shareable link for a day\'s meals."""
-    result = await db.execute(
+    """Create a persistent shareable link for a day's meals."""
+    entries = (await db.execute(
         select(DiaryEntry).where(
             DiaryEntry.user_id == user.id,
             DiaryEntry.entry_date == entry_date,
         )
-    )
-    entries = result.scalars().all()
+    )).scalars().all()
     if not entries:
         raise HTTPException(404, "No entries for this date")
 
-    # Get meals
-    meal_result = await db.execute(
-        select(Meal).where(Meal.user_id == user.id)
-    )
-    meals_map = {m.id: m.name for m in meal_result.scalars().all()}
-
-    share_id = uuid4().hex[:8]
-    _shared_data[share_id] = {
-        "date": str(entry_date),
-        "user_name": user.full_name or "User",
-        "meals": {},
+    meals_map = {
+        m.id: m.name
+        for m in (await db.execute(select(Meal).where(Meal.user_id == user.id))).scalars().all()
     }
 
+    payload = {"date": str(entry_date), "user_name": user.full_name or "User", "meals": {}}
     for e in entries:
         meal_name = meals_map.get(e.meal_id, "Other")
-        if meal_name not in _shared_data[share_id]["meals"]:
-            _shared_data[share_id]["meals"][meal_name] = []
-        _shared_data[share_id]["meals"][meal_name].append({
+        payload["meals"].setdefault(meal_name, []).append({
             "name": e.product_name,
             "weight": e.serving_amount,
             "calories": round(e.calories, 1),
@@ -58,13 +45,18 @@ async def share_day(
             "carbs": round(e.carbohydrates, 1),
         })
 
+    share_id = uuid4().hex[:8]
+    db.add(SharedDay(share_id=share_id, user_id=user.id, payload=payload))
+    await db.commit()
     return {"share_id": share_id}
 
 
 @router.get("/view/{share_id}")
-async def view_shared(share_id: str):
+async def view_shared(share_id: str, db: AsyncSession = Depends(get_db)):
     """View a shared day (public, no auth)."""
-    data = _shared_data.get(share_id)
-    if not data:
+    row = (await db.execute(
+        select(SharedDay).where(SharedDay.share_id == share_id)
+    )).scalar_one_or_none()
+    if not row:
         raise HTTPException(404, "Link expired or not found")
-    return data
+    return row.payload
