@@ -182,6 +182,29 @@ async def add_recipe_to_diary(
 # ---- Import recipe from a URL via Claude ----
 import json as _json
 import httpx as _httpx
+import ipaddress as _ipaddress
+import socket as _socket
+from urllib.parse import urlparse as _urlparse
+
+
+def _validate_public_url(url: str):
+    """Block SSRF: only http/https to publicly-routable hosts. Rejects
+    localhost, private/link-local (cloud metadata 169.254.169.254), reserved."""
+    parsed = _urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(400, "Only http/https URLs are allowed")
+    host = parsed.hostname
+    if not host:
+        raise HTTPException(400, "Invalid URL")
+    try:
+        infos = _socket.getaddrinfo(host, None)
+    except _socket.gaierror:
+        raise HTTPException(400, "Cannot resolve host")
+    for info in infos:
+        ip = _ipaddress.ip_address(info[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+            raise HTTPException(400, "URL resolves to a non-public address")
 from app.core.config import settings as _settings
 
 
@@ -197,14 +220,15 @@ async def import_recipe_url(
     user: User = Depends(get_current_user),
 ):
     """Fetch a recipe page, let Claude extract structured data, save as Recipe."""
+    _validate_public_url(data.url)
     if not _settings.anthropic_api_key:
         raise HTTPException(503, "ANTHROPIC_API_KEY required")
 
     try:
-        async with _httpx.AsyncClient(timeout=15, follow_redirects=True,
+        async with _httpx.AsyncClient(timeout=15, follow_redirects=False,
                                       headers={"User-Agent": "Mozilla/5.0 NutritionDiary/1.0"}) as cli:
             r = await cli.get(data.url)
-            if r.status_code >= 400:
+            if r.status_code >= 300:
                 # fallback: r.jina.ai proxy
                 rj = await cli.get("https://r.jina.ai/" + data.url)
                 if rj.status_code >= 400:
