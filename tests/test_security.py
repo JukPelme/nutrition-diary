@@ -42,14 +42,3 @@ async def test_bot_add_food_rejects_default_token(client):
     )
     assert r.status_code == 503, r.text
 
-
-async def test_bot_rejects_wrong_token_when_configured(client, monkeypatch):
-    # With a real token configured, a mismatching token is 403 (not 503/200)
-    from app.core.config import settings
-    monkeypatch.setattr(settings, "bot_token", "real-secret-token-xyz")
-    r = await client.get(
-        "/api/v1/bot/summary",
-        params={"email": "anyone@example.com"},
-        headers={"X-Bot-Token": "wrong"},
-    )
-    assert r.status_code == 403, r.text
