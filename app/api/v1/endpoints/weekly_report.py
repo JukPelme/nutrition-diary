@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -50,7 +51,7 @@ async def _period_stats(db: AsyncSession, user_id, start: date, end: date) -> di
     }
 
 
-@router.get("/weekly")
+@router.get("/weekly", dependencies=[Depends(ai_limit("weekly", 20, 3600))])
 async def weekly_report(
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
     db: AsyncSession = Depends(get_db),

@@ -35,6 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -132,7 +133,7 @@ def _strip_fences(s: str) -> str:
     return s.strip()
 
 
-@router.post("/generate")
+@router.post("/generate", dependencies=[Depends(ai_limit("mealplan", 10, 3600))])
 async def generate_plan(
     data: GenerateIn = Body(...),
     db: AsyncSession = Depends(get_db),

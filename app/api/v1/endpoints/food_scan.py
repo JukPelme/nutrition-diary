@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.db.session import get_db
 from app.models.user import User
 from app.services.food_recognition_service import recognize_food
@@ -11,7 +12,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE = 10 * 1024 * 1024  # 10MB
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(ai_limit("foodscan", 40, 3600))])
 async def scan_food_photo(
     file: UploadFile = File(..., description="Food photo (JPEG, PNG, WebP)"),
     quality: str = Query("fast", pattern="^(fast|precise)$"),

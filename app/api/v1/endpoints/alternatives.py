@@ -11,6 +11,7 @@ import httpx
 from uuid import UUID
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -19,7 +20,7 @@ from app.models.product import Product
 router = APIRouter(prefix="/products", tags=["alternatives"])
 
 
-@router.get("/{product_id}/alternatives")
+@router.get("/{product_id}/alternatives", dependencies=[Depends(ai_limit("alternatives", 30, 3600))])
 async def alternatives(
     product_id: UUID,
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),

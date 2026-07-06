@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -49,7 +50,7 @@ def _system_prompt(lang: str) -> str:
     }.get(lang, "ru")
 
 
-@router.get("/deficiencies")
+@router.get("/deficiencies", dependencies=[Depends(ai_limit("deficiency", 20, 3600))])
 async def deficiencies(
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
     days: int = Query(14, ge=7, le=30),
