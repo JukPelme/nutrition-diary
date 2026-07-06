@@ -14,6 +14,16 @@ from app.core.config import settings
 
 router = APIRouter(prefix="/bot", tags=["bot"])
 
+_DEFAULT_BOT_TOKEN = "change-me-bot-token"
+
+
+def _verify_bot_token(x_bot_token: str):
+    # An unset/default BOT_TOKEN must never authenticate anyone (was a live
+    # auth bypass: default token let anyone read/write any user by email).
+    if settings.bot_token == _DEFAULT_BOT_TOKEN:
+        raise HTTPException(503, "Bot integration is not configured")
+    _verify_bot_token(x_bot_token)
+
 
 class BotFoodEntry(BaseModel):
     user_email: str
@@ -29,8 +39,7 @@ class BotFoodEntry(BaseModel):
 @router.post("/add-food")
 async def bot_add_food(data: BotFoodEntry, x_bot_token: str = Header(...)):
     """Add food entry from Telegram bot."""
-    if x_bot_token != settings.bot_token:
-        raise HTTPException(403, "Invalid bot token")
+    _verify_bot_token(x_bot_token)
 
     Session = async_sessionmaker(engine, expire_on_commit=False)
     async with Session() as db:
@@ -66,8 +75,7 @@ async def bot_add_food(data: BotFoodEntry, x_bot_token: str = Header(...)):
 @router.get("/summary")
 async def bot_summary(email: str, x_bot_token: str = Header(...)):
     """Get today\'s summary for Telegram bot."""
-    if x_bot_token != settings.bot_token:
-        raise HTTPException(403, "Invalid bot token")
+    _verify_bot_token(x_bot_token)
 
     Session = async_sessionmaker(engine, expire_on_commit=False)
     async with Session() as db:

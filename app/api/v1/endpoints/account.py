@@ -28,11 +28,16 @@ from app.models.security import LoginEvent
 router = APIRouter(prefix="/account", tags=["account"])
 
 
+_SENSITIVE_COLS = {"hashed_password", "totp_secret"}
+
+
 def _to_jsonable(rows):
     out = []
     for r in rows:
         d = {}
         for col in r.__table__.columns:
+            if col.name in _SENSITIVE_COLS:
+                continue
             v = getattr(r, col.name)
             if hasattr(v, "isoformat"):
                 v = v.isoformat()
