@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +34,7 @@ class ParseOut(BaseModel):
     items: list[ParsedItem]
 
 
-@router.post("/parse", response_model=ParseOut)
+@router.post("/parse", response_model=ParseOut, dependencies=[Depends(ai_limit("voice", 60, 3600))])
 async def parse_voice(
     file: UploadFile = File(...),
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
@@ -146,7 +147,7 @@ async def parse_voice(
 
 
 # ---- Universal voice: detect intent and parse ----
-@router.post("/parse-any")
+@router.post("/parse-any", dependencies=[Depends(ai_limit("voice", 60, 3600))])
 async def parse_any(
     file: UploadFile = File(...),
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
@@ -247,7 +248,7 @@ async def parse_any(
 
 
 # ---- Multi-intent voice: parse all things mentioned in one phrase ----
-@router.post("/parse-multi")
+@router.post("/parse-multi", dependencies=[Depends(ai_limit("voice", 60, 3600))])
 async def parse_multi(
     file: UploadFile = File(...),
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),

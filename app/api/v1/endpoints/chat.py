@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -159,7 +160,7 @@ def _system_prompt(lang: str) -> str:
     }.get(lang, "ru")
 
 
-@router.post("", response_model=ChatOut)
+@router.post("", response_model=ChatOut, dependencies=[Depends(ai_limit("chat", 60, 3600))])
 async def chat_send(
     data: ChatIn,
     db: AsyncSession = Depends(get_db),

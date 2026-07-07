@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
@@ -27,7 +28,7 @@ from app.models.health import ICD11Condition, UserCondition
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 
-@router.get("/coach-tip")
+@router.get("/coach-tip", dependencies=[Depends(ai_limit("coach", 30, 3600))])
 async def coach_tip(
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
     db: AsyncSession = Depends(get_db),

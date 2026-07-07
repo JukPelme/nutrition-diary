@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry
@@ -74,7 +75,7 @@ def _rec(kind: str, lang: str, **kwargs):
 
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(ai_limit("recs", 30, 3600))])
 async def get_recommendations(
     lang: str = Query("ru", pattern="^(ru|en|ja)$"),
     db: AsyncSession = Depends(get_db),

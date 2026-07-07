@@ -9,6 +9,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.deps import ai_limit
 from app.db.session import get_db
 from app.models.user import User
 from app.models.product import Product
@@ -213,7 +214,7 @@ class ImportRecipeIn(BaseModel):
     lang: str = Field(default="ru", pattern="^(ru|en|ja)$")
 
 
-@router.post("/import-url")
+@router.post("/import-url", dependencies=[Depends(ai_limit("recipe_ai", 20, 3600))])
 async def import_recipe_url(
     data: ImportRecipeIn,
     db: AsyncSession = Depends(get_db),
@@ -318,7 +319,7 @@ class FromFridgeIn(BaseModel):
     diet: str | None = Field(default=None, max_length=200, description="vegetarian/vegan/low-carb/etc")
 
 
-@router.post("/from-fridge")
+@router.post("/from-fridge", dependencies=[Depends(ai_limit("recipe_ai", 20, 3600))])
 async def from_fridge(
     data: FromFridgeIn,
     db: AsyncSession = Depends(get_db),

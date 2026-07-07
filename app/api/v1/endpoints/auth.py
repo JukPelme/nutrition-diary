@@ -73,7 +73,7 @@ LOCK_MINUTES = 15
 def _client_ip(req: Request) -> str:
     fwd = req.headers.get("x-forwarded-for")
     if fwd:
-        return fwd.split(",")[0].strip()
+        return fwd.split(",")[-1].strip()  # last hop = added by our trusted proxy, not client-spoofable
     return req.client.host if req.client else "unknown"
 
 
