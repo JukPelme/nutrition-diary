@@ -6,6 +6,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from app.services import product_service
+from app.services.barcode_service import search_and_save_off
+from app.core.deps import ai_limit
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -21,6 +23,25 @@ async def list_products(
     _: User = Depends(get_current_user),
 ):
     products, total = await product_service.search_products(db, q=q, category=category, barcode=barcode, limit=limit, offset=offset)
+    return products
+
+
+@router.get("/search-online", response_model=list[ProductResponse],
+            dependencies=[Depends(ai_limit("offsearch", 40, 3600))])
+async def search_online(
+    q: str = Query(..., min_length=2, description="Product name to look up on OpenFoodFacts"),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Explicit web lookup for products not in our catalog. Queries
+    OpenFoodFacts, saves new matches locally (source=openfoodfacts), and
+    returns them — reuses the same fetch as the auto-fallback but on demand,
+    so specific-brand searches aren't crowded out by weak local matches."""
+    try:
+        products = await search_and_save_off(db, q, limit=8)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY,
+                            detail="Online lookup is temporarily unavailable")
     return products
 
 

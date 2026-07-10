@@ -83,6 +83,38 @@ function applyFoodFilter() {
     searchProducts(q, category, sort);
 }
 
+function _foodRowHtml(p) {
+    return `
+        <div class="product-row" style="display:flex;align-items:center;gap:6px">
+            <div role="button" tabindex="0" style="flex:1;cursor:pointer" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")});}'>
+                <div class="p-name">${escapeHtml(p.name)}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
+                <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
+            </div>
+            <div class="p-cal" style="min-width:60px;text-align:right">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
+            <button class="btn-icon" aria-label="Добавить к сравнению" onclick='addToCompare(${JSON.stringify(p).replace(/'/g, "&#39;")})' title="Сравнить">⚖️</button>
+            <button class="btn-icon" aria-label="Найти замены" onclick='openAlternatives("${p.id}", ${JSON.stringify(p.name)})' title="Замены">🔄</button>
+        </div>
+    `;
+}
+
+function _onlineSearchBtnHtml() {
+    const label = (typeof t === 'function' ? (t('searchOnline') || 'Искать в сети') : 'Искать в сети');
+    return `<button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="searchOnline()">🌐 ${label}</button>`;
+}
+
+async function searchOnline() {
+    const q = document.getElementById('food-search').value.trim();
+    if (q.length < 2) return;
+    const container = document.getElementById('search-results');
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2)">🌐 Ищу в сети…</div>';
+    const products = await api('/products/search-online?q=' + encodeURIComponent(q));
+    if (!products || !products.length) {
+        container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2)">В сети тоже не нашлось — можно создать вручную.</div>';
+        return;
+    }
+    container.innerHTML = products.map(_foodRowHtml).join('');
+}
+
 async function searchProducts(q, category, sort) {
     let url = `/products?limit=30`;
     if (q) url += `&q=${encodeURIComponent(q)}`;
@@ -96,20 +128,10 @@ async function searchProducts(q, category, sort) {
     else if (sort === 'protein_desc') products.sort((a, b) => (b.protein || 0) - (a.protein || 0));
     const container = document.getElementById('search-results');
     if (!products?.length) {
-        container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Ничего не найдено</div>';
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Ничего не найдено</div>' + _onlineSearchBtnHtml();
         return;
     }
-    container.innerHTML = products.map(p => `
-        <div class="product-row" style="display:flex;align-items:center;gap:6px">
-            <div role="button" tabindex="0" style="flex:1;cursor:pointer" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")});}'>
-                <div class="p-name">${escapeHtml(p.name)}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
-                <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
-            </div>
-            <div class="p-cal" style="min-width:60px;text-align:right">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
-            <button class="btn-icon" aria-label="Добавить к сравнению" onclick='addToCompare(${JSON.stringify(p).replace(/'/g, "&#39;")})' title="Сравнить">⚖️</button>
-            <button class="btn-icon" aria-label="Найти замены" onclick='openAlternatives("${p.id}", ${JSON.stringify(p.name)})' title="Замены">🔄</button>
-        </div>
-    `).join('');
+    container.innerHTML = products.map(_foodRowHtml).join('') + _onlineSearchBtnHtml();
     // Floating Compare button (visible when >=2 in list)
     if (_compareList && _compareList.length >= 2) {
         const fab = document.getElementById('compare-fab') || (() => {
