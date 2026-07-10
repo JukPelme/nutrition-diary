@@ -22,32 +22,43 @@ async def search_products(
         query = query.where(Product.barcode == barcode)
         count_query = count_query.where(Product.barcode == barcode)
     elif q:
+        # Relevance score (both dialects): exact name match ranks above prefix,
+        # prefix above substring, and anything only caught by fuzzy trigram last.
+        # func.lower is unicode-aware on both PG (native) and SQLite (custom fn),
+        # so Cyrillic is matched case-insensitively.
+        ql = q.lower()
+        name_l = func.lower(Product.name)
+        like_esc = ql.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        relevance = case(
+            (name_l == ql, 3),
+            (name_l.like(f"{like_esc}%", escape="\\"), 2),
+            (name_l.like(f"%{like_esc}%", escape="\\"), 1),
+            else_=0,
+        )
         if is_sqlite():
-            # SQLite: use custom contains_ci() for unicode case-insensitive search
+            # SQLite: custom contains_ci() for unicode case-insensitive containment.
             ci_filter = func.contains_ci(Product.name, q) == 1
             query = query.where(ci_filter).order_by(
+                relevance.desc(),
                 desc(Product.is_verified),
                 Product.name,
             )
             count_query = count_query.where(ci_filter)
         else:
-            # PostgreSQL: use trigram similarity for fuzzy search
+            # PostgreSQL: substring match OR fuzzy trigram (threshold raised
+            # 0.1 -> 0.3 so weak, semantically-unrelated matches don't leak in).
             similarity = func.similarity(Product.name, q)
-            query = query.where(
-                or_(
-                    Product.name.ilike(f"%{q}%"),
-                    similarity > 0.1,
-                )
-            ).order_by(
+            match_filter = or_(
+                Product.name.ilike(f"%{q}%"),
+                similarity > 0.3,
+            )
+            query = query.where(match_filter).order_by(
+                relevance.desc(),
                 desc(Product.is_verified),
                 similarity.desc(),
+                Product.name,
             )
-            count_query = count_query.where(
-                or_(
-                    Product.name.ilike(f"%{q}%"),
-                    similarity > 0.1,
-                )
-            )
+            count_query = count_query.where(match_filter)
     else:
         query = query.order_by(desc(Product.is_verified), Product.name)
 
