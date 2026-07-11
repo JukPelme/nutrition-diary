@@ -26,14 +26,40 @@ async function loadNutrients() {
         return names[key] || key;
     }
 
+    const NUTRIENT_UNITS = {
+        vitamin_a: 'мкг', vitamin_b1: 'мг', vitamin_b2: 'мг', vitamin_b3: 'мг',
+        vitamin_b5: 'мг', vitamin_b6: 'мг', vitamin_b9: 'мкг', vitamin_b12: 'мкг',
+        vitamin_c: 'мг', vitamin_d: 'мкг', vitamin_e: 'мг', vitamin_k: 'мкг',
+        calcium: 'мг', iron: 'мг', magnesium: 'мг', phosphorus: 'мг',
+        potassium: 'мг', sodium: 'мг', zinc: 'мг', selenium: 'мкг', iodine: 'мкг',
+    };
+
     function nutrientBar(key, item) {
+        const unit = NUTRIENT_UNITS[key] || '';
         const pct = Math.min(item.percent || 0, 100);
+        const complete = item.complete;
+        // Data only covers part of the day's foods -> don't show a confident %
+        // (it would understate). Mute the row and show coverage instead.
+        if (!complete) {
+            const cov = (item.covered != null && item.total_products != null)
+                ? `${item.covered}/${item.total_products} прод.` : 'неполные данные';
+            return `<div class="nutrient-row" style="opacity:.6">
+                <div class="nutrient-info"><span class="nutrient-name">${nutrientName(key)}</span><span class="nutrient-val" title="Данные не по всем продуктам">≈ ${item.amount.toFixed(1)} ${unit} · ${cov}</span></div>
+                <div class="nutrient-bar"><div class="nutrient-fill" style="width:${pct}%;background:var(--text2)"></div></div>
+            </div>`;
+        }
         const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--orange)' : 'var(--red)';
         return `<div class="nutrient-row">
-            <div class="nutrient-info"><span class="nutrient-name">${nutrientName(key)}</span><span class="nutrient-val">${item.amount.toFixed(1)} · ${Math.round(item.percent)}%</span></div>
+            <div class="nutrient-info"><span class="nutrient-name">${nutrientName(key)}</span><span class="nutrient-val">${item.amount.toFixed(1)} ${unit} · ${Math.round(item.percent)}%</span></div>
             <div class="nutrient-bar"><div class="nutrient-fill" style="width:${pct}%;background:${color}"></div></div>
         </div>`;
     }
+
+    const _pc = data.products_count || 0;
+    const _pm = data.products_with_micro || 0;
+    const coverageNote = (_pc > 0 && _pm < _pc)
+        ? `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Данные по микронутриентам есть у ${_pm} из ${_pc} продуктов — цифры со значком «≈» неполные.</div>`
+        : '';
 
     container.innerHTML = `
         <div class="date-nav" style="margin-bottom:16px">
@@ -50,8 +76,8 @@ async function loadNutrients() {
                 <div class="macro macro-carbs" style="text-align:center"><div class="macro-value">${Math.round(macros.carbohydrates || 0)}г</div><div class="macro-label">углеводы</div></div>
             </div>
         </div>
-        ${vitamins.length ? `<div class="card"><div class="card-title">Витамины</div>${vitamins.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
-        ${minerals.length ? `<div class="card"><div class="card-title">Минералы</div>${minerals.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
+        ${vitamins.length ? `<div class="card"><div class="card-title">Витамины</div>${coverageNote}${vitamins.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
+        ${minerals.length ? `<div class="card"><div class="card-title">Минералы</div>${coverageNote}${minerals.map(([k, v]) => nutrientBar(k, v)).join('')}</div>` : ''}
         ${!vitamins.length && !minerals.length ? '<div class="card" style="padding:20px;color:var(--text2);text-align:center">Нет данных о микронутриентах.<br>Базовые продукты не содержат витаминов — добавьте продукты из онлайн-базы или USDA.</div>' : ''}
     `;
 }
