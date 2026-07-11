@@ -67,6 +67,9 @@ def _add_missing_columns(conn):
         ],
         "fasting_sessions": [],  # new table, created by create_all
         "mood_entries": [],      # new table, created by create_all
+        "water_entries": [
+            ("source_diary_entry_id", "CHAR(36)"),
+        ],
     }
 
     for table_name, columns in migrations.items():
