@@ -175,6 +175,16 @@ function openSettings() {
     applyAccent(localStorage.getItem('accent') || 'blue');
     updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+    const af = document.getElementById('setting-auto-fluid');
+    if (af) af.checked = getAutoFluid();
+}
+
+// Auto-count drinks (milk/juice/coffee) toward the water goal. Default ON.
+function getAutoFluid() {
+    return localStorage.getItem('auto_fluid') !== '0';
+}
+function setAutoFluid(on) {
+    localStorage.setItem('auto_fluid', on ? '1' : '0');
 }
 
 async function saveSettings() {
