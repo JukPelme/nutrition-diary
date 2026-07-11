@@ -35,7 +35,14 @@ async def get_daily_nutrients(
                 all_nutrients.append(nutrients)
 
     totals = sum_nutrients(all_nutrients)
-    daily_percent = calculate_daily_percent(totals)
+    daily_percent = calculate_daily_percent(totals, all_nutrients)
+
+    # How many logged foods carried ANY micronutrient data (for an honest
+    # 'data based on N of M foods' line in the UI).
+    products_with_product = len(all_nutrients)
+    products_with_micro = sum(
+        1 for n in all_nutrients if n.get("vitamins") or n.get("minerals")
+    )
 
     # Macros
     macro_totals = {
@@ -48,6 +55,8 @@ async def get_daily_nutrients(
     return {
         "date": entry_date,
         "entries_count": len(entries),
+        "products_count": products_with_product,
+        "products_with_micro": products_with_micro,
         "macros": macro_totals,
         "nutrients": daily_percent,
     }
