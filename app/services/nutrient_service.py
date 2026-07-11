@@ -70,18 +70,41 @@ def sum_nutrients(entries_nutrients: list[dict]) -> dict:
     return totals
 
 
-def calculate_daily_percent(totals: dict) -> dict:
-    """Calculate % of daily recommended value."""
+def coverage_stats(entries_nutrients: list[dict]) -> dict:
+    """For each nutrient, how many logged product-entries actually carried a
+    value for it. Lets the UI say 'based on N of M foods' instead of pretending
+    a missing value is zero."""
+    total = len(entries_nutrients)
+    cov = {"vitamins": {}, "minerals": {}}
+    for category in ("vitamins", "minerals"):
+        for entry_nutr in entries_nutrients:
+            for key in entry_nutr.get(category, {}):
+                cov[category][key] = cov[category].get(key, 0) + 1
+    return {"total_products": total, "covered": cov}
+
+
+def calculate_daily_percent(totals: dict, entries_nutrients: list[dict] | None = None) -> dict:
+    """Calculate % of daily recommended value, annotated with data coverage.
+
+    coverage (covered/total_products) tells the client how complete the data is
+    so it never shows a confident '% of norm' built from mostly-missing values.
+    A missing nutrient is EXCLUDED from the sum (never coerced to 0)."""
+    cov = coverage_stats(entries_nutrients or [])
+    total_products = cov["total_products"]
     result = {"vitamins": {}, "minerals": {}}
 
     for category in ("vitamins", "minerals"):
         for key, val in totals.get(category, {}).items():
             dv = DAILY_VALUES.get(category, {}).get(key)
             if dv and dv > 0:
+                covered = cov["covered"].get(category, {}).get(key, 0)
                 result[category][key] = {
                     "amount": val,
                     "daily_value": dv,
                     "percent": round((val / dv) * 100, 1),
+                    "covered": covered,
+                    "total_products": total_products,
+                    "complete": total_products > 0 and covered >= total_products,
                 }
 
     return result
