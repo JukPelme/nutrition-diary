@@ -36,6 +36,7 @@ class DiaryEntryCreate(BaseModel):
     protein: float = 0
     fat: float = 0
     carbohydrates: float = 0
+    add_to_water: bool = True  # auto-log drinks (milk/juice/...) to fluid intake
 
 
 class DiaryEntryUpdate(BaseModel):
@@ -58,6 +59,8 @@ class DiaryEntryResponse(BaseModel):
     protein: float
     fat: float
     carbohydrates: float
+    water_added_ml: int = 0
+    water_entry_id: UUID | None = None
 
     model_config = {"from_attributes": True}
 

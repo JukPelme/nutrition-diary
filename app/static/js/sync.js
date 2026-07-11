@@ -87,6 +87,31 @@ function showToast(msg) {
     setTimeout(() => t.remove(), 3000);
 }
 
+// Toast with a tappable action button (e.g. Undo). toast-stack itself has
+// pointer-events:none, so the toast must re-enable them to be clickable.
+function showActionToast(msg, actionLabel, onAction) {
+    let el = document.getElementById('toast-stack');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'toast-stack';
+        el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:200;pointer-events:none;';
+        document.body.appendChild(el);
+    }
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.style.pointerEvents = 'auto';
+    const span = document.createElement('span');
+    span.textContent = msg + '  ';
+    t.appendChild(span);
+    const btn = document.createElement('button');
+    btn.textContent = actionLabel;
+    btn.style.cssText = 'background:none;border:none;color:var(--orange,#ff9800);font-weight:700;cursor:pointer;padding:0 4px';
+    btn.onclick = () => { t.remove(); try { onAction(); } catch (e) { console.error(e); } };
+    t.appendChild(btn);
+    el.appendChild(t);
+    setTimeout(() => t.remove(), 6000);
+}
+
 // Network listeners
 window.addEventListener('online', async () => {
     offlineState.online = true;

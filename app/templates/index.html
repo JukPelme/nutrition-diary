@@ -865,6 +865,13 @@
                 </div>
             </div>
             <div class="theme-section">
+                <div class="card-title" data-i18n="fluidSection">Напитки</div>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+                    <input type="checkbox" id="setting-auto-fluid" onchange="setAutoFluid(this.checked)" style="margin:0;width:18px;height:18px">
+                    <span data-i18n="autoFluidLabel">Считать напитки (молоко, сок, кофе) в норму воды</span>
+                </label>
+            </div>
+            <div class="theme-section">
                 <div class="card-title" data-i18n="theme">Тема</div>
                 <div class="theme-toggle-row">
                     <button class="theme-toggle-btn" onclick="setTheme('dark')" id="theme-dark-btn">🌙 Тёмная</button>

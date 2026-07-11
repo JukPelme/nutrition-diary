@@ -95,3 +95,57 @@ async def test_other_user_cannot_touch_entry(client):
 async def test_diary_requires_auth(client):
     r = await client.get("/api/v1/diary", params={"entry_date": DAY})
     assert r.status_code in (401, 403)
+
+
+# ---- Auto-log drinks to water intake ----
+
+async def _water_total(client):
+    r = await client.get("/api/v1/water/today")
+    assert r.status_code == 200, r.text
+    return r.json()["total_ml"], r.json()["entries"]
+
+
+async def test_drink_auto_added_to_water(auth_client):
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/diary", json=_entry(product_name="Молоко 3.2%", serving_amount=250))
+    assert r.status_code in (200, 201), r.text
+    body = r.json()
+    assert body["water_added_ml"] == 250, body
+    assert body["water_entry_id"], body
+    total, entries = await _water_total(client)
+    assert total == 250
+    assert any(e["drink_type"] == "milk" and "Из еды" in (e["notes"] or "") for e in entries), entries
+
+
+async def test_solid_food_not_added_to_water(auth_client):
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/diary", json=_entry(product_name="Творог 9%", serving_amount=200))
+    assert r.json()["water_added_ml"] == 0
+    total, _ = await _water_total(client)
+    assert total == 0
+
+
+async def test_milk_chocolate_excluded(auth_client):
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/diary", json=_entry(product_name="Молочный шоколад", serving_amount=100))
+    assert r.json()["water_added_ml"] == 0
+
+
+async def test_add_to_water_can_be_disabled(auth_client):
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/diary", json=_entry(product_name="Сок яблочный", serving_amount=200, add_to_water=False))
+    assert r.json()["water_added_ml"] == 0
+    total, _ = await _water_total(client)
+    assert total == 0
+
+
+async def test_deleting_food_removes_linked_water(auth_client):
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/diary", json=_entry(product_name="Кефир 1%", serving_amount=300))
+    entry_id = r.json()["id"]
+    total, _ = await _water_total(client)
+    assert total == 300
+    d = await client.delete(f"/api/v1/diary/{entry_id}")
+    assert d.status_code == 204, d.text
+    total, _ = await _water_total(client)
+    assert total == 0

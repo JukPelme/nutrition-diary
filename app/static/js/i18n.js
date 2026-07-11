@@ -25,6 +25,7 @@ const TRANSLATIONS = {
         appTitle: 'Дневник питания', appSubtitle: 'Следите за рационом и КБЖУ',
         addProduct: 'Добавить продукт',
         language: 'Язык',
+        fluidSection: 'Напитки', autoFluidLabel: 'Считать напитки (молоко, сок, кофе) в норму воды', addedToWater: 'мл в воду', undo: 'Отменить',
         // Extended (2026-06-17)
         share: 'Поделиться', logout: 'Выйти',
         mood: 'Настроение', energy: 'Энергия', sleepHours: 'Сон, ч',
@@ -107,6 +108,7 @@ const TRANSLATIONS = {
         appTitle: 'Nutrition Diary', appSubtitle: 'Track your diet and macros',
         addProduct: 'Add product',
         language: 'Language',
+        fluidSection: 'Drinks', autoFluidLabel: 'Count drinks (milk, juice, coffee) toward water goal', addedToWater: 'ml to water', undo: 'Undo',
         // Extended (2026-06-17)
         share: 'Share', logout: 'Logout',
         mood: 'Mood', energy: 'Energy', sleepHours: 'Sleep, h',
@@ -189,6 +191,7 @@ const TRANSLATIONS = {
         appTitle: '栄養日記', appSubtitle: '食事とPFCバランスを記録しましょう',
         addProduct: '食品を追加',
         language: '言語',
+        fluidSection: '飲み物', autoFluidLabel: '飲み物（牛乳・ジュース・コーヒー）を水分目標に加算', addedToWater: 'ml を水分に', undo: '取り消す',
         // Extended (2026-06-17)
         share: '共有', logout: 'ログアウト',
         mood: '気分', energy: 'エネルギー', sleepHours: '睡眠時間 (時間)',

@@ -55,3 +55,8 @@ class DiaryEntry(Base):
     user = relationship("User", back_populates="diary_entries")
     meal = relationship("Meal", back_populates="entries")
     product = relationship("Product")
+
+    # Transient (not persisted) — set by diary_service.create_entry so the API
+    # can tell the client how much water was auto-logged and let it be undone.
+    water_added_ml: int = 0
+    water_entry_id = None

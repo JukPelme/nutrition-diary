@@ -297,7 +297,8 @@ async function addToDiary() {
     const amount = parseFloat(document.getElementById('portion-amount').value) || 100;
     const factor = amount / 100;
 
-    await apiQueued('/diary', {
+    const _autoFluid = (typeof getAutoFluid === 'function') ? getAutoFluid() : true;
+    const res = await apiQueued('/diary', {
         method: 'POST',
         body: JSON.stringify({
             meal_id: selectedMealId,
@@ -309,12 +310,25 @@ async function addToDiary() {
             protein: (p.protein || 0) * factor,
             fat: (p.fat || 0) * factor,
             carbohydrates: (p.carbohydrates || 0) * factor,
+            add_to_water: _autoFluid,
         })
     });
 
     closeModal('portion-modal');
     if (typeof showToast === 'function') showToast(typeof t === 'function' ? (navigator.onLine ? t('addedSynced') : t('addedOffline')) : 'Добавлено');
     loadDiary();
+
+    // Drink auto-logged to water — refresh the water UI and offer an undo.
+    if (res && res.water_added_ml > 0 && res.water_entry_id) {
+        if (typeof renderWater === 'function') renderWater();
+        const label = (typeof t === 'function' ? (t('addedToWater') || 'мл в воду') : 'мл в воду');
+        const undo = (typeof t === 'function' ? (t('undo') || 'Отменить') : 'Отменить');
+        if (typeof showActionToast === 'function') {
+            showActionToast(`+${res.water_added_ml} ${label}`, undo, async () => {
+                if (typeof deleteWater === 'function') await deleteWater(res.water_entry_id);
+            });
+        }
+    }
     if (typeof checkAchievementsAfterAction === 'function') setTimeout(checkAchievementsAfterAction, 400);
 }
 
