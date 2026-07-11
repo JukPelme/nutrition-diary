@@ -2,7 +2,10 @@ from datetime import date
 from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime, timezone
 from app.models.diary import DiaryEntry, Meal
+from app.models.water import WaterEntry
+from app.services.fluid import detect_fluid, estimate_ml
 from app.schemas.diary import DiaryEntryCreate, DiaryEntryUpdate
 
 
@@ -37,13 +40,38 @@ async def get_daily_summary(db: AsyncSession, user_id: UUID, entry_date: date) -
 
 
 async def create_entry(db: AsyncSession, user_id: UUID, data: DiaryEntryCreate) -> DiaryEntry:
-    entry = DiaryEntry(
-        user_id=user_id,
-        **data.model_dump(),
-    )
+    payload = data.model_dump(exclude={"add_to_water"})
+    entry = DiaryEntry(user_id=user_id, **payload)
     db.add(entry)
     await db.flush()
+
+    # Auto-log drinks (milk, juice, coffee, ...) toward the daily fluid goal.
+    entry.water_added_ml = 0
+    entry.water_entry_id = None
+    if data.add_to_water:
+        is_liquid, drink_type = detect_fluid(entry.product_name)
+        ml = estimate_ml(entry.serving_amount)
+        if is_liquid and ml > 0:
+            water = WaterEntry(
+                user_id=user_id,
+                amount_ml=ml,
+                drink_type=drink_type,
+                drunk_at=datetime.now(timezone.utc),
+                notes=f"Из еды: {entry.product_name}",
+                source_diary_entry_id=entry.id,
+            )
+            db.add(water)
+            await db.flush()
+            entry.water_added_ml = ml
+            entry.water_entry_id = water.id
     return entry
+
+
+async def _linked_water(db: AsyncSession, entry_id: UUID) -> WaterEntry | None:
+    res = await db.execute(
+        select(WaterEntry).where(WaterEntry.source_diary_entry_id == entry_id)
+    )
+    return res.scalar_one_or_none()
 
 
 async def get_entry(db: AsyncSession, entry_id: UUID, user_id: UUID) -> DiaryEntry | None:
@@ -54,13 +82,26 @@ async def get_entry(db: AsyncSession, entry_id: UUID, user_id: UUID) -> DiaryEnt
 
 
 async def update_entry(db: AsyncSession, entry: DiaryEntry, data: DiaryEntryUpdate) -> DiaryEntry:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changed = data.model_dump(exclude_unset=True)
+    for field, value in changed.items():
         setattr(entry, field, value)
     await db.flush()
+    entry.water_added_ml = 0
+    entry.water_entry_id = None
+    if "serving_amount" in changed:
+        water = await _linked_water(db, entry.id)
+        if water is not None:
+            water.amount_ml = estimate_ml(entry.serving_amount)
+            await db.flush()
+            entry.water_added_ml = water.amount_ml
+            entry.water_entry_id = water.id
     return entry
 
 
 async def delete_entry(db: AsyncSession, entry: DiaryEntry) -> None:
+    water = await _linked_water(db, entry.id)
+    if water is not None:
+        await db.delete(water)
     await db.delete(entry)
     await db.flush()
 
