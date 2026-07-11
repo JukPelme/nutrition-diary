@@ -76,3 +76,25 @@ async def test_search_exact_name_ranks_first(auth_client):
     assert r.status_code == 200, r.text
     names = [p["name"] for p in r.json()]
     assert names and names[0] == "Молоко", names
+
+
+async def test_product_name_decodes_html_entities(auth_client):
+    """OFF-style names with HTML entities must be decoded on store, not kept raw:
+    raw &quot; breaks display and corrupts the inline onclick JSON (untappable row)."""
+    client, _, _ = auth_client
+    r = await client.post("/api/v1/products", json={
+        "name": 'Макароны &quot;Добродея&quot; <b>x</b>', "calories": 348,
+    })
+    assert r.status_code in (200, 201), r.text
+    name = r.json()["name"]
+    assert "&quot;" not in name and "<" not in name and ">" not in name, name
+    assert '"Добродея"' in name, name
+
+
+def test_clean_text_decodes_off_entities():
+    """Unit: OFF ingestion cleaner decodes entities and strips tag delimiters."""
+    from app.services.barcode_service import _clean_text
+    assert _clean_text('Макароны &quot;Добродея&quot;') == 'Макароны "Добродея"'
+    assert _clean_text('Сок &amp; Вода') == 'Сок & Вода'
+    cleaned = _clean_text('<img onerror=1>Плов')
+    assert "<" not in cleaned and ">" not in cleaned

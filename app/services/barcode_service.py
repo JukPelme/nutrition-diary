@@ -1,6 +1,7 @@
 """
 Barcode lookup: first check local DB, then fallback to Open Food Facts API.
 """
+import html
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,10 +63,22 @@ def _validate_nutriments(parsed: dict) -> bool:
     return True
 
 
+def _clean_text(v):
+    """Decode HTML entities (OFF crowdsourced names often contain &quot;, &amp;,
+    &#39;) and strip tag delimiters. Prevents broken display and — critically —
+    onclick JSON being corrupted when the browser re-decodes entities in the
+    attribute value."""
+    if not isinstance(v, str):
+        return v
+    v = html.unescape(v)
+    v = v.replace("<", "").replace(">", "")
+    return " ".join(v.split()).strip()
+
+
 def _parse_off_product(data: dict) -> dict | None:
     """Parse Open Food Facts API response into our product format."""
     product = data.get("product", {})
-    name = product.get("product_name", "").strip()
+    name = _clean_text(product.get("product_name", ""))
     if not name:
         return None
 
@@ -97,9 +110,9 @@ def _parse_off_product(data: dict) -> dict | None:
 
     result = {
         "name": name[:500],
-        "brand": (product.get("brands") or "")[:255] or None,
+        "brand": (_clean_text(product.get("brands") or "")[:255] or None),
         "barcode": str(data.get("code", ""))[:50],
-        "category": (product.get("categories_tags", [""])[0] if product.get("categories_tags") else "")[:255] or None,
+        "category": (_clean_text(product.get("categories_tags", [""])[0] if product.get("categories_tags") else "")[:255] or None),
         "source": "openfoodfacts",
         "source_id": str(data.get("code", "")),
         "serving_size": 100.0,

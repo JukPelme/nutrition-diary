@@ -1,3 +1,15 @@
+// Safely embed an object as JSON inside a single-quoted HTML attribute
+// (e.g. onclick='fn(...)'). Escapes &,<,>,' so the browser reconstructs the
+// exact JSON when it decodes the attribute — otherwise entities like &quot;
+// inside product names corrupt the JSON and the element becomes unclickable.
+function _attrJSON(o) {
+    return JSON.stringify(o)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/'/g, '&#39;');
+}
+
 // app-01-core.js — mechanical split of app.js (Этап 1). Loaded as classic script; all globals stay global.
 
 // ---- Theme & Accent ----
