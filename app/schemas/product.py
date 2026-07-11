@@ -1,11 +1,19 @@
+import html
 from uuid import UUID
 from pydantic import BaseModel, field_validator
 
 
 def _strip_html(v: str | None):
-    """Neutralise stored-XSS: product name/brand/category are shown to other
-    users, so drop HTML tag delimiters (e.g. '<img onerror=...>')."""
-    return v.replace("<", "").replace(">", "").strip() if isinstance(v, str) else v
+    """Neutralise stored-XSS and fix mojibake: product name/brand/category are
+    shown to other users, so decode HTML entities (&quot;, &amp;, &#39; — common
+    in crowdsourced OFF data) and drop tag delimiters (e.g. '<img onerror=...>').
+    Decoding first also prevents entities from breaking inline onclick JSON on
+    the client when the browser re-decodes them in the attribute value."""
+    if not isinstance(v, str):
+        return v
+    v = html.unescape(v)
+    v = v.replace("<", "").replace(">", "")
+    return " ".join(v.split()).strip()
 
 
 class ProductCreate(BaseModel):
