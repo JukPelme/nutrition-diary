@@ -73,7 +73,7 @@ function renderScanResults(foods) {
             </div>
             ${conf ? `<span class="scan-food-confidence">${conf}%</span>` : ''}
             <div class="scan-food-add">
-                <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick='addScannedFood(${JSON.stringify(f).replace(/'/g, "&#39;")})'>+</button>
+                <button class="btn btn-primary" style="padding:6px 12px;font-size:13px" onclick='addScannedFood(${_attrJSON(f)})'>+</button>
             </div>
         </div>`;
     }).join('');

@@ -15,7 +15,7 @@ function openAddFood(mealId) {
     if (recent.length) {
         html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">🕐 Недавние</div>';
         html += recent.map(p => `
-            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${_attrJSON(p)})'>
                 <div>
                     <div class="p-name">${escapeHtml(p.name)}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
@@ -30,7 +30,7 @@ function openAddFood(mealId) {
     if (favs.length) {
         html += '<div class="card-title" style="padding:8px 0 4px;font-size:11px">⭐ Избранное</div>';
         html += favs.map(p => `
-            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='selectProduct(${_attrJSON(p)})'>
                 <div>
                     <div class="p-name">⭐ ${escapeHtml(p.name)}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                     <div class="p-brand">${p.brand || ''} · ${p.serving_size || 100}${p.serving_unit || 'g'}</div>
@@ -86,12 +86,12 @@ function applyFoodFilter() {
 function _foodRowHtml(p) {
     return `
         <div class="product-row" style="display:flex;align-items:center;gap:6px">
-            <div role="button" tabindex="0" style="flex:1;cursor:pointer" onclick='selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();selectProduct(${JSON.stringify(p).replace(/'/g, "&#39;")});}'>
+            <div role="button" tabindex="0" style="flex:1;cursor:pointer" onclick='selectProduct(${_attrJSON(p)})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();selectProduct(${_attrJSON(p)});}'>
                 <div class="p-name">${escapeHtml(p.name)}${p.is_verified ? ' ✓' : ''}${p.source === 'openfoodfacts' ? ' 🌐' : ''}</div>
                 <div class="p-brand">${p.brand || ''} · ${p.serving_size}${p.serving_unit}</div>
             </div>
             <div class="p-cal" style="min-width:60px;text-align:right">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalShort') : 'ккал') : '—'}</div>
-            <button class="btn-icon" aria-label="Добавить к сравнению" onclick='addToCompare(${JSON.stringify(p).replace(/'/g, "&#39;")})' title="Сравнить">⚖️</button>
+            <button class="btn-icon" aria-label="Добавить к сравнению" onclick='addToCompare(${_attrJSON(p)})' title="Сравнить">⚖️</button>
             <button class="btn-icon" aria-label="Найти замены" onclick='openAlternatives("${p.id}", ${JSON.stringify(p.name)})' title="Замены">🔄</button>
         </div>
     `;
@@ -433,7 +433,7 @@ async function searchRecipeIngredients(q) {
         return;
     }
     container.innerHTML = products.map(p => `
-        <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='addRecipeIngredient(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+        <div class="product-row" role="button" tabindex="0" onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();event.currentTarget.click();}' onclick='addRecipeIngredient(${_attrJSON(p)})'>
             <div>
                 <div class="p-name" style="font-size:13px">${escapeHtml(p.name)}</div>
                 <div class="p-brand" style="font-size:11px">${p.calories ? Math.round(p.calories) + ' ' + (typeof t === 'function' ? t('kcalPer100g') : 'ккал/100г') : ''}</div>
