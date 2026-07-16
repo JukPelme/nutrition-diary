@@ -119,3 +119,72 @@ async def create_meal(db: AsyncSession, user_id: UUID, name: str, icon: str | No
     db.add(meal)
     await db.flush()
     return meal
+
+
+async def get_recent_days(db: AsyncSession, user_id: UUID, days: int = 14) -> list[dict]:
+    """Last N distinct days that have diary entries, grouped by date -> meals.
+
+    Used by the History view so the user can browse past days and repeat a
+    meal or a whole day. Bounded to N most-recent days with records (not a
+    calendar window), so it works regardless of gaps or timezone.
+    """
+    days = max(1, min(days, 60))
+
+    date_rows = await db.execute(
+        select(DiaryEntry.entry_date)
+        .where(DiaryEntry.user_id == user_id)
+        .group_by(DiaryEntry.entry_date)
+        .order_by(DiaryEntry.entry_date.desc())
+        .limit(days)
+    )
+    dates = [r[0] for r in date_rows.all()]
+    if not dates:
+        return []
+
+    result = await db.execute(
+        select(DiaryEntry)
+        .where(DiaryEntry.user_id == user_id, DiaryEntry.entry_date.in_(dates))
+        .order_by(DiaryEntry.entry_date.desc(), DiaryEntry.created_at)
+    )
+    entries = list(result.scalars().all())
+
+    meals = await get_user_meals(db, user_id)
+    meal_map = {m.id: m for m in meals}
+
+    by_date: dict = {}
+    for e in entries:
+        by_date.setdefault(e.entry_date, []).append(e)
+
+    def _meal_sort(mid):
+        m = meal_map.get(mid)
+        return (0, m.sort_order) if m else (1, 0)
+
+    out: list[dict] = []
+    for d in dates:  # already sorted desc
+        day_entries = by_date.get(d, [])
+        groups: dict = {}
+        for e in day_entries:
+            groups.setdefault(e.meal_id, []).append(e)
+
+        meal_blocks = []
+        for mid in sorted(groups.keys(), key=_meal_sort):
+            m = meal_map.get(mid)
+            m_entries = groups[mid]
+            meal_blocks.append({
+                "meal_id": mid,
+                "meal_name": m.name if m else None,
+                "meal_icon": m.icon if m else None,
+                "calories": round(sum(x.calories or 0 for x in m_entries), 1),
+                "entries": m_entries,
+            })
+
+        out.append({
+            "date": d,
+            "total_calories": round(sum(x.calories or 0 for x in day_entries), 1),
+            "total_protein": round(sum(x.protein or 0 for x in day_entries), 1),
+            "total_fat": round(sum(x.fat or 0 for x in day_entries), 1),
+            "total_carbohydrates": round(sum(x.carbohydrates or 0 for x in day_entries), 1),
+            "entries_count": len(day_entries),
+            "meals": meal_blocks,
+        })
+    return out

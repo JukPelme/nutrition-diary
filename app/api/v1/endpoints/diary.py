@@ -29,6 +29,16 @@ async def get_daily_summary(
     return await diary_service.get_daily_summary(db, user.id, entry_date)
 
 
+@router.get("/recent")
+async def get_recent_days(
+    days: int = Query(14, ge=1, le=60, description="How many recent days with records"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Recent days that have entries, grouped by date -> meals (for History view)."""
+    return await diary_service.get_recent_days(db, user.id, days)
+
+
 @router.post("", response_model=DiaryEntryResponse, status_code=status.HTTP_201_CREATED)
 async def create_diary_entry(
     data: DiaryEntryCreate,
