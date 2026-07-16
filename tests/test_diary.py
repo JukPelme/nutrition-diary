@@ -149,3 +149,44 @@ async def test_deleting_food_removes_linked_water(auth_client):
     assert d.status_code == 204, d.text
     total, _ = await _water_total(client)
     assert total == 0
+
+
+# ---- Recent history (browse past days, for the History view) ----
+async def test_recent_groups_days_desc(auth_client):
+    client, _, _ = auth_client
+    await client.post("/api/v1/diary", json=_entry(entry_date="2026-07-10", calories=200))
+    await client.post("/api/v1/diary", json=_entry(entry_date="2026-07-12", calories=300))
+    await client.post("/api/v1/diary", json=_entry(entry_date="2026-07-12", calories=100))
+
+    r = await client.get("/api/v1/diary/recent", params={"days": 14})
+    assert r.status_code == 200, r.text
+    days = r.json()
+    assert [d["date"] for d in days] == ["2026-07-12", "2026-07-10"]  # newest first
+    assert days[0]["total_calories"] == 400
+    assert days[0]["entries_count"] == 2
+
+    flat = [e for m in days[0]["meals"] for e in m["entries"]]
+    assert len(flat) == 2
+    assert all("product_id" in e and "serving_amount" in e for e in flat)
+
+
+async def test_recent_limit_caps_days(auth_client):
+    client, _, _ = auth_client
+    for d in ("2026-06-01", "2026-06-02", "2026-06-03"):
+        await client.post("/api/v1/diary", json=_entry(entry_date=d))
+    r = await client.get("/api/v1/diary/recent", params={"days": 2})
+    assert r.status_code == 200, r.text
+    days = r.json()
+    assert [d["date"] for d in days] == ["2026-06-03", "2026-06-02"]
+
+
+async def test_recent_empty_for_new_user(auth_client):
+    client, _, _ = auth_client
+    r = await client.get("/api/v1/diary/recent")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+async def test_recent_requires_auth(client):
+    r = await client.get("/api/v1/diary/recent")
+    assert r.status_code in (401, 403)

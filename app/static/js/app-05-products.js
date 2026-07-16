@@ -332,3 +332,93 @@ async function addToDiary() {
     if (typeof checkAchievementsAfterAction === 'function') setTimeout(checkAchievementsAfterAction, 400);
 }
 
+
+
+// ---- Diary History (browse past days, repeat a meal or a whole day) ----
+let diaryHistory = [];
+
+async function openHistory() {
+    document.getElementById('history-modal').classList.add('active');
+    const body = document.getElementById('history-body');
+    body.innerHTML = `<p class="hist-empty">${t('loading')}</p>`;
+    diaryHistory = await api('/diary/recent?days=14') || [];
+    renderHistory();
+}
+
+function renderHistory() {
+    const body = document.getElementById('history-body');
+    if (!diaryHistory.length) {
+        body.innerHTML = `<p class="hist-empty">${t('historyEmpty')}</p>`;
+        return;
+    }
+    const kcal = t('kcal'), gram = t('grams');
+    body.innerHTML = diaryHistory.map((day, di) => {
+        const meals = (day.meals || []).map(m => {
+            const items = m.entries.map(e =>
+                `${escapeHtml(e.product_name)} — ${Math.round(e.serving_amount)} ${gram}`).join('<br>');
+            const label = (m.meal_icon ? m.meal_icon + ' ' : '') + escapeHtml(m.meal_name || t('otherMeal'));
+            return `
+              <div class="hist-meal">
+                <div class="hist-meal-head">
+                  <span class="hist-meal-name">${label} · ${Math.round(m.calories)} ${kcal}</span>
+                  <button class="btn-mini" onclick="repeatMeal(${di}, '${m.meal_id ?? ''}')">🔁 ${t('repeat')}</button>
+                </div>
+                <div class="hist-items">${items}</div>
+              </div>`;
+        }).join('');
+        const dLabel = (typeof formatDateLocale === 'function' && currentLang !== 'ru')
+            ? formatDateLocale(day.date) : formatDate(day.date);
+        return `
+          <div class="hist-day">
+            <div class="hist-day-head">
+              <b>${dLabel} · ${Math.round(day.total_calories)} ${kcal}</b>
+              <button class="btn-mini btn-mini-accent" onclick="repeatDay(${di})">🔁 ${t('repeatDay')}</button>
+            </div>
+            ${meals}
+          </div>`;
+    }).join('');
+}
+
+async function _repeatEntries(entries) {
+    if (!entries || !entries.length) return;
+    const today = new Date().toISOString().slice(0, 10);
+    currentDate = today;  // repeat always lands on today
+    let copied = 0;
+    for (const e of entries) {
+        const r = await apiQueued('/diary', {
+            method: 'POST',
+            body: JSON.stringify({
+                meal_id: e.meal_id,
+                product_id: e.product_id,
+                product_name: e.product_name,
+                entry_date: today,
+                serving_amount: e.serving_amount,
+                calories: e.calories,
+                protein: e.protein,
+                fat: e.fat,
+                carbohydrates: e.carbohydrates,
+            })
+        });
+        if (r && !r._error) copied++;
+    }
+    closeModal('history-modal');
+    setActiveTab('diary');  // jump to today and reload
+    alert(`${t('addedToToday')}: ${copied}`);
+}
+
+async function repeatDay(dayIdx) {
+    const day = diaryHistory[dayIdx];
+    if (!day) return;
+    const entries = (day.meals || []).flatMap(m => m.entries);
+    if (!entries.length) return;
+    if (!confirm(`${t('repeatDayConfirm')} (${entries.length})?`)) return;
+    await _repeatEntries(entries);
+}
+
+async function repeatMeal(dayIdx, mealId) {
+    const day = diaryHistory[dayIdx];
+    if (!day) return;
+    const meal = (day.meals || []).find(m => String(m.meal_id ?? '') === String(mealId));
+    if (!meal) return;
+    await _repeatEntries(meal.entries);
+}

@@ -100,6 +100,7 @@
                 <button class="btn-icon" aria-label="Следующий день" onclick="changeDate(1)">▶</button>
                 <button class="btn-icon" aria-label="Копировать день" onclick="copyDay()" title="Копировать день" style="margin-left:8px">📋</button>
                 <button class="btn-icon" aria-label="Поделиться днём" onclick="shareDayAsImage()" title="Поделиться днём" style="margin-left:4px">📤</button>
+                <button class="btn-icon" aria-label="История питания" onclick="openHistory()" title="История — что ел раньше" data-i18n-title="historyTitle" style="margin-left:4px">📖</button>
             </div>
             <div class="card summary-card">
                 <div class="summary-ring">
@@ -951,6 +952,17 @@
                 <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('template-modal')">✕</button>
             </div>
             <div id="template-list" class="search-results"></div>
+        </div>
+    </div>
+
+    <!-- History modal (browse past days, repeat) -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header">
+                <h3 class="modal-title-lg" data-i18n="historyTitle">📖 История питания</h3>
+                <button class="btn-icon" aria-label="Закрыть" onclick="closeModal('history-modal')">✕</button>
+            </div>
+            <div id="history-body"></div>
         </div>
     </div>
     <!-- Recipe modal -->
