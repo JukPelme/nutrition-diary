@@ -24,6 +24,7 @@ from app.models.health import MoodEntry, FastingSession, ICD11Condition, UserCon
 from app.models.water import WaterEntry
 from app.models.chat import ChatMessage
 from app.core.timeutil import user_today, user_zone
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -204,6 +205,7 @@ async def chat_send(
             j = r.json()
             reply = j["content"][0]["text"].strip()
             tokens = (j.get("usage") or {}).get("output_tokens")
+            await log_ai_response(user.id, "chat", "claude-haiku-4-5-20251001", j)
     except HTTPException:
         raise
     except Exception as e:

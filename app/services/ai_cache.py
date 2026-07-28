@@ -35,7 +35,7 @@ def make_key(endpoint: str, payload: dict | str) -> str:
 
 async def get_cached(db: AsyncSession, key: str) -> dict | None:
     row = (await db.execute(
-        select(AICache).where(AICache.cache_key == key, AICache.expires_at > datetime.utcnow())
+        select(AICache).where(AICache.cache_key == key, AICache.expires_at > datetime.now(timezone.utc))
     )).scalar_one_or_none()
     return row.response_json if row else None
 
@@ -48,7 +48,7 @@ async def set_cached(db: AsyncSession, key: str, endpoint: str, response: dict, 
         pass
     db.add(AICache(
         id=uuid4(), cache_key=key, endpoint=endpoint, response_json=response,
-        expires_at=datetime.utcnow() + timedelta(hours=ttl_hours),
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=ttl_hours),
     ))
     await db.commit()
 
@@ -101,3 +101,27 @@ async def call_claude(db: AsyncSession, user: User | None, endpoint: str, model:
         return text
     except Exception:
         return None
+
+
+async def log_ai_response(user_id, endpoint: str, model: str, response_json: dict | None) -> None:
+    """Best-effort: record token usage + cost from an Anthropic response.
+
+    Runs in its OWN short-lived session so it can never interfere with (or
+    accidentally commit) the caller's transaction, and never raises — a
+    logging failure must not break the user-facing AI feature.
+    """
+    try:
+        usage = (response_json or {}).get("usage") or {}
+        in_t = int(usage.get("input_tokens", 0) or 0)
+        out_t = int(usage.get("output_tokens", 0) or 0)
+        in_rate, out_rate = PRICING.get(model, (3.0, 15.0))
+        cost = (in_t / 1_000_000.0) * in_rate + (out_t / 1_000_000.0) * out_rate
+        from app.db.session import async_session
+        async with async_session() as s:
+            s.add(AIUsageLog(
+                id=uuid4(), user_id=user_id, endpoint=endpoint, model=model,
+                input_tokens=in_t, output_tokens=out_t, cost_usd=cost,
+            ))
+            await s.commit()
+    except Exception:
+        pass

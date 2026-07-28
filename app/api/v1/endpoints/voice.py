@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.user import User
 from app.models.product import Product
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/voice", tags=["voice"])
 
@@ -97,7 +98,9 @@ async def parse_voice(
         )
         if cr.status_code >= 400:
             raise HTTPException(502, f"Claude {cr.status_code}")
-        text = cr.json()["content"][0]["text"].strip()
+        _vj = cr.json()
+        text = _vj["content"][0]["text"].strip()
+        await log_ai_response(user.id, "voice", "claude-haiku-4-5-20251001", _vj)
         if text.startswith("```"):
             text = text.split("```", 2)[1]
             if text.startswith("json"): text = text[4:]
@@ -226,7 +229,9 @@ async def parse_any(
         )
         if cr.status_code >= 400:
             raise HTTPException(502, f"Claude {cr.status_code}")
-        text = cr.json()["content"][0]["text"].strip()
+        _vj = cr.json()
+        text = _vj["content"][0]["text"].strip()
+        await log_ai_response(user.id, "voice", "claude-haiku-4-5-20251001", _vj)
         if text.startswith("```"):
             text = text.split("\n", 1)[-1]
             if text.endswith("```"):
@@ -309,7 +314,9 @@ async def parse_multi(
         )
         if cr.status_code >= 400:
             raise HTTPException(502, f"Claude {cr.status_code}")
-        text = cr.json()["content"][0]["text"].strip()
+        _vj = cr.json()
+        text = _vj["content"][0]["text"].strip()
+        await log_ai_response(user.id, "voice", "claude-haiku-4-5-20251001", _vj)
         if text.startswith("```"):
             text = text.split("\n", 1)[-1]
             if text.endswith("```"): text = text.rsplit("```", 1)[0]

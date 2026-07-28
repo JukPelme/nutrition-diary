@@ -25,6 +25,7 @@ from app.models.diary import DiaryEntry
 from app.models.water import WaterEntry
 from app.models.health import ICD11Condition, UserCondition
 from app.core.timeutil import user_today, user_now, user_zone
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -97,7 +98,9 @@ async def coach_tip(
             )
             if r.status_code >= 400:
                 raise HTTPException(502, f"AI service error (upstream {r.status_code})")
-            text = r.json()["content"][0]["text"].strip()
+            j = r.json()
+            text = j["content"][0]["text"].strip()
+            await log_ai_response(user.id, "coach", "claude-haiku-4-5-20251001", j)
     except HTTPException:
         raise
     except Exception as e:

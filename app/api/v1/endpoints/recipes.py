@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.product import Product
 from app.models.diary import DiaryEntry, Meal
 from app.models.recipe import Recipe, RecipeIngredient
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -268,7 +269,9 @@ async def import_recipe_url(
             )
             if ar.status_code >= 400:
                 raise HTTPException(502, f"AI service error (upstream {ar.status_code})")
-            text = ar.json()["content"][0]["text"].strip()
+            _rj = ar.json()
+            text = _rj["content"][0]["text"].strip()
+            await log_ai_response(user.id, "recipe_import", "claude-sonnet-4-6", _rj)
     except HTTPException:
         raise
     except Exception as e:
@@ -365,7 +368,9 @@ async def from_fridge(
             )
             if ar.status_code >= 400:
                 raise HTTPException(502, f"Claude {ar.status_code}")
-            text = ar.json()["content"][0]["text"].strip()
+            _rj = ar.json()
+            text = _rj["content"][0]["text"].strip()
+            await log_ai_response(user.id, "recipe_fridge", "claude-haiku-4-5-20251001", _rj)
     except HTTPException:
         raise
     except Exception as e:

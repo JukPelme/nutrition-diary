@@ -38,6 +38,7 @@ from app.core.deps import get_current_user
 from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
+from app.services.ai_cache import log_ai_response
 from app.core.timeutil import user_today
 from app.models.user import User
 from app.models.meal_plan import MealPlan
@@ -182,6 +183,7 @@ async def generate_plan(
                 raise HTTPException(502, f"AI service error (upstream {r.status_code})")
             j = r.json()
             raw = j["content"][0]["text"]
+            await log_ai_response(user.id, "meal_plan", "claude-sonnet-4-6", j)
     except HTTPException:
         raise
     except Exception as e:

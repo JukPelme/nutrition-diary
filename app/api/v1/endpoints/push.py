@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.push import PushSubscription, AppConfig
 from app.core.timeutil import user_today, user_now
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/push", tags=["push"])
 
@@ -193,7 +194,9 @@ async def send_reminders(
                     },
                 )
                 if r.status_code < 400:
-                    msg = r.json()["content"][0]["text"].strip()[:140]
+                    _pj = r.json()
+                    msg = _pj["content"][0]["text"].strip()[:140]
+                    await log_ai_response(user.id, "push_reminder", "claude-haiku-4-5-20251001", _pj)
         except Exception:
             pass
 
