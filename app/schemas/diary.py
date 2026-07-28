@@ -37,6 +37,7 @@ class DiaryEntryCreate(BaseModel):
     fat: float = 0
     carbohydrates: float = 0
     add_to_water: bool = True  # auto-log drinks (milk/juice/...) to fluid intake
+    client_op_id: str | None = None  # idempotency key for offline replay dedupe
 
 
 class DiaryEntryUpdate(BaseModel):

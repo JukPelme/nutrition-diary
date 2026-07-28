@@ -40,6 +40,21 @@ async def get_daily_summary(db: AsyncSession, user_id: UUID, entry_date: date) -
 
 
 async def create_entry(db: AsyncSession, user_id: UUID, data: DiaryEntryCreate) -> DiaryEntry:
+    # Idempotency: a replayed offline write (lost response / background sync /
+    # second tab) carries the same client_op_id — return the existing row
+    # instead of inserting a duplicate.
+    if data.client_op_id:
+        existing = (await db.execute(
+            select(DiaryEntry).where(
+                DiaryEntry.user_id == user_id,
+                DiaryEntry.client_op_id == data.client_op_id,
+            )
+        )).scalar_one_or_none()
+        if existing is not None:
+            existing.water_added_ml = 0
+            existing.water_entry_id = None
+            return existing
+
     payload = data.model_dump(exclude={"add_to_water"})
     entry = DiaryEntry(user_id=user_id, **payload)
     db.add(entry)

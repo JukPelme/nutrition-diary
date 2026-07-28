@@ -50,6 +50,10 @@ class DiaryEntry(Base):
     fat: Mapped[float] = mapped_column(Float, default=0)
     carbohydrates: Mapped[float] = mapped_column(Float, default=0)
 
+    # Client-generated idempotency key: the same queued offline write can be
+    # replayed (lost response, background sync, second tab) — dedupe on it.
+    client_op_id: Mapped[str | None] = mapped_column(String(64))
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=server_now(), onupdate=python_now)
 
@@ -62,6 +66,9 @@ class DiaryEntry(Base):
         # Hottest query filters user_id + entry_date together (get_entries_by_date,
         # get_recent_days). One composite index beats two single-column ones.
         Index("ix_diary_user_date", "user_id", "entry_date"),
+        # Idempotency: a replayed offline write must not create a duplicate.
+        # NULLs are distinct, so pre-existing rows without an op id don't clash.
+        UniqueConstraint("user_id", "client_op_id", name="uq_diary_user_op"),
     )
 
     # Transient (not persisted) — set by diary_service.create_entry so the API
