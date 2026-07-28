@@ -34,6 +34,7 @@ class User(Base):
     failed_login_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     preferred_language: Mapped[str | None] = mapped_column(String(5))
+    timezone: Mapped[str | None] = mapped_column(String(64))  # IANA tz, e.g. "Asia/Tokyo"; None→UTC
     telegram_user_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, index=True)
     totp_secret: Mapped[str | None] = mapped_column(String(64))
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)

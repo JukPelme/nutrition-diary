@@ -254,6 +254,14 @@ async function showApp() {
         if (me?.preferred_language && me.preferred_language !== currentLang && typeof setLang === 'function') {
             setLang(me.preferred_language);
         }
+        // Sync the browser timezone so "today" (streaks, quests, day summary)
+        // is the user's local calendar day, not the server's UTC day.
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz && me && me.timezone !== tz) {
+                api('/auth/me', { method: 'PATCH', body: JSON.stringify({ timezone: tz }) }).catch(()=>{});
+            }
+        } catch (_) {}
     }).catch(()=>{});
     setupOfflineIndicator();
     flushSyncQueue().catch(()=>{});

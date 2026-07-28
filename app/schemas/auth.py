@@ -51,6 +51,7 @@ class UserResponse(BaseModel):
     nutrient_goals: dict | None = None
     waist_cm: float | None = None
     body_fat_pct: float | None = None
+    timezone: str | None = None
     is_superuser: bool = False
 
     model_config = {"from_attributes": True}
@@ -60,6 +61,7 @@ class UserUpdate(BaseModel):
     full_name: str | None = None
     username: str | None = None
     preferred_language: str | None = None
+    timezone: str | None = None
     birth_year: int | None = None
     sex: str | None = None
     activity_level: str | None = None
