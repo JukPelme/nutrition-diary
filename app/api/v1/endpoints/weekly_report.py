@@ -23,6 +23,7 @@ from app.models.user import User
 from app.models.diary import DiaryEntry
 from app.models.health import MoodEntry
 from app.models.device import HealthMetric
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -57,7 +58,7 @@ async def weekly_report(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    today = date.today()
+    today = user_today(user)
     this_week_start = today - timedelta(days=6)
     prev_week_end = this_week_start - timedelta(days=1)
     prev_week_start = prev_week_end - timedelta(days=6)
@@ -163,7 +164,7 @@ async def compare_periods(
     user: User = Depends(get_current_user),
 ):
     """This X days vs previous X days — same shape as weekly but with custom window."""
-    today = date.today()
+    today = user_today(user)
     a_start = today - timedelta(days=window_days - 1)
     b_end = a_start - timedelta(days=1)
     b_start = b_end - timedelta(days=window_days - 1)

@@ -10,6 +10,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -20,7 +21,7 @@ async def export_csv(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    start_date = date.today() - timedelta(days=days - 1)
+    start_date = user_today(current_user) - timedelta(days=days - 1)
 
     result = await db.execute(
         select(DiaryEntry)
@@ -96,7 +97,7 @@ async def export_pdf(
             except Exception:
                 pass
 
-    today = _date.today()
+    today = user_today(user)
     since = today - _td(days=days - 1)
 
     # Diary daily aggregates

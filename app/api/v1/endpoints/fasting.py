@@ -9,6 +9,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.health import FastingSession
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/fasting", tags=["fasting"])
 
@@ -190,7 +191,7 @@ async def get_fasting_stats(
     streak = 0
     if completed:
         dates = sorted(set(s.started_at.date() for s in completed), reverse=True)
-        today = datetime.now(timezone.utc).date()
+        today = user_today(user)
         for i, d in enumerate(dates):
             expected = today - timedelta(days=i)
             if d == expected:

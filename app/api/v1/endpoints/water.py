@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.water import WaterEntry
 from app.schemas.water import WaterCreate, WaterEntryOut, WaterGoalUpdate, WaterGoalOut
+from app.core.timeutil import user_today, user_zone
 
 router = APIRouter(prefix="/water", tags=["water"])
 
@@ -67,8 +68,8 @@ async def water_today(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    today = date.today()
-    start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+    today = user_today(user)
+    start = datetime.combine(today, datetime.min.time(), tzinfo=user_zone(user))
     end = start + timedelta(days=1)
     rows = (await db.execute(
         select(WaterEntry)

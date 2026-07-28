@@ -18,6 +18,7 @@ from app.models.diary import DiaryEntry
 from app.models.water import WaterEntry
 from app.models.health import MoodEntry
 from app.models.quest import DailyQuest
+from app.core.timeutil import user_today, user_zone
 
 router = APIRouter(prefix="/leveling", tags=["leveling"])
 
@@ -92,7 +93,7 @@ async def quests_today(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    today = date.today()
+    today = user_today(user)
     existing = (await db.execute(
         select(DailyQuest).where(DailyQuest.user_id == user.id, DailyQuest.quest_date == today)
     )).scalars().all()
@@ -130,7 +131,7 @@ async def check_quest(
     if q.completed_at:
         return {"already_completed": True}
 
-    today = date.today()
+    today = user_today(user)
     done = False
     code = q.code
 
@@ -146,7 +147,7 @@ async def check_quest(
         ml = (await db.execute(
             select(func.coalesce(func.sum(WaterEntry.amount_ml), 0)).where(
                 WaterEntry.user_id == user.id,
-                WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc),
+                WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=user_zone(user)),
             )
         )).scalar() or 0
         goal = user.daily_water_goal_ml or (int((user.current_weight or 70) * 30))

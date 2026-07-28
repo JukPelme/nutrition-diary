@@ -38,6 +38,7 @@ from app.core.deps import get_current_user
 from app.core.deps import ai_limit
 from app.core.config import settings
 from app.db.session import get_db
+from app.core.timeutil import user_today
 from app.models.user import User
 from app.models.meal_plan import MealPlan
 from app.models.diary import DiaryEntry, Meal
@@ -110,7 +111,7 @@ async def _user_brief(db: AsyncSession, user: User) -> dict:
     )).all()
     age = None
     if user.birth_year:
-        age = date.today().year - user.birth_year
+        age = user_today(user).year - user.birth_year
     return {
         "age": age,
         "sex": user.sex,
@@ -143,7 +144,7 @@ async def generate_plan(
     if not api_key:
         raise HTTPException(503, "Meal plan requires ANTHROPIC_API_KEY")
 
-    start = data.start_date or date.today()
+    start = data.start_date or user_today(user)
     end = start + timedelta(days=data.days - 1)
 
     brief = await _user_brief(db, user)
@@ -224,7 +225,7 @@ async def current_plan(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    today = date.today()
+    today = user_today(user)
     mp = (await db.execute(
         select(MealPlan).where(
             MealPlan.user_id == user.id,

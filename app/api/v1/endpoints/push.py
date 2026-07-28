@@ -13,6 +13,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.push import PushSubscription, AppConfig
+from app.core.timeutil import user_today, user_now
 
 router = APIRouter(prefix="/push", tags=["push"])
 
@@ -164,7 +165,7 @@ async def send_reminders(
     import httpx
     from pywebpush import webpush, WebPushException
 
-    today = date.today()
+    today = user_today(user)
     total_cal = (await db.execute(
         select(func.coalesce(func.sum(DiaryEntry.calories), 0))
         .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date == today)
@@ -231,7 +232,7 @@ async def streak_warning(
     from app.models.diary import DiaryEntry
     from app.services.gamification import _all_entry_dates, _streak_lengths
 
-    today = _d.today()
+    today = user_today(user)
     dates = await _all_entry_dates(db, user.id)
     cur, _ = _streak_lengths(dates, today)
 
@@ -243,7 +244,7 @@ async def streak_warning(
     if today_count > 0 or cur < 3:
         return {"skipped": "no_warning_needed", "current_streak": cur, "today_count": today_count}
 
-    now = _dt.now()
+    now = user_now(user)
     hours_left = 24 - now.hour
     if hours_left > 6:
         return {"skipped": "too_early", "hours_left": hours_left}
@@ -289,7 +290,7 @@ async def meal_time_reminder(
     from sqlalchemy import func, distinct, extract
     from app.models.diary import DiaryEntry
 
-    today = _d.today()
+    today = user_today(user)
     since = today - _td(days=14)
 
     # Average meal hour per meal_id over last 14 days
@@ -310,7 +311,7 @@ async def meal_time_reminder(
         .where(DiaryEntry.user_id == user.id, DiaryEntry.entry_date == today)
     )).all()}
 
-    now_h = _dt.now().hour
+    now_h = user_now(user).hour
     overdue = []
     for meal_id, avg_h in rows:
         if not avg_h or meal_id in today_meals:

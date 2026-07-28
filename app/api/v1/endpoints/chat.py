@@ -23,6 +23,7 @@ from app.models.diary import DiaryEntry
 from app.models.health import MoodEntry, FastingSession, ICD11Condition, UserCondition
 from app.models.water import WaterEntry
 from app.models.chat import ChatMessage
+from app.core.timeutil import user_today, user_zone
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -40,7 +41,7 @@ class ChatOut(BaseModel):
 
 
 async def _build_context(db: AsyncSession, user: User) -> dict:
-    today = date.today()
+    today = user_today(user)
     week_ago = today - timedelta(days=7)
 
     # Last 7 days totals per day
@@ -75,7 +76,7 @@ async def _build_context(db: AsyncSession, user: User) -> dict:
     water_today = (await db.execute(
         select(func.sum(WaterEntry.amount_ml))
         .where(WaterEntry.user_id == user.id,
-               WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc))
+               WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=user_zone(user)))
     )).scalar() or 0
 
     # Latest mood (yesterday or today)

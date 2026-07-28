@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
@@ -46,7 +47,7 @@ async def auto_goals(user: User = Depends(get_current_user)):
     if missing:
         return {"ready": False, "missing": missing, "message": "Заполните рост, вес, год рождения и пол в Профиле"}
 
-    age = date.today().year - user.birth_year
+    age = user_today(user).year - user.birth_year
     if user.sex == "male":
         bmr = 10 * user.current_weight + 6.25 * user.height - 5 * age + 5
     elif user.sex == "female":

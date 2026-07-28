@@ -237,6 +237,15 @@ async def update_me(
         if lang and lang not in {"ru", "en", "ja"}:
             raise HTTPException(status_code=400, detail="Unsupported language")
         current_user.preferred_language = lang
+    if data.timezone is not None:
+        tzname = data.timezone.strip() or None
+        if tzname:
+            from zoneinfo import ZoneInfo
+            try:
+                ZoneInfo(tzname)
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid timezone")
+        current_user.timezone = tzname
     if data.username is not None:
         new_username = data.username.strip() or None
         if new_username and new_username != current_user.username:

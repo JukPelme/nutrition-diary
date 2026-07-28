@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry
 from app.models.health import ICD11Condition, UserCondition
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 REC_TEMPLATES = {
@@ -82,7 +83,7 @@ async def get_recommendations(
     user: User = Depends(get_current_user),
 ):
     """Generate personalized recommendations based on recent diet and health."""
-    today = date.today()
+    today = user_today(user)
     week_ago = today - timedelta(days=7)
 
     # Daily totals first, then average across tracked days (correct daily KBJU)
