@@ -24,6 +24,7 @@ from app.models.diary import DiaryEntry
 from app.models.health import MoodEntry
 from app.models.device import HealthMetric
 from app.core.timeutil import user_today
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -138,7 +139,9 @@ async def weekly_report(
                     },
                 )
                 if r.status_code < 400:
-                    narrative = r.json()["content"][0]["text"].strip()
+                    j = r.json()
+                    narrative = j["content"][0]["text"].strip()
+                    await log_ai_response(user.id, "weekly_report", "claude-haiku-4-5-20251001", j)
         except Exception:
             pass
 

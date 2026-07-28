@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models.user import User
 from app.models.product import Product
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/products", tags=["alternatives"])
 
@@ -72,7 +73,9 @@ async def alternatives(
             )
             if r.status_code >= 400:
                 raise HTTPException(502, f"AI service error (upstream {r.status_code})")
-            text = r.json()["content"][0]["text"].strip()
+            j = r.json()
+            text = j["content"][0]["text"].strip()
+            await log_ai_response(user.id, "alternatives", "claude-haiku-4-5-20251001", j)
             if text.startswith("```"):
                 text = text.split("\n", 1)[-1]
                 if text.endswith("```"): text = text.rsplit("```", 1)[0]

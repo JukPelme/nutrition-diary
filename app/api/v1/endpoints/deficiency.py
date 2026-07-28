@@ -21,6 +21,7 @@ from app.models.user import User
 from app.models.diary import DiaryEntry
 from app.models.product import Product
 from app.core.timeutil import user_today
+from app.services.ai_cache import log_ai_response
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -143,6 +144,7 @@ async def deficiencies(
                 raise HTTPException(502, f"AI service error (upstream {r.status_code})")
             j = r.json()
             text = j["content"][0]["text"]
+            await log_ai_response(user.id, "deficiency", "claude-haiku-4-5-20251001", j)
     except HTTPException:
         raise
     except Exception as e:

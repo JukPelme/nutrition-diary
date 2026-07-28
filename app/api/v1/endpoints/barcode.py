@@ -29,6 +29,7 @@ async def scan_barcode(
 from fastapi import UploadFile, File, status as fa_status
 from app.services.food_recognition_service import settings as _settings
 import base64, httpx, re as _re
+from app.services.ai_cache import log_ai_response
 
 
 @router.post("/decode-image")
@@ -81,7 +82,9 @@ async def decode_barcode_image(
             if r.status_code >= 400:
                 return {"barcode": None, "raw": None, "product": None,
                         "error": f"Vision API error (upstream {r.status_code})"}
-            text = r.json()["content"][0]["text"].strip()
+            _bj = r.json()
+            text = _bj["content"][0]["text"].strip()
+            await log_ai_response(user.id, "barcode", "claude-sonnet-4-6", _bj)
         except Exception as e:
             return {"barcode": None, "raw": None, "product": None, "error": f"Vision call failed: {e}"}
 
