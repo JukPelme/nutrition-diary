@@ -8,6 +8,21 @@ async function apiQueued(path, options = {}) {
     // Reads always go through normal api() (use local fallbacks separately if needed)
     if (method === 'GET') return api(path, options);
 
+    // Stable idempotency key for diary writes: the immediate attempt and any
+    // queued replay (lost response / background sync / second tab) share it,
+    // so the server dedupes instead of creating a duplicate entry.
+    if (path.startsWith('/diary') && options.body) {
+        try {
+            const parsed = JSON.parse(options.body);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && !parsed.client_op_id) {
+                parsed.client_op_id = (self.crypto && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+                options = { ...options, body: JSON.stringify(parsed) };
+            }
+        } catch (_) { /* non-JSON body — leave as-is */ }
+    }
+
     if (!navigator.onLine) {
         await dexieDB.syncQueue.add({
             method, path,
@@ -42,6 +57,14 @@ async function apiQueued(path, options = {}) {
 
 let _syncing = false;
 async function flushSyncQueue() {
+    // Cross-tab guard: only one tab flushes the shared IndexedDB queue at a time.
+    if (navigator.locks && navigator.locks.request) {
+        return navigator.locks.request('nd-sync-flush', { ifAvailable: true }, (lock) =>
+            lock ? _flushSyncQueueInner() : 0);
+    }
+    return _flushSyncQueueInner();
+}
+async function _flushSyncQueueInner() {
     if (_syncing || !navigator.onLine) return;
     _syncing = true;
     let synced = 0;
@@ -69,7 +92,18 @@ async function flushSyncQueue() {
     if (synced > 0) {
         showToast(`Синхронизировано: ${synced} ${synced === 1 ? 'изменение' : 'изменений'}`);
     }
+    const failedCount = await dexieDB.syncQueue.where('status').equals('failed').count();
+    if (failedCount > 0) {
+        showActionToast(`${failedCount} не синхронизировано`, 'Повторить', retryFailedSync);
+    }
     return synced;
+}
+
+async function retryFailedSync() {
+    const failed = await dexieDB.syncQueue.where('status').equals('failed').toArray();
+    for (const it of failed) await dexieDB.syncQueue.update(it.id, { status: 'pending', error: null });
+    await refreshQueueCount();
+    await flushSyncQueue();
 }
 
 function showToast(msg) {
