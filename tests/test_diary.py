@@ -190,3 +190,35 @@ async def test_recent_empty_for_new_user(auth_client):
 async def test_recent_requires_auth(client):
     r = await client.get("/api/v1/diary/recent")
     assert r.status_code in (401, 403)
+
+
+# ---- Offline idempotency (client_op_id dedupe) ----
+async def test_client_op_id_dedupes_replay(auth_client):
+    client, _, _ = auth_client
+    payload = _entry(client_op_id="op-fixed-123", calories=200)
+    r1 = await client.post("/api/v1/diary", json=payload)
+    assert r1.status_code == 201, r1.text
+    id1 = r1.json()["id"]
+    # replaying the same queued write must NOT create a duplicate
+    r2 = await client.post("/api/v1/diary", json=payload)
+    assert r2.status_code == 201, r2.text
+    assert r2.json()["id"] == id1
+    g = await client.get("/api/v1/diary", params={"entry_date": DAY})
+    assert len(g.json()) == 1
+
+
+async def test_different_op_ids_create_two(auth_client):
+    client, _, _ = auth_client
+    await client.post("/api/v1/diary", json=_entry(client_op_id="op-a"))
+    await client.post("/api/v1/diary", json=_entry(client_op_id="op-b"))
+    g = await client.get("/api/v1/diary", params={"entry_date": DAY})
+    assert len(g.json()) == 2
+
+
+async def test_null_op_ids_are_distinct(auth_client):
+    client, _, _ = auth_client
+    # no op id → each write is its own row (NULLs distinct under the unique constraint)
+    await client.post("/api/v1/diary", json=_entry())
+    await client.post("/api/v1/diary", json=_entry())
+    g = await client.get("/api/v1/diary", params={"entry_date": DAY})
+    assert len(g.json()) == 2
