@@ -71,7 +71,7 @@ async def alternatives(
                 },
             )
             if r.status_code >= 400:
-                raise HTTPException(502, f"Claude {r.status_code}: {r.text[:200]}")
+                raise HTTPException(502, f"AI service error (upstream {r.status_code})")
             text = r.json()["content"][0]["text"].strip()
             if text.startswith("```"):
                 text = text.split("\n", 1)[-1]

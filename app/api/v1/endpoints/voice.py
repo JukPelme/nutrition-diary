@@ -70,7 +70,7 @@ async def parse_voice(
             content=audio,
         )
         if r.status_code >= 400:
-            raise HTTPException(502, f"Deepgram {r.status_code}: {r.text[:200]}")
+            raise HTTPException(502, f"Transcription service error (upstream {r.status_code})")
         dg = r.json()
         try:
             transcript = dg["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
@@ -192,7 +192,7 @@ async def parse_any(
             content=audio,
         )
         if r.status_code >= 400:
-            raise HTTPException(502, f"Deepgram {r.status_code}: {r.text[:200]}")
+            raise HTTPException(502, f"Transcription service error (upstream {r.status_code})")
         try:
             transcript = r.json()["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
         except Exception:

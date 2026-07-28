@@ -14,7 +14,8 @@ def _normalize_db_url(url: str) -> str:
 class Settings(BaseSettings):
     app_name: str = "Nutrition Diary API"
     version: str = "0.1.0"
-    debug: bool = True
+    debug: bool = False
+    sql_echo: bool = False  # never tie SQL echo to debug — it logs bind params (password hashes, diary data)
 
     # Database
     database_url: str = "sqlite+aiosqlite:///nutrition_diary.db"
@@ -47,10 +48,13 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Fail-fast: never let production boot with the default secret key.
-# Guards against a deploy that forgot to set SECRET_KEY env var.
-if not settings.debug and settings.secret_key == "change-me-in-production":
+# Fail-fast: never let a real server deployment boot with the default secret key.
+# Keyed on a non-SQLite (server/Postgres) database rather than DEBUG, so a deploy
+# that forgot both SECRET_KEY and DEBUG can't silently sign JWTs with a known key.
+# Desktop builds run on SQLite (local, single-user) and are intentionally exempt.
+_is_server_db = "sqlite" not in settings.database_url
+if _is_server_db and settings.secret_key == "change-me-in-production":
     raise RuntimeError(
-        "SECRET_KEY is still the insecure default while DEBUG=false. "
+        "SECRET_KEY is still the insecure default on a server database. "
         "Set a strong SECRET_KEY env var before running in production."
     )

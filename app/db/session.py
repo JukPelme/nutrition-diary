@@ -7,11 +7,14 @@ connect_args = {}
 if is_sqlite():
     connect_args["check_same_thread"] = False
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    connect_args=connect_args,
-)
+_engine_kwargs = {"echo": settings.sql_echo, "connect_args": connect_args}
+if not is_sqlite():
+    # Railway Postgres drops idle connections; pre-ping avoids
+    # "server closed the connection unexpectedly" after idle periods.
+    _engine_kwargs["pool_pre_ping"] = True
+    _engine_kwargs["pool_recycle"] = 300
+
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
 
 # Enable foreign key enforcement for SQLite
 if is_sqlite():

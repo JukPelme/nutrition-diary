@@ -80,7 +80,7 @@ async def decode_barcode_image(
             )
             if r.status_code >= 400:
                 return {"barcode": None, "raw": None, "product": None,
-                        "error": f"Vision API error: {r.status_code} {r.text[:150]}"}
+                        "error": f"Vision API error (upstream {r.status_code})"}
             text = r.json()["content"][0]["text"].strip()
         except Exception as e:
             return {"barcode": None, "raw": None, "product": None, "error": f"Vision call failed: {e}"}

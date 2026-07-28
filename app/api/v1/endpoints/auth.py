@@ -68,6 +68,17 @@ async def register(data: UserRegister, request: Request, db: AsyncSession = Depe
 
 MAX_FAIL = 5
 LOCK_MINUTES = 15
+# Precomputed hash so login runs bcrypt even for unknown users (constant-time, blocks enumeration).
+_DUMMY_HASH = hash_password("timing-equalizer-not-a-real-password")
+
+def _is_demo(user) -> bool:
+    """Published demo creds must not be lock-out-able (DoS on a public account)."""
+    return (getattr(user, "username", "") or "").lower() == "demo" or (getattr(user, "email", "") or "").lower().startswith("demo@")
+
+def _aware(dt):
+    """SQLite returns naive datetimes for tz-aware columns; we always store UTC,
+    so treat a naive value as UTC to avoid naive/aware comparison TypeErrors."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def _client_ip(req: Request) -> str:
@@ -100,24 +111,35 @@ async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(ge
     user = (await db.execute(query)).scalar_one_or_none()
 
     # Account lockout
-    if user and user.locked_until and user.locked_until > datetime.now(timezone.utc):
+    if user and user.locked_until and _aware(user.locked_until) > datetime.now(timezone.utc):
         await _log_login(db, user_id=user.id, identifier=data.login, ip=ip, ua=ua, status="locked")
         await db.commit()
         raise HTTPException(status_code=423, detail=f"Account temporarily locked, try later")
 
-    if not user or not verify_password(data.password, user.hashed_password):
+    if user:
+        password_ok = verify_password(data.password, user.hashed_password)
+    else:
+        verify_password(data.password, _DUMMY_HASH)  # run bcrypt anyway → constant time
+        password_ok = False
+    if not password_ok:
         if user:
             user.failed_login_count = (user.failed_login_count or 0) + 1
-            if user.failed_login_count >= MAX_FAIL:
+            if user.failed_login_count >= MAX_FAIL and not _is_demo(user):
                 user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCK_MINUTES)
         await _log_login(db, user_id=user.id if user else None, identifier=data.login, ip=ip, ua=ua, status="failed")
         await db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    # 2FA gate
+    # 2FA gate — a wrong code must also count toward lockout and be audited,
+    # otherwise the 6-digit TOTP can be brute-forced with zero trace.
     if user.totp_enabled and user.totp_secret:
         import pyotp
         if not data.totp_code or not pyotp.TOTP(user.totp_secret).verify(data.totp_code, valid_window=1):
+            user.failed_login_count = (user.failed_login_count or 0) + 1
+            if user.failed_login_count >= MAX_FAIL and not _is_demo(user):
+                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCK_MINUTES)
+            await _log_login(db, user_id=user.id, identifier=data.login, ip=ip, ua=ua, status="totp_failed")
+            await db.commit()
             raise HTTPException(status_code=401, detail="totp_required")
     # Successful login — reset counter, clear lockout
     user.failed_login_count = 0
