@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import String, Float, Date, DateTime, ForeignKey, Integer, UniqueConstraint, Index
 from app.db.compat import UUIDType, JSONType, server_now, python_now
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
@@ -21,7 +21,9 @@ class Meal(Base):
 
     # Relationships
     user = relationship("User", back_populates="meals")
-    entries = relationship("DiaryEntry", back_populates="meal", lazy="selectin")
+    # Never eager/lazy-load the full history on GET /meals. Load entries explicitly
+    # (by date) where needed; passive_deletes relies on the DB SET NULL on meal_id.
+    entries = relationship("DiaryEntry", back_populates="meal", lazy="raise", passive_deletes=True)
 
     __table_args__ = (
         UniqueConstraint("user_id", "name", name="uq_meal_user_name"),
@@ -55,6 +57,12 @@ class DiaryEntry(Base):
     user = relationship("User", back_populates="diary_entries")
     meal = relationship("Meal", back_populates="entries")
     product = relationship("Product")
+
+    __table_args__ = (
+        # Hottest query filters user_id + entry_date together (get_entries_by_date,
+        # get_recent_days). One composite index beats two single-column ones.
+        Index("ix_diary_user_date", "user_id", "entry_date"),
+    )
 
     # Transient (not persisted) — set by diary_service.create_entry so the API
     # can tell the client how much water was auto-logged and let it be undone.
