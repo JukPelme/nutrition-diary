@@ -24,6 +24,7 @@ from app.models.user import User
 from app.models.diary import DiaryEntry
 from app.models.water import WaterEntry
 from app.models.health import ICD11Condition, UserCondition
+from app.core.timeutil import user_today, user_now, user_zone
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -38,7 +39,7 @@ async def coach_tip(
     if not api_key:
         raise HTTPException(503, "ANTHROPIC_API_KEY required")
 
-    today = date.today()
+    today = user_today(user)
     totals = (await db.execute(
         select(
             func.coalesce(func.sum(DiaryEntry.calories), 0),
@@ -51,7 +52,7 @@ async def coach_tip(
     water_ml = (await db.execute(
         select(func.coalesce(func.sum(WaterEntry.amount_ml), 0))
         .where(WaterEntry.user_id == user.id,
-               WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc))
+               WaterEntry.drunk_at >= datetime.combine(today, datetime.min.time(), tzinfo=user_zone(user)))
     )).scalar() or 0
 
     conds = (await db.execute(
@@ -61,7 +62,7 @@ async def coach_tip(
 
     water_goal = user.daily_water_goal_ml or (int(user.current_weight * 30) if user.current_weight else 2000)
     ctx = {
-        "hour_of_day": datetime.now().hour,
+        "hour_of_day": user_now(user).hour,
         "today_kcal": int(totals[0] or 0),
         "today_protein_g": round(float(totals[1] or 0), 1),
         "today_fat_g": round(float(totals[2] or 0), 1),

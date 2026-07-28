@@ -6,6 +6,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
@@ -71,7 +72,7 @@ async def get_week_stats(
     user: User = Depends(get_current_user),
 ):
     """Shortcut: stats for current week (Mon-Sun)."""
-    today = date.today()
+    today = user_today(user)
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
 
@@ -110,7 +111,7 @@ async def heatmap(
 ):
     """Per-day entry counts for the last N days (GitHub-style heatmap)."""
     days = max(7, min(days, 365))
-    today = _date.today()
+    today = user_today(user)
     since = today - _td(days=days - 1)
     rows = (await db.execute(
         _sel(_DE.entry_date.label("d"), _func.count(_DE.id).label("n"))

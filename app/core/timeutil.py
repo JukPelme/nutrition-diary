@@ -21,6 +21,11 @@ def _zone(arg=None):
         return timezone.utc
 
 
+def user_zone(user_or_tz=None):
+    """tzinfo for the user (UTC fallback) — for day-boundary datetimes."""
+    return _zone(user_or_tz)
+
+
 def user_now(user_or_tz=None) -> datetime:
     """Aware 'now' in the user's timezone (UTC if unset/invalid)."""
     return datetime.now(_zone(user_or_tz))

@@ -12,6 +12,7 @@ from app.db.session import engine
 from app.models.user import User
 from app.models.diary import DiaryEntry, Meal
 from app.core.config import settings
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/bot", tags=["bot"])
 
@@ -60,7 +61,7 @@ async def bot_add_food(data: BotFoodEntry, x_bot_token: str = Header(...)):
         entry = DiaryEntry(
             user_id=user.id,
             meal_id=meal.id if meal else None,
-            entry_date=date.today(),
+            entry_date=user_today(user),
             product_name=data.product_name,
             serving_amount=data.serving_amount,
             calories=data.calories,
@@ -89,7 +90,7 @@ async def bot_summary(email: str, x_bot_token: str = Header(...)):
         result = await db.execute(
             select(DiaryEntry).where(
                 DiaryEntry.user_id == user.id,
-                DiaryEntry.entry_date == date.today(),
+                DiaryEntry.entry_date == user_today(user),
             )
         )
         entries = result.scalars().all()
@@ -100,7 +101,7 @@ async def bot_summary(email: str, x_bot_token: str = Header(...)):
     total_c = sum(e.carbohydrates for e in entries)
 
     return {
-        "date": str(date.today()),
+        "date": str(user_today(user)),
         "entries_count": len(entries),
         "calories": round(total_cal, 1),
         "protein": round(total_p, 1),

@@ -20,6 +20,7 @@ from app.models.water import WaterEntry
 from app.models.health import MoodEntry, FastingSession
 from app.models.recipe import Recipe
 from app.models.achievement import Achievement, UserAchievement
+from app.core.timeutil import user_today
 
 
 # Catalog of all achievements. Auto-seeded into achievements table at startup.
@@ -182,7 +183,7 @@ def _streak_lengths(dates: list[date], today: date) -> tuple[int, int]:
 
 
 async def get_streak(db: AsyncSession, user: User) -> dict:
-    today = date.today()
+    today = user_today(user)
     dates = await _all_entry_dates(db, user.id)
     current, longest = _streak_lengths(dates, today)
     last_7 = {today - timedelta(days=i) for i in range(7)}
@@ -253,7 +254,7 @@ async def check_and_award(db: AsyncSession, user: User) -> list[str]:
     earned_ids = {r[0] for r in earned_rows}
     earned_codes = {a.code for a in catalog if a.id in earned_ids}
 
-    today = date.today()
+    today = user_today(user)
     # ---- Diary stats ----
     entry_count = (await db.execute(
         select(func.count(DiaryEntry.id)).where(DiaryEntry.user_id == user.id)

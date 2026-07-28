@@ -20,6 +20,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.diary import DiaryEntry
 from app.models.product import Product
+from app.core.timeutil import user_today
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -61,7 +62,7 @@ async def deficiencies(
     if not api_key:
         raise HTTPException(503, "ANTHROPIC_API_KEY required")
 
-    since = date.today() - timedelta(days=days - 1)
+    since = user_today(user) - timedelta(days=days - 1)
 
     rows = (await db.execute(
         select(
