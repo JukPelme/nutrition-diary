@@ -75,6 +75,11 @@ def _is_demo(user) -> bool:
     """Published demo creds must not be lock-out-able (DoS on a public account)."""
     return (getattr(user, "username", "") or "").lower() == "demo" or (getattr(user, "email", "") or "").lower().startswith("demo@")
 
+def _aware(dt):
+    """SQLite returns naive datetimes for tz-aware columns; we always store UTC,
+    so treat a naive value as UTC to avoid naive/aware comparison TypeErrors."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
 
 def _client_ip(req: Request) -> str:
     fwd = req.headers.get("x-forwarded-for")
@@ -106,7 +111,7 @@ async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(ge
     user = (await db.execute(query)).scalar_one_or_none()
 
     # Account lockout
-    if user and user.locked_until and user.locked_until > datetime.now(timezone.utc):
+    if user and user.locked_until and _aware(user.locked_until) > datetime.now(timezone.utc):
         await _log_login(db, user_id=user.id, identifier=data.login, ip=ip, ua=ua, status="locked")
         await db.commit()
         raise HTTPException(status_code=423, detail=f"Account temporarily locked, try later")
