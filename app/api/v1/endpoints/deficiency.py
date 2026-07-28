@@ -139,7 +139,7 @@ async def deficiencies(
                 },
             )
             if r.status_code >= 400:
-                raise HTTPException(502, f"Claude {r.status_code}: {r.text[:200]}")
+                raise HTTPException(502, f"AI service error (upstream {r.status_code})")
             j = r.json()
             text = j["content"][0]["text"]
     except HTTPException:

@@ -199,7 +199,7 @@ async def chat_send(
                 },
             )
             if r.status_code >= 400:
-                raise HTTPException(502, f"Claude {r.status_code}: {r.text[:200]}")
+                raise HTTPException(502, f"AI service error (upstream {r.status_code})")
             j = r.json()
             reply = j["content"][0]["text"].strip()
             tokens = (j.get("usage") or {}).get("output_tokens")

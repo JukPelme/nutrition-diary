@@ -267,7 +267,7 @@ async def import_recipe_url(
                 },
             )
             if ar.status_code >= 400:
-                raise HTTPException(502, f"Claude {ar.status_code}: {ar.text[:200]}")
+                raise HTTPException(502, f"AI service error (upstream {ar.status_code})")
             text = ar.json()["content"][0]["text"].strip()
     except HTTPException:
         raise
