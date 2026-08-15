@@ -42,3 +42,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 .venv/
+_rdz_preview.db
+_redesign_preview.db
+e2e_test.db
