@@ -184,29 +184,14 @@ async def add_recipe_to_diary(
 # ---- Import recipe from a URL via Claude ----
 import json as _json
 import httpx as _httpx
-import ipaddress as _ipaddress
-import socket as _socket
-from urllib.parse import urlparse as _urlparse
+from pydantic import ValidationError as _ValidationError
 
 
-def _validate_public_url(url: str):
-    """Block SSRF: only http/https to publicly-routable hosts. Rejects
-    localhost, private/link-local (cloud metadata 169.254.169.254), reserved."""
-    parsed = _urlparse(url)
-    if parsed.scheme not in ("http", "https"):
-        raise HTTPException(400, "Only http/https URLs are allowed")
-    host = parsed.hostname
-    if not host:
-        raise HTTPException(400, "Invalid URL")
-    try:
-        infos = _socket.getaddrinfo(host, None)
-    except _socket.gaierror:
-        raise HTTPException(400, "Cannot resolve host")
-    for info in infos:
-        ip = _ipaddress.ip_address(info[4][0])
-        if (ip.is_private or ip.is_loopback or ip.is_link_local
-                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
-            raise HTTPException(400, "URL resolves to a non-public address")
+from app.core.safe_fetch import (
+    assert_public_url,
+    fetch_recipe_html,
+    ExtractedRecipe,
+)
 from app.core.config import settings as _settings
 
 
@@ -222,24 +207,11 @@ async def import_recipe_url(
     user: User = Depends(get_current_user),
 ):
     """Fetch a recipe page, let Claude extract structured data, save as Recipe."""
-    _validate_public_url(data.url)
+    assert_public_url(data.url)
     if not _settings.anthropic_api_key:
         raise HTTPException(503, "ANTHROPIC_API_KEY required")
 
-    try:
-        async with _httpx.AsyncClient(timeout=15, follow_redirects=False,
-                                      headers={"User-Agent": "Mozilla/5.0 NutritionDiary/1.0"}) as cli:
-            r = await cli.get(data.url)
-            if r.status_code >= 300:
-                # fallback: r.jina.ai proxy
-                rj = await cli.get("https://r.jina.ai/" + data.url)
-                if rj.status_code >= 400:
-                    raise HTTPException(400, f"Cannot fetch URL ({r.status_code})")
-                html = rj.text[:50000]
-            else:
-                html = r.text[:50000]
-    except _httpx.HTTPError as e:
-        raise HTTPException(400, f"Fetch failed: {e}")
+    html = await fetch_recipe_html(data.url)
 
     sys_prompt = (
         "Извлеки рецепт из HTML страницы. Верни ТОЛЬКО JSON, без markdown:\n"
@@ -286,15 +258,17 @@ async def import_recipe_url(
     except Exception:
         raise HTTPException(502, f"Bad JSON from model: {text[:200]}")
 
-    if parsed.get("error"):
+    if isinstance(parsed, dict) and parsed.get("error"):
         raise HTTPException(404, parsed["error"])
 
-    name = (parsed.get("name") or "").strip()
-    total_w = float(parsed.get("total_weight_g") or 0)
-    servings = int(parsed.get("servings") or 1)
-    ings = parsed.get("ingredients") or []
-    if not name or not ings or total_w <= 0:
+    try:
+        extracted = ExtractedRecipe.model_validate(parsed)
+    except _ValidationError:
         raise HTTPException(422, "Recipe data incomplete")
+    name = extracted.name
+    total_w = extracted.total_weight_g
+    servings = extracted.servings
+    ings = [{"name": ig.name, "amount_g": ig.amount_g} for ig in extracted.ingredients]
 
     recipe = Recipe(id=uuid4(), user_id=user.id, name=name[:255],
                     total_weight_g=total_w, servings=servings)
