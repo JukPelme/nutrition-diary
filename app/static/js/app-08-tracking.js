@@ -557,7 +557,7 @@ function offerUpdate(newVersion) {
     if (document.getElementById('update-banner')) return;
     const banner = document.createElement('div');
     banner.id = 'update-banner';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--accent);color:#fff;padding:10px 14px;text-align:center;z-index:300;font-size:13px;display:flex;gap:12px;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--accent);color:var(--on-accent);padding:10px 14px;text-align:center;z-index:300;font-size:13px;display:flex;gap:12px;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     banner.innerHTML = `Доступна новая версия (${newVersion}) <button onclick="hardRefresh()" style="background:#fff;color:var(--accent);border:none;border-radius:8px;padding:6px 12px;font-weight:600;cursor:pointer">Обновить</button>`;
     document.body.appendChild(banner);
 }
