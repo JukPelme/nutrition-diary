@@ -15,7 +15,7 @@ function _attrJSON(o) {
 // ---- Theme & Accent ----
 function initTheme() {
     const theme = localStorage.getItem('theme') || 'dark';
-    const accent = localStorage.getItem('accent') || 'blue';
+    const accent = localStorage.getItem('accent') || 'lime';
     applyTheme(theme);
     applyAccent(accent);
 }
@@ -35,7 +35,7 @@ function applyTheme(theme) {
     if (amoledBtn) amoledBtn.classList.toggle('active', theme === 'amoled');
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-        meta.content = theme === 'light' ? '#ffffff' : (theme === 'amoled' ? '#000000' : '#0f1117');
+        meta.content = theme === 'light' ? '#ffffff' : (theme === 'amoled' ? '#000000' : '#0E1116');
     }
 }
 
