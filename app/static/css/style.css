@@ -257,6 +257,7 @@ a { color:var(--accent); text-decoration:none; }
 .accent-dot { width:32px; height:32px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all 0.2s; }
 .accent-dot:hover { transform:scale(1.15); }
 .accent-dot.active { border-color:var(--text); transform:scale(1.15); }
+.accent-dot[data-color="lime"]   { background:#A3E635; }
 .accent-dot[data-color="blue"]   { background:#4f8cff; }
 .accent-dot[data-color="green"]  { background:#34d399; }
 .accent-dot[data-color="purple"] { background:#a78bfa; }
@@ -858,3 +859,17 @@ button:focus-visible,
 .btn-mini { flex:0 0 auto; background:var(--bg2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap; }
 .btn-mini:active { transform:scale(0.96); }
 .btn-mini-accent { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+
+/* ---- Desktop diary: full-width hero banner + two-column widgets below (redesign) ---- */
+@media (min-width: 900px) {
+    .main-content { max-width: 1040px; }
+    /* Grid auto-placement respects `order` (order-modified document order), so the
+       hero + date-nav (order -3/-2) land first and span both columns; everything
+       else keeps its natural DOM order and auto-fills the 2-column grid row by row. */
+    #diary-view { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-items: start; }
+    #diary-view .summary-card { grid-column: 1 / -1; order: -3; flex-direction: row; justify-content: center; gap: 40px; padding: 26px 40px; }
+    #diary-view .summary-card .macros { max-width: 420px; }
+    #diary-view .date-nav { grid-column: 1 / -1; order: -2; margin-top: 4px; }
+    /* the bottom pill stays centered but narrower on wide screens */
+    .bottom-nav { max-width: 520px; }
+}

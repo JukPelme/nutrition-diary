@@ -172,7 +172,7 @@ function renderBMI(weight, heightCm) { renderBodyComposition(); }
 function openSettings() {
     document.getElementById('settings-modal').classList.add('active');
     applyTheme(localStorage.getItem('theme') || 'dark');
-    applyAccent(localStorage.getItem('accent') || 'blue');
+    applyAccent(localStorage.getItem('accent') || 'lime');
     updateNotifButton(localStorage.getItem('notificationsEnabled') === 'true');
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
     const af = document.getElementById('setting-auto-fluid');

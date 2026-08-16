@@ -1,47 +1,40 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-*.egg-info/
-dist/
-build/
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Docker
-docker-compose.override.yml
 
 # Database
-*.db
-*.sqlite3
-
+# Docker
+# Environment
+# IDE
 # Logs
-*.log
-logs/
-
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-
 # OS
+# Python
+# Testing
+*$py.class
+*.db
+*.egg-info/
+*.log
+*.py[cod]
+*.so
+*.sqlite3
+*.swo
+*.swp
 .DS_Store
-Thumbs.db
+.Python
+.coverage
+.env
+.env.*.local
+.env.local
+.idea/
+.pytest_cache/
 .venv/
+.vscode/
+Thumbs.db
+__pycache__/
 _rdz_preview.db
 _redesign_preview.db
+build/
+dist/
+docker-compose.override.yml
 e2e_test.db
+env/
+htmlcov/
+logs/
+venv/
