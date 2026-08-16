@@ -959,3 +959,10 @@ button:focus-visible,
     .header-action-label { display: none; }
     .header-action { padding: 6px; }
 }
+
+/* nav with 6 tabs + center FAB — tighten labels on narrow screens */
+@media (max-width: 560px) {
+    .bottom-nav .nav-label { font-size: 9px; }
+    .bottom-nav .nav-icon { font-size: 18px; }
+    .bottom-nav .nav-tab { padding: 10px 0; gap: 3px; }
+}

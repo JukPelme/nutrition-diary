@@ -374,8 +374,6 @@
 
     <!-- Bottom Navigation -->
     <div id="more-menu" class="more-menu hidden">
-        <div class="more-item" onclick="setActiveTab('nutrients'); closeMoreMenu()"><span>💊</span><span data-i18n="nutrients">Нутриенты</span></div>
-        <div class="more-item" onclick="setActiveTab('fasting'); closeMoreMenu()"><span>⏱</span><span data-i18n="fasting">Голодание</span></div>
         <div class="more-item" onclick="openChat(); closeMoreMenu()"><span>✨</span><span>AI-нутрициолог</span></div>
         <div class="more-item" onclick="openUniversalVoice(); closeMoreMenu()"><span>🎙</span><span>Голосовая запись</span></div>
     </div>
@@ -409,6 +407,9 @@
         <div class="nav-tab" data-tab="plan" onclick="setActiveTab('plan')">
             <div class="nav-icon">📅</div><div class="nav-label" data-i18n="plan">План</div>
         </div>
+        <div class="nav-tab" data-tab="nutrients" onclick="setActiveTab('nutrients')">
+            <div class="nav-icon">💊</div><div class="nav-label" data-i18n="nutrients">Нутриенты</div>
+        </div>
         <div class="nav-fab-wrap">
             <div class="nav-add" onclick="openAddSheet()" aria-label="Добавить">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>
@@ -416,6 +417,9 @@
         </div>
         <div class="nav-tab" data-tab="stats" onclick="setActiveTab('stats')">
             <div class="nav-icon">📊</div><div class="nav-label" data-i18n="stats">Статистика</div>
+        </div>
+        <div class="nav-tab" data-tab="fasting" onclick="setActiveTab('fasting')">
+            <div class="nav-icon">⏱</div><div class="nav-label" data-i18n="fasting">Голодание</div>
         </div>
         <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
             <div class="nav-icon">🏥</div><div class="nav-label" data-i18n="health">Здоровье</div>
