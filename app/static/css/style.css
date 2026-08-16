@@ -873,3 +873,79 @@ button:focus-visible,
     /* the bottom pill stays centered but narrower on wide screens */
     .bottom-nav { max-width: 520px; }
 }
+
+/* ================= Diary 1:1 redesign ================= */
+/* water + XP in one row */
+.wx-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; margin-bottom: 12px; }
+.wx-row > * { margin-bottom: 0 !important; }
+#xp-widget .card, #xp-widget { height: 100%; }
+
+/* meal cards (icon | name+composition | kcal/plus) */
+.meal-card { display: flex; align-items: center; gap: 13px; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 13px 14px; margin-bottom: 10px; cursor: pointer; transition: border-color .15s; }
+.meal-card:hover { border-color: rgba(255,255,255,.14); }
+.meal-card.empty { border-style: dashed; background: transparent; }
+.meal-ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex: none; }
+.meal-body { flex: 1; min-width: 0; }
+.meal-card .meal-name { font-size: 14.5px; font-weight: 700; }
+.meal-sub { color: var(--text2); font-size: 12px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-card.empty .meal-name { color: var(--text2); }
+.meal-right { display: flex; align-items: center; gap: 4px; flex: none; }
+.meal-kcal { font-weight: 700; font-size: 13.5px; }
+.meal-plus { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
+.meal-plus.filled { background: var(--accent); color: var(--on-accent); }
+.meal-plus.ghost { border: 1px dashed rgba(255,255,255,.18); color: var(--text2); }
+.meal-chev { color: var(--text2); font-size: 13px; margin-left: 2px; transition: transform .2s; }
+.meal-card.open .meal-chev { transform: rotate(90deg); }
+/* expanded entries + actions under a meal card */
+.meal-expand { margin: -4px 0 12px; padding: 4px 14px 12px; }
+.meal-expand .entry-row { padding: 9px 0; }
+.meal-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+/* meal section title */
+.meals-head { display: flex; align-items: center; justify-content: space-between; margin: 20px 4px 12px; }
+.meals-head h2 { font-size: 15px; font-weight: 700; }
+.meals-head .eaten { color: var(--text2); font-size: 12.5px; font-weight: 600; }
+
+/* bottom nav with a centered add FAB */
+.nav-fab-wrap { flex: none; display: flex; align-items: center; justify-content: center; }
+.nav-add { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--green)); display: grid; place-items: center; color: var(--on-accent); margin-top: -24px; border: 4px solid var(--bg); box-shadow: 0 8px 22px rgba(163,230,53,.4); cursor: pointer; }
+.nav-add svg { width: 26px; height: 26px; }
+
+/* add-food method sheet */
+.add-sheet-scrim { position: fixed; inset: 0; background: rgba(5,7,10,.68); z-index: 90; display: none; }
+.add-sheet-scrim.active { display: block; }
+.add-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 91; background: #12171E; border-top: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 12px 16px 24px; max-width: 480px; margin: 0 auto; transform: translateY(100%); transition: transform .25s; }
+.add-sheet.active { transform: translateY(0); }
+.add-sheet .handle { width: 42px; height: 4px; border-radius: 99px; background: rgba(255,255,255,.2); margin: 6px auto 14px; }
+.add-sheet h3 { font-size: 16px; font-weight: 800; margin: 0 4px 14px; }
+.sheet-opt { display: flex; align-items: center; gap: 14px; padding: 13px 14px; border-radius: 16px; background: var(--bg2); border: 1px solid var(--border); margin-bottom: 10px; cursor: pointer; }
+.sheet-opt:hover { border-color: rgba(255,255,255,.14); }
+.sheet-opt .oi { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 19px; flex: none; }
+.sheet-opt .ot { font-weight: 700; font-size: 14px; }
+.sheet-opt .od { color: var(--text2); font-size: 12px; margin-top: 2px; }
+
+/* diary block order (mobile): hero -> water/xp -> coach -> meals; secondary below */
+#diary-view { display: flex; flex-direction: column; }
+#diary-view .date-nav { order: 1; }
+#diary-view .summary-card { order: 2; }
+#diary-view .wx-row { order: 3; }
+#diary-view #coach-tip-widget { order: 4; }
+#diary-view .meals-head { order: 5; }
+#diary-view #meals-container { order: 6; }
+#diary-view #seasonal-card { order: 7; }
+#diary-view #streak-badge { order: 7; }
+#diary-view #quests-widget { order: 8; }
+#diary-view .mood-card { order: 9; }
+.cal-goal { display: block; font-size: 12px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+
+/* "More" dropdown menu */
+.more-menu { position: fixed; top: 60px; right: 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 6px; z-index: 80; box-shadow: 0 12px 34px rgba(0,0,0,.5); min-width: 180px; }
+.more-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.more-item:hover { background: var(--bg3); }
+
+/* side FABs retired — voice/AI now live in the + sheet and More menu */
+#uvoice-fab, #chat-fab { display: none; }
+@media (max-width: 560px) {
+    .header-action-label { display: none; }
+    .header-action { padding: 6px; }
+}
