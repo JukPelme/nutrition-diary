@@ -285,7 +285,7 @@ async function loadCoachTip() {
     const TWO_HOURS = 2 * 60 * 60 * 1000;
     const cachedTip = localStorage.getItem('coach_tip_text');
     if (cachedTip && Date.now() - last < TWO_HOURS) {
-        wrap.innerHTML = `<div class="card" style="background:linear-gradient(135deg,rgba(74,158,255,0.08),rgba(255,184,0,0.08));border-color:#4a9eff"><div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px">🧠</span><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:2px">${t('coachTip') || 'Совет на сейчас'}</div><div style="font-size:13px;line-height:1.4">${escapeHtml(cachedTip)}</div></div><button class="btn-icon" aria-label="Обновить" onclick="forceRefreshCoachTip()">↻</button></div></div>`;
+        wrap.innerHTML = `<div class="card" style="background:linear-gradient(135deg,rgba(163,230,53,0.08),rgba(52,211,153,0.06));border-color:rgba(163,230,53,0.28)"><div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px">🧠</span><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:2px">${t('coachTip') || 'Совет на сейчас'}</div><div style="font-size:13px;line-height:1.4">${escapeHtml(cachedTip)}</div></div><button class="btn-icon" aria-label="Обновить" onclick="forceRefreshCoachTip()">↻</button></div></div>`;
         return;
     }
     await forceRefreshCoachTip();
