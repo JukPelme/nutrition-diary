@@ -456,8 +456,8 @@ function injectXpAndQuests() {
         const xp = document.createElement('div'); xp.id = 'xp-widget';
         const seasonal = document.getElementById('seasonal-card');
         view.insertBefore(xp, seasonal || view.firstChild);
-        loadXpLevel();
     }
+    loadXpLevel();
     if (!document.getElementById('quests-widget')) {
         const q = document.createElement('div'); q.id = 'quests-widget';
         const streak = document.getElementById('streak-badge');

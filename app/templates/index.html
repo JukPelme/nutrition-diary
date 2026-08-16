@@ -64,6 +64,10 @@
                 <span class="offline-dot"></span>
                 <span class="offline-count" id="offline-count"></span>
             </div>
+            <button class="header-action" onclick="toggleMoreMenu(event)" title="Ещё">
+                <div class="header-action-icon">☰</div>
+                <div class="header-action-label">Ещё</div>
+            </button>
             <button class="header-action" onclick="openSettings()" title="Настройки">
                 <div class="header-action-icon">⚙</div>
                 <div class="header-action-label" data-i18n="settings">Настройки</div>
@@ -130,6 +134,7 @@
                     </div>
                 </div>
             </div>
+            <div class="wx-row">
             <div class="card water-card-v2">
                 <div class="water-header">
                     <span class="water-title" data-i18n="liquid">💧 Жидкость</span>
@@ -148,6 +153,8 @@
                     <button class="water-quick water-custom" onclick="addWaterCustom()" data-i18n="custom">＋ свой</button>
                 </div>
                 <div id="water-entries" class="water-entries"></div>
+            </div>
+                <div id="xp-widget"></div>
             </div>
             <!-- Mood tracker -->
             <div class="card mood-card">
@@ -180,6 +187,10 @@
                 </div>
             </div>
 
+            <div class="meals-head">
+                <h2 data-i18n="mealsTitle">Приёмы пищи</h2>
+                <span class="eaten" id="meals-eaten"></span>
+            </div>
             <div id="meals-container"></div>
         </div>
 
@@ -362,30 +373,52 @@
     <button id="chat-fab" class="chat-fab" aria-label="AI-нутрициолог" onclick="openChat()" title="AI-нутрициолог"><span class="chat-fab-icon">✨</span><span class="chat-fab-label">AI</span></button>
 
     <!-- Bottom Navigation -->
+    <div id="more-menu" class="more-menu hidden">
+        <div class="more-item" onclick="setActiveTab('nutrients'); closeMoreMenu()"><span>💊</span><span data-i18n="nutrients">Нутриенты</span></div>
+        <div class="more-item" onclick="setActiveTab('fasting'); closeMoreMenu()"><span>⏱</span><span data-i18n="fasting">Голодание</span></div>
+        <div class="more-item" onclick="openChat(); closeMoreMenu()"><span>✨</span><span>AI-нутрициолог</span></div>
+        <div class="more-item" onclick="openUniversalVoice(); closeMoreMenu()"><span>🎙</span><span>Голосовая запись</span></div>
+    </div>
+
+    <div id="add-sheet-scrim" class="add-sheet-scrim" onclick="closeAddSheet()"></div>
+    <div id="add-sheet" class="add-sheet">
+        <div class="handle"></div>
+        <h3 id="add-sheet-title">Добавить в дневник</h3>
+        <div class="sheet-opt" onclick="addSheetPick('search')">
+            <div class="oi" style="background:rgba(163,230,53,.15);color:var(--accent)">🔍</div>
+            <div><div class="ot">Поиск продукта</div><div class="od">Найти в базе продуктов</div></div>
+        </div>
+        <div class="sheet-opt" onclick="addSheetPick('camera')">
+            <div class="oi" style="background:rgba(96,165,250,.15);color:var(--protein)">📷</div>
+            <div><div class="ot">Камера и штрихкод</div><div class="od">Распознавание блюда · Claude Vision</div></div>
+        </div>
+        <div class="sheet-opt" onclick="addSheetPick('voice')">
+            <div class="oi" style="background:rgba(167,139,250,.16);color:#A78BFA">🎙</div>
+            <div><div class="ot">Голосом</div><div class="od">«съел два яйца и кофе»</div></div>
+        </div>
+        <div class="sheet-opt" onclick="addSheetPick('history')">
+            <div class="oi" style="background:rgba(251,191,36,.15);color:var(--fat)">📖</div>
+            <div><div class="ot">История и повтор</div><div class="od">Из прошлых дней</div></div>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <div class="nav-tab active" data-tab="diary" onclick="setActiveTab('diary')">
-            <div class="nav-icon">📖</div>
-            <div class="nav-label" data-i18n="diary">Дневник</div>
+            <div class="nav-icon">📖</div><div class="nav-label" data-i18n="diary">Дневник</div>
         </div>
         <div class="nav-tab" data-tab="plan" onclick="setActiveTab('plan')">
-            <div class="nav-icon">📅</div>
-            <div class="nav-label" data-i18n="plan">План</div>
+            <div class="nav-icon">📅</div><div class="nav-label" data-i18n="plan">План</div>
         </div>
-        <div class="nav-tab" data-tab="nutrients" onclick="setActiveTab('nutrients')">
-            <div class="nav-icon">💊</div>
-            <div class="nav-label" data-i18n="nutrients">Нутриенты</div>
+        <div class="nav-fab-wrap">
+            <div class="nav-add" onclick="openAddSheet()" aria-label="Добавить">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
         </div>
         <div class="nav-tab" data-tab="stats" onclick="setActiveTab('stats')">
-            <div class="nav-icon">📊</div>
-            <div class="nav-label" data-i18n="stats">Статистика</div>
-        </div>
-        <div class="nav-tab" data-tab="fasting" onclick="setActiveTab('fasting')">
-            <div class="nav-icon">⏱</div>
-            <div class="nav-label" data-i18n="fasting">Голодание</div>
+            <div class="nav-icon">📊</div><div class="nav-label" data-i18n="stats">Статистика</div>
         </div>
         <div class="nav-tab" data-tab="health" onclick="setActiveTab('health')">
-            <div class="nav-icon">🏥</div>
-            <div class="nav-label" data-i18n="health">Здоровье</div>
+            <div class="nav-icon">🏥</div><div class="nav-label" data-i18n="health">Здоровье</div>
         </div>
     </nav>
 

@@ -53,8 +53,8 @@ test("add a product to the diary (search -> portion -> add)", async ({ page }) =
   });
   expect(create.ok(), "product create failed").toBeTruthy();
 
-  // Open the add-food modal for the first meal (button is rendered by loadDiary)
-  await page.locator(".add-btn").first().click();
+  // Open the add-food modal: tapping an empty meal card triggers openAddFood (redesign)
+  await page.locator(".meal-card").first().click();
   await expect(page.locator("#add-food-modal")).toHaveClass(/active/);
 
   // Search and pick the product

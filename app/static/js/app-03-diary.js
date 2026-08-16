@@ -88,20 +88,28 @@ async function loadDiary() {
     loadMood();
 }
 
+let _lastSummary = null;
+window.expandedMeals = window.expandedMeals || new Set();
+const MEAL_TINT = { 'Завтрак':'rgba(251,191,36,.14)', 'Обед':'rgba(96,165,250,.14)', 'Ужин':'rgba(52,211,153,.14)', 'Перекус':'rgba(167,139,250,.16)' };
+
 function renderDiary(summary) {
+    _lastSummary = summary;
     document.getElementById('date-display').textContent = (typeof formatDateLocale === 'function' && currentLang !== 'ru') ? formatDateLocale(currentDate) : formatDate(currentDate);
 
     const cal = summary?.total_calories || 0;
     const goal = userGoals.calories;
     const pct = Math.min((cal / goal) * 100, 100);
     const circumference = 2 * Math.PI * 40;
-    const offset = circumference - (pct / 100) * circumference;
-
-    document.getElementById('cal-ring').setAttribute('stroke-dasharray', circumference);
-    document.getElementById('cal-ring').setAttribute('stroke-dashoffset', offset);
-    document.getElementById('cal-num').textContent = Math.round(cal);
-    document.getElementById('cal-left').textContent = `${typeof t === 'function' ? t('outOf') : 'из'} ${goal}`;
-    document.getElementById('cal-ring').style.stroke = pct >= 100 ? 'var(--red)' : 'var(--accent)';
+    const ring = document.getElementById('cal-ring');
+    ring.setAttribute('stroke-dasharray', circumference);
+    ring.setAttribute('stroke-dashoffset', circumference - (pct / 100) * circumference);
+    const remaining = Math.round(goal - cal);
+    document.getElementById('cal-num').textContent = remaining >= 0 ? remaining : 0;
+    const leftLabel = remaining >= 0 ? (typeof t === 'function' ? t('kcalLeft') : 'осталось, ккал')
+                                     : (typeof t === 'function' ? t('kcalOver') : 'перебор, ккал');
+    const goalWord = typeof t === 'function' ? t('goal') : 'цель';
+    document.getElementById('cal-left').innerHTML = leftLabel + `<span class="cal-goal">${Math.round(cal)} / ${goal} · ${goalWord}</span>`;
+    ring.style.stroke = cal >= goal ? 'var(--red)' : 'var(--accent)';
 
     const prot = Math.round(summary?.total_protein || 0);
     const fatVal = Math.round(summary?.total_fat || 0);
@@ -109,51 +117,104 @@ function renderDiary(summary) {
     document.getElementById('protein-val').textContent = prot + 'г';
     document.getElementById('fat-val').textContent = fatVal + 'г';
     document.getElementById('carbs-val').textContent = carbsVal + 'г';
-
-    // Update macro bars
     document.querySelector('.macro-protein .macro-fill').style.width = Math.min(prot / userGoals.protein * 100, 100) + '%';
     document.querySelector('.macro-fat .macro-fill').style.width = Math.min(fatVal / userGoals.fat * 100, 100) + '%';
     document.querySelector('.macro-carbs .macro-fill').style.width = Math.min(carbsVal / userGoals.carbs * 100, 100) + '%';
 
+    const eatenEl = document.getElementById('meals-eaten');
+    if (eatenEl) eatenEl.textContent = cal ? `${typeof t === 'function' ? t('eaten') : 'съедено'} ${Math.round(cal)} ккал` : '';
+
     const container = document.getElementById('meals-container');
     container.innerHTML = '';
-
     for (const meal of meals) {
         const mealEntries = entries.filter(e => e.meal_id === meal.id);
-        const mealCal = mealEntries.reduce((s, e) => s + (e.calories || 0), 0);
+        const mealCal = Math.round(mealEntries.reduce((s, e) => s + (e.calories || 0), 0));
+        const has = mealEntries.length > 0;
+        const open = expandedMeals.has(meal.id);
+        const mealName = typeof trMeal === 'function' ? trMeal(meal.name) : meal.name;
+        const composition = has ? mealEntries.map(e => e.product_name).join(', ')
+                                : (typeof t === 'function' ? t('nothingAdded') : 'Ничего не добавлено');
+        const tint = MEAL_TINT[meal.name] || 'rgba(255,255,255,.05)';
 
-        const section = document.createElement('div');
-        section.className = 'card meal-section';
-        section.innerHTML = `
-            <div class="meal-header">
-                <span><span class="meal-icon">${meal.icon || '🍽'}</span><span class="meal-name">${typeof trMeal === "function" ? trMeal(meal.name) : meal.name}</span></span>
-                <span class="meal-cal">${mealCal ? Math.round(mealCal) + ' ккал' : ''}</span>
+        const card = document.createElement('div');
+        card.className = 'meal-card' + (has ? '' : ' empty') + (open ? ' open' : '');
+        card.setAttribute('onclick', `mealCardClick('${meal.id}', ${has})`);
+        card.innerHTML = `
+            <div class="meal-ic" style="background:${tint}">${meal.icon || '🍽'}</div>
+            <div class="meal-body">
+                <div class="meal-name">${mealName}</div>
+                <div class="meal-sub">${composition}</div>
             </div>
-            <div class="meal-entries">
-                ${mealEntries.map(e => `
-                    <div class="entry-row" id="entry-${e.id}">
-                        <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${e.product_name.replace(/'/g, "\\'")}')">
-                            <div class="entry-name">${e.product_name}</div>
-                            <div class="entry-weight">${e.serving_amount}г · Б${Math.round(e.protein)} Ж${Math.round(e.fat)} У${Math.round(e.carbohydrates)}</div>
-                        </div>
-                        <div class="entry-right">
-                            <span class="entry-cal">${Math.round(e.calories)} ккал</span>
-                            <button class="btn-delete" onclick="deleteEntry('${e.id}')" title="Удалить">✕</button>
-                        </div>
+            <div class="meal-right">
+                ${has ? `<span class="meal-kcal">${mealCal}</span><span class="meal-chev">›</span>`
+                      : `<span class="meal-plus ghost">+</span>`}
+            </div>`;
+        container.appendChild(card);
+
+        if (has && open) {
+            const exp = document.createElement('div');
+            exp.className = 'meal-expand';
+            exp.innerHTML = mealEntries.map(e => `
+                <div class="entry-row" id="entry-${e.id}">
+                    <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${(e.product_name || '').replace(/'/g, "\\'")}')">
+                        <div class="entry-name">${e.product_name}</div>
+                        <div class="entry-weight">${e.serving_amount}г · Б${Math.round(e.protein)} Ж${Math.round(e.fat)} У${Math.round(e.carbohydrates)}</div>
                     </div>
-                `).join('')}
-            </div>
-            <div style="display:flex;gap:6px">
-                <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ ${typeof t === 'function' ? t('add').replace(/^\+ /, '') : 'Добавить'}</div>
-                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="openTemplates('${meal.id}')" title="Шаблоны">📂</div>
-                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="saveTemplate('${meal.id}')" title="Сохранить как шаблон">💾</div>
-                <div class="add-btn" style="flex:0;padding:10px 12px;font-size:16px" onclick="copyMeal('${meal.id}', '${currentDate}')" title="Повторить вчера">📋</div>
-            </div>
-        `;
-        container.appendChild(section);
+                    <div class="entry-right">
+                        <span class="entry-cal">${Math.round(e.calories)} ккал</span>
+                        <button class="btn-delete" onclick="deleteEntry('${e.id}')" title="Удалить">✕</button>
+                    </div>
+                </div>`).join('') + `
+                <div class="meal-actions">
+                    <div class="add-btn" style="flex:1" onclick="openAddFood('${meal.id}')">+ ${typeof t === 'function' ? t('add').replace(/^\+ /, '') : 'Добавить'}</div>
+                    <div class="add-btn" style="flex:0;padding:10px 12px" onclick="openTemplates('${meal.id}')" title="Шаблоны">📂</div>
+                    <div class="add-btn" style="flex:0;padding:10px 12px" onclick="saveTemplate('${meal.id}')" title="Сохранить шаблон">💾</div>
+                    <div class="add-btn" style="flex:0;padding:10px 12px" onclick="copyMeal('${meal.id}', '${currentDate}')" title="Повторить вчера">📋</div>
+                </div>`;
+            container.appendChild(exp);
+        }
     }
     renderWater();
 }
+
+function mealCardClick(mealId, has) {
+    if (!has) { openAddFood(mealId); }
+    else { toggleMeal(mealId); }
+}
+function toggleMeal(id) {
+    if (expandedMeals.has(id)) expandedMeals.delete(id); else expandedMeals.add(id);
+    if (_lastSummary !== null) renderDiary(_lastSummary);
+}
+
+// ---- Add sheet (central + button) ----
+function openAddSheet() {
+    document.getElementById('add-sheet-scrim').classList.add('active');
+    document.getElementById('add-sheet').classList.add('active');
+}
+function closeAddSheet() {
+    document.getElementById('add-sheet-scrim').classList.remove('active');
+    document.getElementById('add-sheet').classList.remove('active');
+}
+function addSheetPick(kind) {
+    closeAddSheet();
+    const firstMeal = (typeof meals !== 'undefined' && meals && meals[0]) ? meals[0].id : null;
+    if (kind === 'search') { openAddFood(firstMeal); }
+    else if (kind === 'camera') {
+        if (typeof openFoodPhoto === 'function') openFoodPhoto(firstMeal);
+        else if (typeof openBarcodeScanner === 'function') openBarcodeScanner(firstMeal);
+        else openAddFood(firstMeal);
+    }
+    else if (kind === 'voice') { if (typeof openUniversalVoice === 'function') openUniversalVoice(); }
+    else if (kind === 'history') { if (typeof openHistory === 'function') openHistory(); }
+}
+
+// ---- Header "More" menu (Нутриенты / Голодание) ----
+function toggleMoreMenu(ev) { if (ev) ev.stopPropagation(); document.getElementById('more-menu').classList.toggle('hidden'); }
+function closeMoreMenu() { document.getElementById('more-menu').classList.add('hidden'); }
+document.addEventListener('click', (e) => {
+    const m = document.getElementById('more-menu');
+    if (m && !m.classList.contains('hidden') && !e.target.closest('#more-menu') && !e.target.closest('[onclick^="toggleMoreMenu"]')) closeMoreMenu();
+});
 
 function changeDate(delta) {
     const d = new Date(currentDate);
