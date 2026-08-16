@@ -860,17 +860,25 @@ button:focus-visible,
 .btn-mini:active { transform:scale(0.96); }
 .btn-mini-accent { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
 
-/* ---- Desktop diary: full-width hero banner + two-column widgets below (redesign) ---- */
+/* ---- Desktop diary: hero banner on top, meals left / widgets right (redesign 1:1) ---- */
 @media (min-width: 900px) {
-    .main-content { max-width: 1040px; }
-    /* Grid auto-placement respects `order` (order-modified document order), so the
-       hero + date-nav (order -3/-2) land first and span both columns; everything
-       else keeps its natural DOM order and auto-fills the 2-column grid row by row. */
-    #diary-view { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-items: start; }
-    #diary-view .summary-card { grid-column: 1 / -1; order: -3; flex-direction: row; justify-content: center; gap: 40px; padding: 26px 40px; }
-    #diary-view .summary-card .macros { max-width: 420px; }
-    #diary-view .date-nav { grid-column: 1 / -1; order: -2; margin-top: 4px; }
-    /* the bottom pill stays centered but narrower on wide screens */
+    .main-content { max-width: 1120px; }
+    #diary-view { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0 24px; align-items: start; }
+    /* hero ring + date span the full width on top */
+    #diary-view .summary-card { grid-column: 1 / -1; grid-row: 1; flex-direction: row; justify-content: center; gap: 44px; padding: 26px 44px; }
+    #diary-view .summary-card .macros { max-width: 460px; }
+    #diary-view .date-nav { grid-column: 1 / -1; grid-row: 2; margin: 2px 0 12px; }
+    /* section heading spans full width so meals (left) and widgets (right) align at the same top row */
+    #diary-view .meals-head { grid-column: 1 / -1; grid-row: 3; margin: 4px 4px 12px; }
+    /* LEFT column: meals (primary) */
+    #diary-view #meals-container { grid-column: 1; grid-row: 4 / span 40; }
+    /* RIGHT column: widgets stacked, each on its own explicit row, aligned with meals */
+    #diary-view .wx-row { grid-column: 2; grid-row: 4; }
+    #diary-view #coach-tip-widget { grid-column: 2; grid-row: 5; }
+    #diary-view #seasonal-card { grid-column: 2; grid-row: 6; }
+    #diary-view #streak-badge { grid-column: 2; grid-row: 7; }
+    #diary-view #quests-widget { grid-column: 2; grid-row: 8; }
+    #diary-view .mood-card { grid-column: 2; grid-row: 9; }
     .bottom-nav { max-width: 520px; }
 }
 
@@ -924,18 +932,20 @@ button:focus-visible,
 .sheet-opt .ot { font-weight: 700; font-size: 14px; }
 .sheet-opt .od { color: var(--text2); font-size: 12px; margin-top: 2px; }
 
-/* diary block order (mobile): hero -> water/xp -> coach -> meals; secondary below */
-#diary-view { display: flex; flex-direction: column; }
-#diary-view .date-nav { order: 1; }
-#diary-view .summary-card { order: 2; }
-#diary-view .wx-row { order: 3; }
-#diary-view #coach-tip-widget { order: 4; }
-#diary-view .meals-head { order: 5; }
-#diary-view #meals-container { order: 6; }
-#diary-view #seasonal-card { order: 7; }
-#diary-view #streak-badge { order: 7; }
-#diary-view #quests-widget { order: 8; }
-#diary-view .mood-card { order: 9; }
+/* diary block order (mobile only): hero -> water/xp -> coach -> meals; secondary below */
+@media (max-width: 899px) {
+    #diary-view { display: flex; flex-direction: column; }
+    #diary-view .date-nav { order: 1; }
+    #diary-view .summary-card { order: 2; }
+    #diary-view .wx-row { order: 3; }
+    #diary-view #coach-tip-widget { order: 4; }
+    #diary-view .meals-head { order: 5; }
+    #diary-view #meals-container { order: 6; }
+    #diary-view #seasonal-card { order: 7; }
+    #diary-view #streak-badge { order: 7; }
+    #diary-view #quests-widget { order: 8; }
+    #diary-view .mood-card { order: 9; }
+}
 .cal-goal { display: block; font-size: 12px; color: var(--text2); margin-top: 3px; font-weight: 500; }
 
 /* "More" dropdown menu */
