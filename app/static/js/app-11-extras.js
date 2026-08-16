@@ -417,7 +417,7 @@ async function loadXpLevel() {
     const wrap = document.getElementById('xp-widget');
     if (!wrap) return;
     const pct = r.xp_to_next_level > 0 ? Math.round((r.xp_into_level / r.xp_to_next_level) * 100) : 0;
-    wrap.innerHTML = `<div class="card" style="padding:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><b>Уровень ${r.level}</b><span style="color:var(--text2)">${r.xp_into_level}/${r.xp_to_next_level} XP</span></div><div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#4a9eff,#ffb800);border-radius:3px"></div></div></div>`;
+    wrap.innerHTML = `<div class="card" style="padding:14px;height:100%;display:flex;flex-direction:column;justify-content:center;margin-bottom:0"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><b>Уровень ${r.level}</b><span style="color:var(--text2)">${r.xp_into_level}/${r.xp_to_next_level} XP</span></div><div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px"></div></div></div>`;
 }
 
 async function loadDailyQuests() {

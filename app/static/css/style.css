@@ -966,3 +966,9 @@ button:focus-visible,
     .bottom-nav .nav-icon { font-size: 18px; }
     .bottom-nav .nav-tab { padding: 10px 0; gap: 3px; }
 }
+
+/* desktop: 6 tabs + FAB need a wider pill */
+@media (min-width: 900px) {
+    .bottom-nav { max-width: 680px; }
+    .bottom-nav .nav-label { font-size: 11px; }
+}
