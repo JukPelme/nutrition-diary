@@ -117,8 +117,8 @@ async function loadHealth() {
         aiHtml += '<div class="card"><div class="card-title">Рекомендации</div>' +
             aiRecs.recommendations.map(r =>
                 `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-                    <div style="font-size:14px;font-weight:500">${r.icon} ${r.title}</div>
-                    <div style="font-size:12px;color:var(--text2);margin-top:4px">${r.text}</div>
+                    <div style="font-size:14px;font-weight:500">${r.icon} ${escapeHtml(r.title)}</div>
+                    <div style="font-size:12px;color:var(--text2);margin-top:4px">${escapeHtml(r.text)}</div>
                 </div>`
             ).join('') + '</div>';
 

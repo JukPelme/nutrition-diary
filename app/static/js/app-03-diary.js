@@ -156,8 +156,8 @@ function renderDiary(summary) {
             exp.className = 'meal-expand';
             exp.innerHTML = mealEntries.map(e => `
                 <div class="entry-row" id="entry-${e.id}">
-                    <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${(e.product_name || '').replace(/'/g, "\\'")}')">
-                        <div class="entry-name">${e.product_name}</div>
+                    <div class="entry-info" onclick="editEntry('${e.id}', ${e.serving_amount}, '${escapeHtml((e.product_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"))}')">
+                        <div class="entry-name">${escapeHtml(e.product_name)}</div>
                         <div class="entry-weight">${e.serving_amount}г · Б${Math.round(e.protein)} Ж${Math.round(e.fat)} У${Math.round(e.carbohydrates)}</div>
                     </div>
                     <div class="entry-right">

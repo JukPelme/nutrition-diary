@@ -248,7 +248,7 @@ function renderSavedRecipes() {
         const perPortion = r.portions > 0 ? Math.round(totalCal / r.portions) : Math.round(totalCal);
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bg2)">
             <div>
-                <div style="font-weight:500">${r.name}</div>
+                <div style="font-weight:500">${escapeHtml(r.name)}</div>
                 <div style="font-size:11px;color:var(--text2)">${r.ingredients.length} ингр. · ${perPortion} ккал/порция · ${r.portions || 1} порц.</div>
             </div>
             <div style="display:flex;gap:4px">
